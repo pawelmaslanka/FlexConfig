@@ -16,6 +16,7 @@ class VisitorImpl : public Visitor {
     virtual ~VisitorImpl() = default;
     virtual bool visit(SharedPtr<Node> node) override {
         std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Visit node: " << node->getName() << std::endl;
+        std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Node " << node->getName() << " with schema " << (node->getSchemaNode() ? node->getSchemaNode()->getName() : "none") << std::endl;
         node->accept(*this);
         return true;
     }

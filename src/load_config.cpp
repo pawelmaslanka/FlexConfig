@@ -7,8 +7,8 @@
 #include <regex>
 
 template <typename T>
-void createNode(const String node_name, SharedPtr<T>& parent_node) {
-    auto new_node = std::make_shared<T>(node_name, parent_node);
+void createNode(const String node_name, SharedPtr<T>& parent_node, SharedPtr<Node> schema_node = nullptr) {
+    auto new_node = std::make_shared<T>(node_name, parent_node, schema_node);
     if (!parent_node->add(new_node)) {
         std::cerr << "Failed to add new node as a child\n";
         exit(EXIT_FAILURE);
@@ -91,19 +91,20 @@ void Config::loadSchema(std::ifstream& config_file, std::shared_ptr<SchemaCompos
 }
 
 bool validateAndCreateAttributeValue(SharedPtr<Composite>& config_node, SharedPtr<SchemaComposite> schema_node, const String property, const String property_value) {
-    auto pattern_val = schema_node->findAttr("pattern-value");
-    if (!pattern_val.empty()) {
-        std::clog << "Found pattern-value: " << pattern_val << std::endl;
-        std::regex regexp(pattern_val);
-        std::smatch match {};
-        if (!std::regex_match(property_value, match, regexp)) {
-            std::cerr << "Not matching regex " << pattern_val << " to property name " << property_value << std::endl;
-            exit(EXIT_FAILURE);
+    auto patterns = schema_node->findAttr("pattern-value");
+    if (!patterns.empty()) {
+        for (auto& pattern : patterns) {
+            std::clog << "Found pattern-value: " << pattern << std::endl;
+            std::regex regexp(pattern);
+            std::smatch match {};
+            if (!std::regex_match(property_value, match, regexp)) {
+                std::cerr << "Not matching regex " << pattern << " to property name " << property_value << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
-    auto new_node = std::make_shared<Leaf>(property, config_node);
-    new_node->setValue(property_value);
+    auto new_node = std::make_shared<Leaf>(property, config_node, schema_node, property_value);
     if (!config_node->add(new_node)) {
         std::cerr << "Failed to add new node as a child\n";
         exit(EXIT_FAILURE);
@@ -114,24 +115,28 @@ bool validateAndCreateAttributeValue(SharedPtr<Composite>& config_node, SharedPt
 
 bool validateContainerAttributes(SharedPtr<Composite> config_node, SharedPtr<SchemaComposite> schema_node, const String property_value) {
     std::clog << "Validate container element\n";
-    auto attr = schema_node->findAttr("pattern-name");
-    if (!attr.empty()) {
-        std::clog << "Check pattern " << attr << " for name of " << property_value << std::endl;
-        std::regex regexp(attr);
-        std::smatch match {};
-        if (!std::regex_match(property_value, match, regexp)) {
-            std::cerr << "Not matching regex " << attr << " to property name " << property_value << std::endl;
-            exit(EXIT_FAILURE);
+    auto attribute_values = schema_node->findAttr("pattern-name");
+    if (!attribute_values.empty()) {
+        for (auto& pattern : attribute_values) {
+            std::clog << "Check pattern " << pattern << " for name of " << property_value << std::endl;
+            std::regex regexp(pattern);
+            std::smatch match {};
+            if (!std::regex_match(property_value, match, regexp)) {
+                std::cerr << "Not matching regex " << pattern << " to property name " << property_value << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
     auto schema_node_parent = std::dynamic_pointer_cast<SchemaComposite>(schema_node->getParent());
-    attr = schema_node_parent ? schema_node_parent->findAttr("max") : String {};
-    if (!attr.empty()) {
-        std::clog << "Check if container size " << config_node->count() << " is less than " << attr << std::endl;
-        if (std::stoul(attr) <= config_node->count()) {
-            std::cerr << "Container " << config_node->getName() << " exceeded its maximum size " << std::stoul(attr) << std::endl;
-            exit(EXIT_FAILURE);
+    attribute_values = schema_node_parent ? schema_node_parent->findAttr("max") : ForwardList<String>{ };
+    if (!attribute_values.empty()) {
+        for (auto& limit : attribute_values) {
+            std::clog << "Check if container size " << config_node->count() << " is less than " << limit << std::endl;
+            if (std::stoul(limit) <= config_node->count()) {
+                std::cerr << "Container " << config_node->getName() << " exceeded its maximum size " << std::stoul(limit) << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
@@ -202,7 +207,7 @@ void load_internal(std::ifstream& config_file, SharedPtr<Composite> root_config,
                     if (auto item_ptr = std::dynamic_pointer_cast<SchemaComposite>(root_schema->findNode("@item"))) {
                         if (validateContainerAttributes(last_node, item_ptr, property_value)) {
                             auto parent = std::dynamic_pointer_cast<Composite>(last_node->getParent());
-                            createNode<Composite>(property_value, parent);
+                            createNode<Composite>(property_value, parent, item_ptr);
                         }
                     }
                     else if (auto node_ptr = std::dynamic_pointer_cast<SchemaComposite>(root_schema->findNode(property))) {
@@ -222,13 +227,13 @@ void load_internal(std::ifstream& config_file, SharedPtr<Composite> root_config,
                 }
                 else {
                     property = word;
-                    if (root_schema->findNode(property)) {
-                        createNode<Composite>(property, last_node);
+                    if (auto schema_node = root_schema->findNode(property)) {
+                        createNode<Composite>(property, last_node, schema_node);
                         property.clear();
                     }
                     else if (auto item_ptr = std::dynamic_pointer_cast<SchemaComposite>(root_schema->findNode("@item"))) {
                         if (validateContainerAttributes(last_node, item_ptr, property)) {
-                            createNode<Composite>(property, last_node);
+                            createNode<Composite>(property, last_node, item_ptr);
                         }
                     }
                     else {
@@ -238,7 +243,7 @@ void load_internal(std::ifstream& config_file, SharedPtr<Composite> root_config,
                 }
             }
             else {
-                std::cerr << "Cos zle, bo mam: (" << word << ")" << std::endl;
+                std::cerr << "Cos zle, poniewaz jest: (" << word << ")" << std::endl;
             }
 
             word.clear();

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <forward_list>
 #include <map>
 #include <memory>
 #include <set>
@@ -8,6 +9,7 @@
 #include <vector>
 
 // Keep it in alphabetical order
+#define ForwardList std::forward_list
 #define Map std::map
 #define Pair std::pair
 #define Set std::set

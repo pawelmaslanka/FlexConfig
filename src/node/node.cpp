@@ -28,8 +28,8 @@ const Set<String> SchemaNode::TYPE_NAME = {
     "leaf"
 };
 
-Node::Node(const String& name, SharedPtr<Node> parent)
- : m_name(name), m_parent(parent) {
+Node::Node(const String& name, SharedPtr<Node> parent, SharedPtr<Node> schema_node)
+ : m_name { name }, m_parent { parent }, m_schema_node { schema_node } {
 
 }
 
@@ -45,16 +45,24 @@ void Node::setParent(SharedPtr<Node> parent) {
     m_parent = parent;
 }
 
-SharedPtr<Node> Node::getParent() {
+SharedPtr<Node> Node::getParent() const {
     return m_parent;
 }
 
-void Node::accept(Visitor& visitor) {
-    return;
+void Node::setSchemaNode(SharedPtr<Node> schema_node) {
+    m_schema_node = schema_node;
 }
 
-Leaf::Leaf(const String& name, SharedPtr<Node> parent, const String value)
-: Node(name, parent), m_value { value } {
+SharedPtr<Node> Node::getSchemaNode() const {
+    return m_schema_node;
+}
+
+void Node::accept(Visitor& visitor) {
+    std::clog << "Node " << m_name << " with schema " << (m_schema_node ? m_schema_node->getName() : "none") << std::endl;
+}
+
+Leaf::Leaf(const String& name, SharedPtr<Node> parent, SharedPtr<Node> schema_node, const String value)
+: Node(name, parent, schema_node), m_value { value } {
 
 }
 
@@ -66,8 +74,8 @@ String Leaf::getValue() const {
     return m_value;
 }
 
-SchemaNode::SchemaNode(const String& name, SharedPtr<Node> parent)
- : Node(name, parent) {
+SchemaNode::SchemaNode(const String& name, SharedPtr<Node> parent, SharedPtr<Node> schema_node)
+ : Node(name, parent, schema_node) {
 
 }
 
@@ -75,11 +83,11 @@ SchemaNode::~SchemaNode() {
 
 }
 
-void SchemaNode::addAttr(const String attr_name, const String attr_val) {
-    m_attr_by_name[attr_name] = attr_val;
+void SchemaNode::addAttr(const String& attr_name, const String& attr_val) {
+    m_attr_by_name[attr_name].emplace_front(attr_val);
 }
 
-String SchemaNode::findAttr(const String attr_name) {
+ForwardList<String> SchemaNode::findAttr(const String& attr_name) {
     auto attr_it = m_attr_by_name.find(attr_name);
     if (attr_it != m_attr_by_name.end()) {
         return attr_it->second;
@@ -91,6 +99,8 @@ String SchemaNode::findAttr(const String attr_name) {
 void SchemaNode::accept(Visitor& visitor) {
     std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Members for node " << getName() << ":\n";
     for (auto& [attr, value] : m_attr_by_name) {
-        std::clog << attr << " -> " << value << std::endl;
+        for (auto& val : value) {
+            std::clog << attr << " -> " << val << std::endl;
+        }
     }
 }

@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-Composite::Composite(const String name, SharedPtr<Node> parent)
- : Node(name, parent) {
+Composite::Composite(const String name, SharedPtr<Node> parent, SharedPtr<Node> schema_node)
+ : Node(name, parent, schema_node) {
 
 }
 
@@ -52,8 +52,8 @@ size_t Composite::count() const {
     return m_node_by_name.size();
 }
 
-SchemaComposite::SchemaComposite(const String name, SharedPtr<Node> parent)
- : Node(name, parent), SchemaNode(name, parent), Composite(name, parent) {
+SchemaComposite::SchemaComposite(const String name, SharedPtr<Node> parent, SharedPtr<Node> schema_node)
+ : Node(name, parent, schema_node), SchemaNode(name, parent, schema_node), Composite(name, parent, schema_node) {
 
 }
 

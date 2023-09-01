@@ -17,14 +17,15 @@ set(CPP_HEADER_EXT hpp)
 set(CPP_SRC_EXT cpp)
 
 set(INC_LIST
+    "${SRC_DIR}/lib/topo_sort.${CPP_HEADER_EXT}"
     "${SRC_DIR}/load_config.${CPP_HEADER_EXT}"
     "${SRC_DIR}/node/node.${CPP_HEADER_EXT}"
     "${SRC_DIR}/node/composite.${CPP_HEADER_EXT}"
     "${SRC_DIR}/node/visitor.${CPP_HEADER_EXT}"
-    "${SRC_DIR}/lib/utils.${CPP_HEADER_EXT}"
 )
 
 set(SRC_LIST
+    "${SRC_DIR}/lib/topo_sort.${CPP_SRC_EXT}"
     "${SRC_DIR}/load_config.${CPP_SRC_EXT}"
     "${SRC_DIR}/node/node.${CPP_SRC_EXT}"
     "${SRC_DIR}/node/composite.${CPP_SRC_EXT}"
