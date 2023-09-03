@@ -104,7 +104,14 @@ bool validateAndCreateAttributeValue(SharedPtr<Composite>& config_node, SharedPt
         }
     }
 
-    auto new_node = std::make_shared<Leaf>(property, config_node, schema_node, property_value);
+    // TODO: Make real Value
+    // auto type = schema_node->findAttr("type");
+    // if (type == "string") {
+    // }
+    // else if (type == "number")
+    Value value(Value::Type::STRING);
+    value.set_string(property_value);
+    auto new_node = std::make_shared<Leaf>(property, value, config_node, schema_node);
     if (!config_node->add(new_node)) {
         std::cerr << "Failed to add new node as a child\n";
         exit(EXIT_FAILURE);

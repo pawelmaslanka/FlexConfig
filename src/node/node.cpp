@@ -59,18 +59,19 @@ SharedPtr<Node> Node::getSchemaNode() const {
 
 void Node::accept(Visitor& visitor) {
     std::clog << "Node " << m_name << " with schema " << (m_schema_node ? m_schema_node->getName() : "none") << std::endl;
+    visitor.visit(shared_from_this());
 }
 
-Leaf::Leaf(const String& name, SharedPtr<Node> parent, SharedPtr<Node> schema_node, const String value)
-: Node(name, parent, schema_node), m_value { value } {
+Leaf::Leaf(const String& name, const Value value, SharedPtr<Node> parent, SharedPtr<Node> schema_node)
+: Node(name, parent, schema_node), m_value(value) {
 
 }
 
-void Leaf::setValue(const String value) {
+void Leaf::setValue(const Value value) {
     m_value = value;
 }
 
-String Leaf::getValue() const {
+Value Leaf::getValue() const {
     return m_value;
 }
 
@@ -103,4 +104,6 @@ void SchemaNode::accept(Visitor& visitor) {
             std::clog << attr << " -> " << val << std::endl;
         }
     }
+
+    Node::accept(visitor);
 }

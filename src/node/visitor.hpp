@@ -5,12 +5,19 @@
 
 class Node;
 
+class IVisitableNode {
+  public:
+    ~IVisitableNode() = default;
+    virtual SharedPtr<Node> getNode() const = 0;
+};
+
 class Visitor
  : public inheritable_enable_shared_from_this<Visitor> {
   public:
     virtual ~Visitor() = default;
     Visitor() = default;
     virtual bool visit(SharedPtr<Node> node) = 0;
+    // TODO: Replace with: virtual bool visit(IVisitableNode& node) = 0;
 };
 
 class IVisitable {

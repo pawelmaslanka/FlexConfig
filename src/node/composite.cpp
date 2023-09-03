@@ -32,10 +32,15 @@ bool Composite::remove(const String node_name) {
 }
 
 void Composite::accept(Visitor& visitor) {
+    std::clog << "Composite " << getName() << " has " << m_node_by_name.size() << " members\n";
     for (auto node : m_node_by_name) {
+        std::clog << "Visiting node " << node.first << " which is parent of " << getName() << std::endl;
+        // node.second->accept(visitor);
         if (!visitor.visit(node.second)) {
             break;
         }
+
+        node.second->accept(visitor); // TODO: Czy to dobre? Nie przerwiemy rekurencji, bez mozliwosci zwrocenia true/false
     }
 }
 

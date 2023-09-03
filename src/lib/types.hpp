@@ -3,7 +3,9 @@
 #include <forward_list>
 #include <map>
 #include <memory>
+#include <queue>
 #include <set>
+#include <stack>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -11,9 +13,12 @@
 // Keep it in alphabetical order
 #define ForwardList std::forward_list
 #define Map std::map
+#define MultiMap std::multimap
 #define Pair std::pair
+#define Queue std::queue
 #define Set std::set
 #define SharedPtr std::shared_ptr
+#define Stack std::stack
 #define WeakPtr std::weak_ptr
 #define Vector std::vector
 

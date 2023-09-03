@@ -25,10 +25,13 @@ set(INC_LIST
 )
 
 set(SRC_LIST
+    "${SRC_DIR}/expr_eval.${CPP_SRC_EXT}"
     "${SRC_DIR}/lib/topo_sort.${CPP_SRC_EXT}"
     "${SRC_DIR}/load_config.${CPP_SRC_EXT}"
     "${SRC_DIR}/node/node.${CPP_SRC_EXT}"
     "${SRC_DIR}/node/composite.${CPP_SRC_EXT}"
+    "${SRC_DIR}/value.${CPP_SRC_EXT}"
+    "${SRC_DIR}/xpath.${CPP_SRC_EXT}"
 )
 
 add_executable(${PROJECT_NAME} ${INC_LIST} ${SRC_LIST} main.${CPP_SRC_EXT})

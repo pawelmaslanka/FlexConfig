@@ -17,4 +17,16 @@ static inline std::string trim(const std::string &s) {
     return leftTrim(rightTrim(s));
 }
 
+static void find_and_replace_all(String& data, String to_search, String replace_str) {
+    // Get the first occurrence
+    size_t pos = data.find(to_search);
+    // Repeat till end is reached
+    while (pos != String::npos) {
+        // Replace this occurrence of Sub String
+        data.replace(pos, to_search.size(), replace_str);
+        // Get the next occurrence from the current position
+        pos = data.find(to_search, pos + replace_str.size());
+    }
+}
+
 } // namespace Utils
