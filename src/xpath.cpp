@@ -130,6 +130,39 @@ String XPath::to_string(SharedPtr<Node> node) {
     return xpath;
 }
 
+String XPath::to_string2(SharedPtr<Node> node) {
+    String xpath;
+    Stack<String> xpath_stack;
+    auto processing_node = node;
+
+    while (processing_node) {
+
+        // if (processing_node->getName() == "@item") {
+        //     xpath_stack.push(XPath::SUBSCRIPT_LEFT_PARENTHESIS + std::string("@key") + XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
+        // }
+        // else {
+            xpath_stack.push(processing_node->getName());
+        // }
+
+        // std::cout << "Adding " << processing_node->getName() << "\n";
+        processing_node = processing_node->getParent();
+    }
+
+    while (!xpath_stack.empty()) {
+        if (xpath_stack.top() != XPath::SEPARATOR) {
+            if (xpath_stack.top()[0] != '[') {
+                xpath += XPath::SEPARATOR;
+            }
+
+            xpath += xpath_stack.top();
+        }
+
+        xpath_stack.pop();
+    }
+
+    return xpath;
+}
+
 struct NodeCounter : public Visitor {
     size_t node_cnt;
     NodeCounter() : node_cnt(0) {}
