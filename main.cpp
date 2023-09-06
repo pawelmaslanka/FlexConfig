@@ -239,6 +239,24 @@ int main(int argc, char* argv[]) {
     std::clog << "Execute action for nodes\n";
     for (auto n : nodes_to_execute) {
         std::clog << n->getName() << ": " << XPath::to_string2(n) << std::endl;
+        auto expr_eval = std::make_shared<ExprEval>();
+        expr_eval->init(n);
+        auto schema_node = std::dynamic_pointer_cast<SchemaNode>(n->getSchemaNode());
+        if (!schema_node) {
+            std::clog << schema_node->getName() << " has not reference to schema node\n";
+            continue;
+        }
+
+        for (auto& constraint : schema_node->findAttr("update-constraint")) {
+            std::clog << "Evaluating expression '" << constraint << "' for node " << n->getName() << std::endl;
+            if (expr_eval->evaluate(constraint)) {
+                std::cout << "Successfully evaluated expression\n";
+            }
+            else {
+                std::cerr << "Failed to evaluate expression\n";
+                exit(EXIT_FAILURE);
+            }
+        }
     }
 
     // auto depends = std::make_shared<Map<String, Set<String>>>();

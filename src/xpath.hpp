@@ -31,4 +31,5 @@ namespace XPath {
     size_t count_members(SharedPtr<Node> root_node, const String xpath);
     SharedPtr<Node> get_root(SharedPtr<Node> start_node);
     String evaluate_xpath(SharedPtr<Node> start_node, String xpath);
+    String evaluate_xpath2(SharedPtr<Node> start_node, String xpath);
 };

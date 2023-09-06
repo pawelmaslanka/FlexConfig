@@ -79,6 +79,7 @@ bool ExprEval::ExprEvalVisitor::visit(SharedPtr<Node> node) {
 }
 
 Pair<bool, Optional<Value>> ExprEval::xpath_evaluate(std::string xpath) {
+    std::clog << "XPath to evaluate: " << xpath << std::endl;
     if (xpath.at(0) != XPath::SEPARATOR[0]) {
         return { false, {} };
     }
@@ -151,7 +152,7 @@ Pair<bool, Optional<Value>> ExprEval::xpath_evaluate(std::string xpath) {
         std::cout << "Resolved parent of key name: " << resolved_key_name << std::endl;
         // Resolve all occurences of XPath::KEY_NAME_SUBSCRIPT
         for (auto it = range.first; it != range.second; ++it) {
-            std::cout << "Replacing " << xpath_elements.at(it->second) << " with " << resolved_key_name << std::endl;
+            std::cout << __LINE__ << ": Replacing " << xpath_elements.at(it->second) << " with " << resolved_key_name << std::endl;
             xpath_elements.at(it->second) = resolved_key_name;
         }
     }
@@ -238,9 +239,14 @@ void ExprEval::get_result_of_eval(int nested_lvl) {
             if (argument.back().is_bool()
                 && (argument.back().get_bool() == false)) {
                 std::cout << "Stopped processing statement" << std::endl;
+                std::cerr << "Context function: " << function.front() << std::endl;
+                std::cerr << "Context argument: " << argument.front().to_string() << std::endl;
                 result = "true";
                 function.clear();
                 argument.clear();
+                Value v(Value::Type::BOOL);
+                v.set_bool(true);
+                argument.emplace_front(v);
                 return;
             }
 
@@ -365,12 +371,13 @@ void ExprEval::get_result_of_eval(int nested_lvl) {
             auto arg2 = argument.back();
             argument.pop_back();
             // }
-            std::cout << "Match regex: " << arg2.to_string() << " to " << arg1.to_string() << std::endl;
+            std::cout << "Match regex: " << arg1.to_string() << " to " << arg2.to_string() << std::endl;
             std::regex regexp(arg2.get_string());
             std::smatch match;
             String str = arg1.to_string();
             Value bool_val(Value::Type::BOOL);
             bool_val.set_bool(std::regex_match(str, match, regexp));
+            std::clog << "Evaluated regex match result to " << bool_val.to_string() << std::endl;
             argument.push_back(bool_val);
         }
         else if (function.front() == "count") {
@@ -518,7 +525,7 @@ size_t ExprEval::evaluate(const std::string tokens, const size_t start_idx, cons
                 std::cout << tokens[i];
                 if (tokens[i] == '#') { // nested function
                     i = evaluate(tokens, i, nested_lvl + 1);
-                    std::cout << "Nested level: " << nested_lvl << std::endl;
+                    std::cout << __LINE__ << ": Nested level: " << nested_lvl << std::endl;
                 }
                 else if (function.front() != "regex"
                             && (tokens[i] == ' '
