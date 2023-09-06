@@ -75,6 +75,10 @@ Value Leaf::getValue() const {
     return m_value;
 }
 
+void Leaf::accept(Visitor& visitor) {
+    std::clog << getName() << " is a leaf so skip visiting" << std::endl;
+}
+
 SchemaNode::SchemaNode(const String& name, SharedPtr<Node> parent, SharedPtr<Node> schema_node)
  : Node(name, parent, schema_node) {
 

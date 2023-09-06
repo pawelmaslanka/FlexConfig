@@ -72,6 +72,9 @@ int main(int argc, char* argv[]) {
     Config::load(config_file, load_config, root_schema);
     std::cout << "Dump nodes creating backtrace:\n";
     load_config->accept(visitor);
+
+    // exit(EXIT_SUCCESS);
+
     VisitorGE1Speed visit_ge1_speed;
     load_config->accept(visit_ge1_speed);
     if (!visit_ge1_speed.getSpeedNode()) {
@@ -110,6 +113,10 @@ int main(int argc, char* argv[]) {
                 std::clog << "Node " << node->getName() << " depends on " << dep << std::endl;
             }
 
+            // if (std::dynamic_pointer_cast<Leaf>(node)) {
+            //     return false; // Terminate visiting on Leaf object
+            // }
+
             return true;
         }
 
@@ -141,6 +148,10 @@ int main(int argc, char* argv[]) {
                 std::clog << "Node " << node->getName() << " depends on " << dep << std::endl;
             }
 
+            // if (std::dynamic_pointer_cast<Leaf>(node)) {
+            //     return false; // Terminate visiting on Leaf object
+            // }
+
             return true;
         }
 
@@ -171,6 +182,10 @@ int main(int argc, char* argv[]) {
             else {
                 m_unordered_nodes[schema_node_xpath].emplace_back(node);
             }
+
+            // if (std::dynamic_pointer_cast<Leaf>(node)) {
+            //     return false; // Terminate visiting on Leaf object
+            // }
 
             return true;
         }

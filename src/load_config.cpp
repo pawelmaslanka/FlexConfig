@@ -14,6 +14,7 @@ void createNode(const String node_name, SharedPtr<T>& parent_node, SharedPtr<Nod
         exit(EXIT_FAILURE);
     }
 
+    std::clog << "Created node '" << node_name << "' and attached it to its parent '" << parent_node->getName() << std::endl;
     parent_node = new_node;
 }
 
@@ -70,6 +71,7 @@ void Config::loadSchema(std::ifstream& config_file, std::shared_ptr<SchemaCompos
                     }
 
                     if (property_value == "group" || property_value == "container" || property_value == "array" || property_value == "leaf") {
+                        std::clog << __func__ << ":" << __LINE__ << std::endl;
                         createNode<SchemaComposite>(property, last_node);
                     }
                     else {
@@ -80,6 +82,7 @@ void Config::loadSchema(std::ifstream& config_file, std::shared_ptr<SchemaCompos
                     property_value.clear();
                 }
                 else if (word == "@item") {
+                    std::clog << __func__ << ":" << __LINE__ << std::endl;
                     createNode<SchemaComposite>(word, last_node);
                 }
             }
@@ -150,6 +153,7 @@ bool validateContainerAttributes(SharedPtr<Composite> config_node, SharedPtr<Sch
     return true;
 }
 
+SharedPtr<Node> backup_last_node = std::make_shared<Node>(std::string("/"));
 void load_internal(std::ifstream& config_file, SharedPtr<Composite> root_config, SharedPtr<SchemaComposite> root_schema, Vector<Pair<SharedPtr<Node>, String>>& ref_by_node) {
     std::clog << "Root schema node: " << root_schema->getName() << std::endl;
     auto last_node = root_config;
@@ -214,12 +218,15 @@ void load_internal(std::ifstream& config_file, SharedPtr<Composite> root_config,
                     if (auto item_ptr = std::dynamic_pointer_cast<SchemaComposite>(root_schema->findNode("@item"))) {
                         if (validateContainerAttributes(last_node, item_ptr, property_value)) {
                             auto parent = std::dynamic_pointer_cast<Composite>(last_node->getParent());
+                            std::clog << __func__ << ":" << __LINE__ << std::endl;
                             createNode<Composite>(property_value, parent, item_ptr);
                         }
                     }
                     else if (auto node_ptr = std::dynamic_pointer_cast<SchemaComposite>(root_schema->findNode(property))) {
                         std::clog << "--> Found attribute: " << node_ptr->getName() << std::endl;
-                        if (!validateAndCreateAttributeValue(last_node, node_ptr, property, property_value)) {
+                        std::clog << __func__ << ":" << __LINE__ << " - last_node: " << last_node->getName() << ", node_ptr: " << node_ptr->getName() << ", property: " << property << ", property_value: " << property_value << ", backup_last_node: " << backup_last_node->getName() << std::endl;
+                        auto compo = std::dynamic_pointer_cast<Composite>(backup_last_node);
+                        if (!validateAndCreateAttributeValue(compo /* last_node */, node_ptr, property, property_value)) {
                             std::cerr << "Failed to validate attribute value\n";
                             exit(EXIT_FAILURE);
                         }
@@ -235,18 +242,24 @@ void load_internal(std::ifstream& config_file, SharedPtr<Composite> root_config,
                 else {
                     property = word;
                     if (auto schema_node = root_schema->findNode(property)) {
+                        std::clog << __func__ << ":" << __LINE__ << std::endl;
                         createNode<Composite>(property, last_node, schema_node);
-                        property.clear();
                     }
                     else if (auto item_ptr = std::dynamic_pointer_cast<SchemaComposite>(root_schema->findNode("@item"))) {
                         if (validateContainerAttributes(last_node, item_ptr, property)) {
+                            std::clog << __func__ << ":" << __LINE__ << " - last_node: " << last_node->getName() << ", item_ptr: " << item_ptr->getName() << ", property: " << property << std::endl;
+                            auto prev_last_node = last_node;
                             createNode<Composite>(property, last_node, item_ptr);
+                            backup_last_node = last_node;
+                            last_node = prev_last_node;
                         }
                     }
                     else {
                         std::cerr << "Not found property: " << property << std::endl;
                         exit(EXIT_FAILURE);
                     }
+
+                    property.clear();
                 }
             }
             else {
