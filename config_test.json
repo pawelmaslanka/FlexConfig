@@ -1,0 +1,41 @@
+{
+    "interface": {
+        "gigabit-ethernet": {
+            "ge-1": {
+                "speed": "100G"
+            },
+            "ge-2": {
+                "speed": "100G"
+            }
+        },
+        "aggregate-ethernet": {
+            "ae-1": {
+                "members": [
+                    "ge-1"
+                ]
+            }
+        }
+    },
+    "vlan": {
+        "id": {
+            "2": {
+                "members": [
+                    "ge-2"
+                ]
+            }
+        }
+    },
+    "protocol": {
+        
+    },
+    "platform": {
+        "port": {
+            "ge-1": {
+                "breakout-mode": "none"
+            },
+            "ge-2": {
+                "breakout-mode": "4x100G"
+            }
+        }
+    }
+}

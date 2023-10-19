@@ -32,6 +32,7 @@ bool Composite::remove(const String node_name) {
     return true;
 }
 
+// TODO: Get value from Visitor if it prefere DFS or BFS
 void Composite::accept(Visitor& visitor) {
     std::clog << "Composite " << getName() << " has " << m_node_by_name.size() << " members\n";
     for (auto node : m_node_by_name) {

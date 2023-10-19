@@ -18,6 +18,8 @@ class Visitor
     Visitor() = default;
     virtual bool visit(SharedPtr<Node> node) = 0;
     // TODO: Replace with: virtual bool visit(IVisitableNode& node) = 0;
+    // TODO: bool goDFS(); // DFS or BFS
+    // TODO: size_t depthLevel(); // When stop recurrency
 };
 
 class IVisitable {

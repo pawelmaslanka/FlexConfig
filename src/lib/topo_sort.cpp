@@ -86,7 +86,7 @@ std::optional<std::string> makeGraphNode(std::map<std::string, std::set<std::str
 // TODO: First run delete_depends(), then run update_depends()
 std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmds, std::list<String>& ordered_cmds) {
     if (!cmds) {
-            return "Not pass data!";
+        return "Not pass data!";
     }
     std::cout << "Elements: " << cmds->size() << std::endl;
     // TODO: First sort by operation to delete and then operation to update
@@ -146,7 +146,7 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
                 std::list<String>::iterator find_it = std::find_if(ordered_cmds.begin(), ordered_cmds.end(), [&res](String& node_xpath) -> bool {
                         if ((node_xpath.find(res->name()) != std::string::npos)
                                         && (res->name().size() < node_xpath.size())) {
-                                std::cout << "Found shorter xpath " <<    node_xpath << " than " << res->name() << std::endl;
+                                std::cout << "Found shorter xpath " << res->name() << " than " << node_xpath << std::endl;
                                 return true;
                         }
 
@@ -156,6 +156,34 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
                 // Put parent before its child
                 ordered_cmds.emplace(find_it, res->name());
                 adj_list.erase(it);
+        }
+    }
+
+    // TODO: Check if this step won't mess dependencies
+    // Find last xpath which is a substring of currently processing xpath and put it after that xpath
+    // Got: /interface/gigabit-ethernet/ge-2 /interface/aggregate-ethernet /interface/aggregate-ethernet/ae-1 /interface/gigabit-ethernet/ge-2/speed
+    // Expected: /interface/gigabit-ethernet/ge-2 /interface/gigabit-ethernet/ge-2/speed /interface/aggregate-ethernet /interface/aggregate-ethernet/ae-1
+    ForwardList<String> corrected_ordered_cmds {};
+    if (ordered_cmds.size() > 0) {
+        corrected_ordered_cmds.push_front(*ordered_cmds.begin());
+        ordered_cmds.erase(ordered_cmds.begin());
+        ForwardList<String>::iterator longest_xpath = corrected_ordered_cmds.begin();
+        for (auto& item : ordered_cmds) {
+            for (auto it = corrected_ordered_cmds.begin(); it != corrected_ordered_cmds.end(); ++it) {
+                if (item.find(*it) != String::npos) {
+                    if (longest_xpath->size() < it->size()) {
+                        std::cout << item << " is longer than " << *it << std::endl;
+                        longest_xpath = it;
+                    }
+                }
+            }
+
+            longest_xpath = corrected_ordered_cmds.insert_after(longest_xpath, item);
+        }
+
+        ordered_cmds.clear();
+        for (auto& item : corrected_ordered_cmds) {
+            ordered_cmds.push_back(item);
         }
     }
 

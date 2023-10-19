@@ -25,6 +25,8 @@ namespace XPath {
     };
 
     SharedPtr<Queue<String>> parse(const String xpath);
+    List<String> parse2(const String xpath);
+    Queue<String> parse3(const String xpath);
     SharedPtr<Node> select(SharedPtr<Node> root_node, const String xpath);
     String to_string(SharedPtr<Node> node);
     String to_string2(SharedPtr<Node> node);

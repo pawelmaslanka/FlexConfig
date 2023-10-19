@@ -7,6 +7,7 @@
 using Any = std::any;
 using Number = int32_t;
 
+// TODO: Replace Value with std::variant
 class Value {
  public:
   enum class Type {

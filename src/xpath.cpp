@@ -43,6 +43,21 @@ SharedPtr<Queue<String>> XPath::parse(const String xpath) {
     return xpath_items;
 }
 
+Queue<String> XPath::parse3(const String xpath) {
+    Queue<String> xpath_items;
+    // Returns first token
+    char* token = ::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
+    // Keep printing tokens while one of the
+    // delimiters present in str[].
+    while (token != nullptr) {
+        printf("%s\n", token);
+        xpath_items.push(token);
+        token = ::strtok(nullptr, XPath::SEPARATOR);
+    }
+
+    return xpath_items;
+}
+
 SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
     if (!root_node || xpath.empty()) {
         return nullptr;
@@ -100,6 +115,7 @@ String XPath::to_string(SharedPtr<Node> node) {
     //     }
     // }
 
+     std::cout << "XPath composing: ";
     while (processing_node) {
         if (processing_node->getParent()) {
             if (auto dict = std::dynamic_pointer_cast<Composite>(processing_node->getParent())) {
@@ -111,9 +127,11 @@ String XPath::to_string(SharedPtr<Node> node) {
         }
 
         xpath_stack.push(processing_node->getName());
-        std::cout << "Adding " << processing_node->getName() << "\n";
+        std::cout << processing_node->getName() << "\n";
         processing_node = processing_node->getParent();
     }
+
+    std::cout << std::endl;
 
     while (!xpath_stack.empty()) {
         if (xpath_stack.top() != XPath::SEPARATOR) {
@@ -144,11 +162,12 @@ String XPath::to_string2(SharedPtr<Node> node) {
             xpath_stack.push(processing_node->getName());
         // }
 
-        // std::cout << "Adding " << processing_node->getName() << "\n";
+        std::cout << "Adding " << processing_node->getName() << "\n";
         processing_node = processing_node->getParent();
     }
 
     while (!xpath_stack.empty()) {
+        // std::cout << "Compose: " << xpath_stack.top() << std::endl;
         if (xpath_stack.top() != XPath::SEPARATOR) {
             if (xpath_stack.top()[0] != '[') {
                 xpath += XPath::SEPARATOR;
@@ -160,6 +179,7 @@ String XPath::to_string2(SharedPtr<Node> node) {
         xpath_stack.pop();
     }
 
+    // std::cout << "Created xpath: " << xpath << std::endl;
     return xpath;
 }
 
@@ -412,4 +432,19 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
 
     std::cout << "Evaluated " << xpath << " to " << evaluated_xpath << " based on node " << start_node->getName() << std::endl;
     return evaluated_xpath;
+}
+
+List<String> XPath::parse2(const String xpath) {
+    std::list<String> xpath_items = {};
+    // Returns first token
+    char* token = ::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
+    // Keep printing tokens while one of the
+    // delimiters present in str[].
+    while (token != nullptr) {
+        printf("%s\n", token);
+        xpath_items.emplace_back(token);
+        token = ::strtok(nullptr, XPath::SEPARATOR);
+    }
+
+    return xpath_items;
 }

@@ -1,9 +1,11 @@
 #pragma once
 
 #include <forward_list>
+#include <list>
 #include <map>
 #include <memory>
 #include <queue>
+#include <regex>
 #include <set>
 #include <stack>
 #include <string>
@@ -12,6 +14,7 @@
 
 // Keep it in alphabetical order
 #define ForwardList std::forward_list
+#define List std::list
 #define Map std::map
 #define MultiMap std::multimap
 #define Pair std::pair
@@ -22,5 +25,6 @@
 #define WeakPtr std::weak_ptr
 #define Vector std::vector
 
+using Regex = std::regex;
 using String = std::string;
 using StringView = std::string_view;

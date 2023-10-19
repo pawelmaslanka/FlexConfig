@@ -1,0 +1,57 @@
+#pragma once
+
+#include "node.hpp"
+
+#include <memory>
+#include <string>
+#include <string_view>
+
+template <typename T>
+union RVT {
+    std::string err_msg;
+    T value;
+};
+// template <typename ValueType>
+// struct Result : std::pair<bool, RVT<ValueType>&&> {
+//     Result(const bool success, RVT<ValueType>&& value)
+//     : m_success { success }, m_value(value) {
+        
+//     }
+
+//     operator bool() const {
+
+//     }
+// }
+
+// class Logger {
+    // seet_module_level_log() logging from modules
+// }
+
+class RegistryClass {
+    // Logger logger
+};
+
+namespace Config {
+
+static auto constexpr ROOT_TREE_CONFIG_NAME { "/" };
+
+namespace PropertyName {
+    static const auto DEFAULT = "default";
+    static const auto DESCRIPTION = "description";
+    static const auto UPDATE_CONSTRAINTS = "update-constraints";
+    static const auto UPDATE_DEPENDENCIES = "update-dependencies";
+};
+
+class Manager {
+public:
+    Manager(std::string_view config_filename, std::string_view schema_filename, SharedPtr<RegistryClass>& registry);
+    ~Manager() = default;
+    bool load(SharedPtr<Node>& root_config_ptr);
+    SharedPtr<SchemaNode> getSchemaByXPath(const String& xpath);
+
+private:
+    const std::string m_config_filename;
+    const std::string m_schema_filename;
+}; // class Manager
+
+} // namespace Config
