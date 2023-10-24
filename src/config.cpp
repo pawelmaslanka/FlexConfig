@@ -9,6 +9,7 @@
 #include "composite.hpp"
 #include "lib/utils.hpp"
 #include "xpath.hpp"
+#include "node/leaf.hpp"
 
 #include <fstream>
 
@@ -180,7 +181,6 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
     for (auto& [k, v] : jschema.items()) {
         spdlog::info("Processing schema node {}", k);
         if (jconfig.find(k) == jconfig.end()) {
-            spdlog::info("{} {}", __func__, __LINE__);
             continue;
         }
 
@@ -189,12 +189,16 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
         // Composite::Factory(k, root_config).get_object<Composite>();
 
         if ((v.find("type") != v.end()) && (v.at("type") == "array")) {
-            spdlog::info("{} {}", __func__, __LINE__);
+            spdlog::info("Found {} is array. Load its items", k);
+            auto leaf = std::make_shared<Composite>(k, root_config);
+            root_config->add(leaf);
             for (const auto& item : jconfig.at(k)) {
                 Value val(Value::Type::STRING);
+                // TODO: Make a reference instead of string
                 val.set_string(item.get<String>());
-                auto leaf = std::make_shared<Leaf>(k, val, root_config);
-                root_config->add(leaf);
+                auto item_leaf = std::make_shared<Leaf>(item.get<String>(), val, leaf);
+                leaf->add(item_leaf);
+                // val.set_string(item.get<String>());
             }
         } // leaf node does not include "properties"
         else if (((v.find("properties") == v.end())
@@ -213,13 +217,11 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
             continue;
         }
         else {
-            spdlog::info("{} {}", __func__, __LINE__);
             node = std::make_shared<Composite>(k, root_config);
             root_config->add(node);
             spdlog::info("{} -> {}\n", node->getParent()->getName(), node->getName());
         }
 
-        spdlog::info("{} {}", __func__, __LINE__);
         if (!parseAndLoadConfig(jconfig[k], v, node)) {
             spdlog::error("Failed to parse schema node '{}'", k);
             return false;
@@ -245,12 +247,10 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
         }
 
         if (jconfig.find(k) == jconfig.end()) {
-            spdlog::info("{} {}", __func__, __LINE__);
             continue;
         }
     }
 
-    spdlog::info("{} {}", __func__, __LINE__);
     return true;
 }
 
@@ -687,7 +687,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     auto root_schema_node = std::make_shared<SchemaComposite>("/");
     auto schema_node = root_schema_node;
     static const Set<String> SUPPORTED_ATTRIBUTES = {
-        Config::PropertyName::DEFAULT, Config::PropertyName::DESCRIPTION, Config::PropertyName::UPDATE_CONSTRAINTS, Config::PropertyName::UPDATE_DEPENDENCIES
+        Config::PropertyName::DEFAULT, Config::PropertyName::DESCRIPTION, Config::PropertyName::REFERENCE, Config::PropertyName::UPDATE_CONSTRAINTS, Config::PropertyName::UPDATE_DEPENDENCIES
     };
 
     spdlog::info("Attribute name: {}", xpath_tokens.back());
@@ -698,6 +698,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
         for (auto& [k, v] : attributes.items()) {
             spdlog::info("Checking attribute: {}", k);
             if (SUPPORTED_ATTRIBUTES.find(k) != SUPPORTED_ATTRIBUTES.end()) {
+                spdlog::info("Save attribute: {}", k);
                 if (v.is_array()) {
                     for (auto& [_, item] : v.items()) {
                         schema_node->addAttr(k, item);

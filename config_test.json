@@ -11,7 +11,7 @@
         "aggregate-ethernet": {
             "ae-1": {
                 "members": [
-                    "ge-1"
+                    "ge-2"
                 ]
             }
         }
@@ -20,7 +20,7 @@
         "id": {
             "2": {
                 "members": [
-                    "ge-2"
+                    "ge-1"
                 ]
             }
         }
@@ -34,7 +34,7 @@
                 "breakout-mode": "none"
             },
             "ge-2": {
-                "breakout-mode": "4x100G"
+                "breakout-mode": "none"
             }
         }
     }

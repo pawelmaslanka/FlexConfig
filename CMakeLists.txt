@@ -17,6 +17,7 @@ include_directories(
     ${SRC_DIR}
     ${SRC_DIR}/node
     ${SRC_DIR}/lib
+    ${SRC_DIR}/lib/external/peglib
 )
 
 set(CPP_HEADER_EXT hpp)
@@ -27,6 +28,7 @@ set(INC_LIST
     # "${SRC_DIR}/load_config.${CPP_HEADER_EXT}"
     "${SRC_DIR}/config.${CPP_HEADER_EXT}"
     "${SRC_DIR}/node/node.${CPP_HEADER_EXT}"
+    "${SRC_DIR}/node/leaf.${CPP_HEADER_EXT}"
     "${SRC_DIR}/node/composite.${CPP_HEADER_EXT}"
     "${SRC_DIR}/node/visitor.${CPP_HEADER_EXT}"
 )
@@ -37,6 +39,7 @@ set(SRC_LIST
     # "${SRC_DIR}/load_config.${CPP_SRC_EXT}"
     "${SRC_DIR}/config.${CPP_SRC_EXT}"
     "${SRC_DIR}/node/node.${CPP_SRC_EXT}"
+    "${SRC_DIR}/node/leaf.${CPP_SRC_EXT}"
     "${SRC_DIR}/node/composite.${CPP_SRC_EXT}"
     "${SRC_DIR}/value.${CPP_SRC_EXT}"
     "${SRC_DIR}/xpath.${CPP_SRC_EXT}"

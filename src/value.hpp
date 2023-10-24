@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lib/types.hpp"
+#include "node/node.hpp"
 
 #include <any>
 
@@ -14,11 +15,13 @@ class Value {
     BOOL,
     NUMBER,
     STRING,
+    STRING_ARRAY,
+    NODE_ARRAY,
     REF // if leafref then attach_on_update
   };
 
   Value() = delete;
-  Value(const Type type) : _type { type } { }
+  Value(const Type type);
   Value(const Value& value);
 
   bool has_value() const;
@@ -36,6 +39,14 @@ class Value {
   bool is_string() const;
   String get_string() const;
   bool set_string(const String val);
+
+  bool is_string_array() const;
+  Vector<String> get_string_array() const;
+  bool add_item(const String val);
+
+  bool is_node_array() const;
+  Vector<SharedPtr<Node>> get_node_array() const;
+  bool add_item(SharedPtr<Node> val);
 
  private:
   Type _type;

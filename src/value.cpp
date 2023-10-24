@@ -10,6 +10,18 @@
 #include <typeinfo>
 #include <type_traits>
 
+Value::Value(const Type type)
+: _type { type } {
+    if (_type == Type::STRING_ARRAY) {
+        Vector<String> initializator = {};
+        _holder = initializator;
+    }
+    else if (_type == Type::NODE_ARRAY) {
+        Vector<SharedPtr<Node>> initializator = {};
+        _holder = initializator;
+    }
+}
+
 Value::Value(const Value& value) {
     _type = value._type;
     _holder = value._holder;
@@ -40,6 +52,14 @@ String Value::to_string() const {
       convert << get_string();
       break;
     }
+    case Type::STRING_ARRAY: {
+      convert << "String Array";
+      break;
+    }
+    case Type::NODE_ARRAY: {
+      convert << "Node Array";
+      break;
+    }
     default: {
       convert << "";
     }
@@ -56,6 +76,15 @@ String Value::to_string() const {
 DEFINE_VALUE_METHOD(bool, Value::Type::BOOL, bool)
 DEFINE_VALUE_METHOD(number, Value::Type::NUMBER, Number)
 DEFINE_VALUE_METHOD(string, Value::Type::STRING, String)
+// DEFINE_VALUE_METHOD(StringArray, Value::Type::STRING_ARRAY, Vector<String>)
 // bool Value::has_bool() const { return _holder.has_value() && (std::type_index(_holder.type()) == std::type_index(typeid(bool))); }
 // bool Value::get_bool() const { return std::any_cast<bool>(_holder); }
 // bool Value::set_bool(bool val) { if (_type != Type::BOOL) return false; _holder = val; }
+
+bool Value::is_string_array() const { return _holder.has_value() && (std::type_index(_holder.type()) == std::type_index(typeid(Vector<String>))); }
+Vector<String> Value::get_string_array() const { return std::any_cast<Vector<String>>(_holder); }
+bool Value::add_item(const String val) { if (_type != Type::STRING_ARRAY) return false; std::any_cast<Vector<String>&>(_holder).emplace_back(val); return true; }
+
+bool Value::is_node_array() const { return _holder.has_value() && (std::type_index(_holder.type()) == std::type_index(typeid(Vector<SharedPtr<Node>>))); }
+Vector<SharedPtr<Node>> Value::get_node_array() const { return std::any_cast<Vector<SharedPtr<Node>>>(_holder); }
+bool Value::add_item(SharedPtr<Node> val) { if (_type != Type::STRING_ARRAY) return false; std::any_cast<Vector<SharedPtr<Node>>&>(_holder).emplace_back(val); return true; }

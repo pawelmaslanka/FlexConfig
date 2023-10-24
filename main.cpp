@@ -9,12 +9,72 @@
 #include <spdlog/spdlog.h>
 
 #include "node/node.hpp"
+#include "node/leaf.hpp"
 #include "node/composite.hpp"
 #include "lib/utils.hpp"
 #include "config.hpp"
 #include "expr_eval.hpp"
 #include "lib/topo_sort.hpp"
 #include "xpath.hpp"
+
+#include <fstream>
+#include <variant>
+#include "peglib.h"
+#include <type_traits>
+#include <typeindex>
+#include <typeinfo>
+
+using namespace peg;
+using namespace peg::udl;
+
+#include <any>
+#include <functional>
+#include <iomanip>
+
+template<class T, class F>
+inline std::pair<const std::type_index, std::function<void(std::any const&)>>
+    to_any_visitor(F const &f)
+{
+    return
+    {
+        std::type_index(typeid(T)),
+        [g = f](std::any const &a)
+        {
+            if constexpr (std::is_void_v<T>)
+                g();
+            else
+                g(std::any_cast<T const&>(a));
+        }
+    };
+}
+ 
+static std::unordered_map<std::type_index, std::function<void(std::any const&)>>
+    any_visitor
+{
+    to_any_visitor<void>([] { std::cout << "{}" << std::endl; }),
+    to_any_visitor<bool>([](bool x) { std::cout << std::boolalpha << x << std::endl; }),
+    to_any_visitor<int>([](int x) { std::cout << x << std::endl; }),
+    to_any_visitor<unsigned>([](unsigned x) { std::cout << x << std::endl; }),
+    to_any_visitor<float>([](float x) { std::cout << x << std::endl; }),
+    to_any_visitor<double>([](double x) { std::cout << x << std::endl; }),
+    to_any_visitor<char>([](char x) { std::cout << x << std::endl; }),
+    to_any_visitor<long>([](long x) { std::cout << x << std::endl; }),
+    to_any_visitor<char const*>([](char const *s)
+        { std::cout << std::quoted(s) << std::endl; }),
+    to_any_visitor<std::string_view>([](std::string_view s)
+        { std::cout << std::quoted(s) << std::endl; }),
+    // ... add more handlers for your types ...
+};
+ 
+inline void process(const std::any& a)
+{
+  std::cout << a.type().name() << std::endl;
+    if (const auto it = any_visitor.find(std::type_index(a.type()));
+        it != any_visitor.cend())
+        it->second(a);
+    else
+        std::cout << "Unregistered type "<< std::quoted(a.type().name());
+}
 
 class VisitorImpl : public Visitor {
   public:
@@ -144,7 +204,7 @@ int main(int argc, char* argv[]) {
     spdlog::info("Looking for dependencies");
     root_config->accept(depVisitor);
     spdlog::info("Completed looking for dependencies");
-            class SubnodeChildsVisitor : public Visitor {
+    class SubnodeChildsVisitor : public Visitor {
         public:
             virtual ~SubnodeChildsVisitor() = default;
             SubnodeChildsVisitor(const String& parent_name)
@@ -167,7 +227,6 @@ int main(int argc, char* argv[]) {
             ForwardList<String> m_child_subnode_names;
         };
 
-    // TODO: Resolve [@key] dependencies - get node name and replace it e.g. "/platform/port[@key]"
     class KeySelectorResolverVisitior : public Visitor {
     public:
         virtual ~KeySelectorResolverVisitior() = default;
@@ -415,6 +474,693 @@ int main(int argc, char* argv[]) {
 
         std::clog << std::endl;
     }
+
+    class UpdateConstraintVisitor : public Visitor {
+    public:
+        ~UpdateConstraintVisitor() = default;
+        UpdateConstraintVisitor(StringView constraint)
+            : m_constraint { constraint } {}
+
+        virtual bool visit(SharedPtr<Node> node) override {
+            if (!node) {
+                spdlog::error("Node is null");
+                return false;
+            }
+
+            return true;
+        }
+
+    private:
+        String m_constraint;
+    };
+
+    struct PEGArgument {
+        SharedPtr<Config::Manager> config_mngr;
+        SharedPtr<Node> root_config;
+        SharedPtr<Node> current_processing_node;
+        Stack<String> string_stack = {};
+        Stack<long> number_stack {};
+        Stack<bool> bool_stack {};
+        Stack<String> operator_stack = {};
+        Stack<SharedPtr<Node>> node_stack = {};
+        bool continue_processing = { true };
+        bool expression_result = { false };
+    };
+
+    auto grammar =(R"(
+        # Syntax Rules
+        # Top rule seems to not required to have reference!!!
+        # STATEMENT              <-  IF_STATEMENT / IF_ELSE_STATEMENT / MUST_STATEMENT
+        # EXPRESSION             <-  INFIX_EXPRESSION(ATOM, OPERATOR)
+        # ATOM                   <-  NUMBER / STRING / '(' EXPRESSION ')' / EXISTS_FUNC / XPATH_FUNC
+        # OPERATOR               <-  < [=~&|] >
+        # NUMBER                 <-  < '-'? [0-9]+ >
+        # STRING                 <-  "'" < ([^'] .)* > "'"
+        # THEN                   <-  'then'
+        # THEN_EXPRESSION        <-  THEN ATOM
+        # ELSE_EXPRESSION        <-  'else' ATOM
+        # IF_EXPRESSION          <-  'if' EXPRESSION
+        # IF_STATEMENT           <-  IF_EXPRESSION THEN_EXPRESSION
+        # IF_ELSE_STATEMENT      <-  IF_EXPRESSION THEN_EXPRESSION ELSE_EXPRESSION
+        # MUST_STATEMENT         <-  'must' EXPRESSION
+        # EXISTS_FUNC            <-  'exists' '(' STRING ')'
+        # XPATH_FUNC             <-  'xpath' '(' STRING ')'
+        # %whitespace            <-  [ \t\r\n]*
+
+        # Declare order of precedence
+        # INFIX_EXPRESSION(A, O) <-  A (O A)* {
+        # precedence
+        #     L = ~ & |
+        # }
+
+        # Syntax Rules
+        EXPRESSION              <- CONDITION
+        CONDITION               <- MULTIPLICATIVE (ConditionOperator MULTIPLICATIVE)?
+        MULTIPLICATIVE          <- CALL (MultiplicativeOperator CALL)*
+        CALL                    <- PRIMARY (EXPRESSION)?
+        PRIMARY                 <- COUNT_FUNC / EXISTS_FUNC / MUST_FUNC / XPATH_FUNC / '(' EXPRESSION ')' / REFERENCE / Keyword / Number / String
+        COUNT_FUNC              <- 'count' '(' EXPRESSION ')'
+        EXISTS_FUNC             <- 'exists' '(' EXPRESSION ')'
+        MUST_FUNC               <- 'must' '(' EXPRESSION ')'
+        XPATH_FUNC              <- 'xpath' '(' EXPRESSION ')'
+        REFERENCE               <- '@'
+
+        # Token Rules
+        ConditionOperator       <- < [=~&|] >
+        MultiplicativeOperator  <- '%'
+        String                  <- "'" < ([^'] .)* > "'"
+        Number                  <- < [0-9]+ >
+
+        Keyword                 <- ('if' / 'then' / 'else') ![a-zA-Z]
+        %whitespace             <- [ \t\r\n]*
+
+        # Declare order of precedence
+        INFIX_EXPRESSION(A, O) <-  A (O A)* {
+        precedence
+            L = ~ & |
+        }
+    )");
+
+    parser parser;
+    parser.set_logger([](size_t line, size_t col, const String& msg, const String &rule) {
+        std::cerr << line << ":" << col << ": " << msg << " (" << rule << "\n";
+    });
+
+    auto ok = parser.load_grammar(grammar);
+    assert(ok);
+
+    parser["REFERENCE"] = [](const SemanticValues& vs, std::any& dt) { 
+        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
+        PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+        if (!peg_arg.continue_processing) {
+            spdlog::info("Stop to further processing on the rule");
+            return;
+        }
+
+        peg_arg.string_stack.push("@");
+        return;
+    };
+
+    // parser["NUMBER"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
+    //     PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+    //     peg_arg.args.push(vs.token_to_string());
+    //     // return vs.sv();
+    // };
+
+    parser["Number"] = [](const SemanticValues& vs, std::any& dt) { 
+        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
+        PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+        if (!peg_arg.continue_processing) {
+            spdlog::info("Stop to further processing on the rule");
+            return;
+        }
+
+        peg_arg.number_stack.push(vs.token_to_number<long>());
+        // return vs.sv();
+    };
+
+    // parser["STRING"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
+    //     PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+    //     peg_arg.args.push(vs.token_to_string());
+    //     // return vs.sv();
+    // };
+
+    parser["String"] = [](const SemanticValues& vs, std::any& dt) { 
+        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
+        PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+        if (!peg_arg.continue_processing) {
+            spdlog::info("Stop to further processing on the rule");
+            return;
+        }
+
+        peg_arg.string_stack.push(vs.token_to_string());
+        // return vs.sv();
+    };
+
+    // parser["OPERATOR"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
+    //     PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+    //     peg_arg.args.push(vs.token_to_string());
+    //     // return vs.sv();
+    // };
+
+    parser["ConditionOperator"] = [](const SemanticValues& vs, std::any& dt) { 
+        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
+        PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+        if (!peg_arg.continue_processing) {
+            spdlog::info("Stop to further processing on the rule");
+            return;
+        }
+
+        peg_arg.operator_stack.push(vs.token_to_string());
+        // return vs.sv();
+    };
+
+    parser["COUNT_FUNC"] = [](const SemanticValues& vs, std::any& dt) { 
+        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+        process(vs[0]);
+        process(dt);
+        PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+        if (!peg_arg.continue_processing) {
+            spdlog::info("Stop to further processing on the rule");
+            return;
+        }
+
+        if (peg_arg.node_stack.empty()) {
+            spdlog::error("There is not any node to count its members");
+            peg_arg.continue_processing = false;
+            peg_arg.expression_result = false;
+            return;
+        }
+
+        if (!peg_arg.node_stack.top()) {
+            spdlog::error("The node is null so cannot to count its members");
+            peg_arg.node_stack.pop();
+            peg_arg.continue_processing = false;
+            peg_arg.expression_result = false;
+            return;
+        }
+
+        std::clog << "'count' function's argument: " << peg_arg.node_stack.top()->getName() << std::endl;
+        auto node = peg_arg.node_stack.top();
+        peg_arg.node_stack.pop();
+        
+        SubnodeChildsVisitor subnode_child_visitor(node->getName());
+        node->accept(subnode_child_visitor);
+        auto subnodes = subnode_child_visitor.getAllSubnodes();
+        long subnodes_count = 0;
+        for (auto it = subnodes.begin(); it != subnodes.end(); ++it) {
+            ++subnodes_count;
+        }
+
+        spdlog::info("Counted {} subnodes of parent {}", subnodes_count, node->getName());
+        peg_arg.number_stack.push(subnodes_count);
+    };
+
+    parser["EXISTS_FUNC"] = [](const SemanticValues& vs, std::any& dt) { 
+        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+        process(vs[0]);
+        process(dt);
+        PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+        if (!peg_arg.continue_processing) {
+            spdlog::info("Stop to further processing on the rule");
+            return;
+        }
+
+        // There is exception like this rule: must(exists(@))
+        // @ means reference
+        if (peg_arg.string_stack.top() == "@") {
+            peg_arg.string_stack.pop();
+            // TODO: Get "subnodes" directly from config by json_pointer
+            // auto xpath = XPath::to_string2(peg_arg.current_processing_node);
+            // peg_arg.config_mngr->getArray(xpath);
+            auto node = peg_arg.current_processing_node;
+            SubnodeChildsVisitor subnode_child_visitor(node->getName());
+            node->accept(subnode_child_visitor);
+            auto subnode_names = subnode_child_visitor.getAllSubnodes();
+            auto schema_node = peg_arg.config_mngr->getSchemaByXPath(XPath::to_string2(peg_arg.current_processing_node));
+            if (!schema_node) {
+                spdlog::error("Not found schema node for xpath: {}", XPath::to_string2(peg_arg.current_processing_node));
+                peg_arg.continue_processing = false;
+                return;
+            }
+
+            auto ref_attrs = schema_node->findAttr("reference");
+            if (ref_attrs.empty()) {
+                spdlog::error("Not found attribute 'reference' at schema node {}", XPath::to_string2(schema_node));
+                peg_arg.continue_processing = false;
+                return;
+            }
+
+            spdlog::info("Found attribute reference: {}", ref_attrs.front());
+            for (auto& subnode_name : subnode_names) {
+                spdlog::info("Checking if {} exists", subnode_name);
+                bool found = false;
+                for (auto& ref_attr : ref_attrs) {
+                    String ref_xpath = ref_attr;
+                    Utils::find_and_replace_all(ref_xpath, "@", subnode_name);
+                    spdlog::info("Created new reference xpath: {}", ref_xpath);
+                    if (XPath::select2(peg_arg.root_config, ref_xpath)) {
+                        spdlog::info("Found node {}", ref_xpath);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    spdlog::info("Not found reference node {}", subnode_name);
+                    peg_arg.bool_stack.push(false);
+                    return;
+                }
+            }
+
+            peg_arg.bool_stack.push(true);
+            return;
+        }
+
+        if (peg_arg.node_stack.empty()) {
+            spdlog::error("There is not any node to check if that exists");
+            peg_arg.continue_processing = false;
+            peg_arg.expression_result = false;
+            return;
+        }
+
+        if (!peg_arg.node_stack.top()) {
+            peg_arg.node_stack.pop();
+            spdlog::info("Node is null");
+            peg_arg.bool_stack.push(false);
+            return;
+        }
+
+        std::clog << "Exists() argument: " << peg_arg.node_stack.top()->getName() << std::endl;
+        peg_arg.bool_stack.push(peg_arg.node_stack.top() != nullptr);
+        peg_arg.node_stack.pop();
+        // ForwardList<String> resolved_xpath = {};
+        // resolved_xpath.emplace_front(peg_arg.args.top());
+        // peg_arg.args.pop();
+        // if (resolved_xpath.front().find("[@key]") != String::npos) {
+        //     auto key_selector_resolver = KeySelectorResolverVisitior(resolved_xpath.front());
+        //     peg_arg.root_config->accept(key_selector_resolver);
+        //     resolved_xpath = key_selector_resolver.getResolvedXpath();
+        // }
+        // else if (resolved_xpath.front().find("/*") != String::npos) {
+        //     auto wildcard_resolver = WildcardDependencyResolverVisitior(resolved_xpath.front());
+        //     peg_arg.root_config->accept(wildcard_resolver);
+        //     resolved_xpath = wildcard_resolver.getResolvedXpath();
+        // }
+
+        // for (const auto& xpath : resolved_xpath) {
+        //     std::clog << "Checking xpath if exists: " << xpath << std::endl;
+        //     if (!XPath::select(peg_arg.root_config, xpath)) {
+        //         std::clog << "Not found seeking node\n";
+        //         peg_arg.if_cond_result = false; // Start from here to set reurned value from expression
+        //     }
+        //     else {
+        //         std::clog << "Successfully found seeking node\n";
+        //         peg_arg.if_cond_result = true; // Start from here to set reurned value from expression
+        //     }
+        // }
+
+        // return dt;
+    };
+
+    // parser["IF_STATEMENT"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+    //     process(vs[0]);
+    //     std::clog << "[" << __func__ << ":" << __LINE__ << "] " << std::endl;
+    //     // dt = vs[0];
+    //     return vs[0];
+    // };
+
+    // parser["IF_EXPRESSION"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+    //     process(vs[0]);
+    //     // auto result = any_cast<long>(vs[0]);
+    //     std::clog << "[" << __func__ << ":" << __LINE__ << "] " << std::endl;
+    //     if (vs.size() > 1) {
+    //         process(vs[1]);
+    //     }
+
+    //     // process(dt);
+    //     // PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+    //     // peg_arg.if_cond_result = std::any_cast<bool>(vs[0]);
+    //     // dt = vs[0];
+    //     // return vs[0];
+    // };
+
+    // STATEMENT jako top rule, wzraca wartosc z metody parse()
+    // parser["STATEMENT"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+    //     process(vs[0]);
+    //     PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+    //     std::clog << "All statement has completed with result: " << peg_arg.expression_result << std::endl;
+    //     return dt;
+    // };
+
+    // parser["THEN_EXPRESSION"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+    //     process(vs[0]);
+    //     PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+    //     if (!peg_arg.if_cond_result) {
+    //         std::clog << "Stop to further processing because if conditional was unsuccessfull\n";
+    //         return;
+    //     }
+    // };
+
+    parser["XPATH_FUNC"] = [](const SemanticValues& vs, std::any& dt) { 
+        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+        process(vs[0]);
+        PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+        if (!peg_arg.continue_processing) {
+            spdlog::info("Stop to further processing on the rule");
+            return;
+        }
+
+        if (peg_arg.string_stack.empty()) {
+            spdlog::error("There is not any xpath to convert to node");
+            peg_arg.continue_processing = false;
+            peg_arg.expression_result = false;
+            return;
+        }
+
+        auto xpath = peg_arg.string_stack.top();
+        peg_arg.string_stack.pop();
+        if (xpath.size() == 0) {
+            spdlog::error("xpath is empty");
+            peg_arg.node_stack.push(nullptr);
+            return;
+        }
+
+        spdlog::info("Resolving xpath: {}", xpath);
+        auto xpath_tokens = XPath::parse3(xpath);
+        auto resolved_xpath = XPath::evaluate_xpath2(peg_arg.current_processing_node, xpath);
+        spdlog::info("Resolved xpath: {}", resolved_xpath);
+        auto node = XPath::select2(peg_arg.root_config, resolved_xpath);
+        peg_arg.node_stack.push(node);
+        if (!node) {
+            spdlog::info("Not found node: {}", xpath);
+            return;
+        }
+
+        if (xpath_tokens.back() == "value") {
+            auto value = std::dynamic_pointer_cast<Leaf>(node)->getValue();
+            spdlog::info("Got value {} from xpath {}", value.to_string(), xpath);
+            if (value.is_bool()) {
+                peg_arg.bool_stack.push(value.get_bool());
+            }
+            else if (value.is_number()) {
+                peg_arg.number_stack.push(value.get_number());
+            }
+            else if (value.is_string()) {
+                peg_arg.string_stack.push(value.get_string());
+            }
+            else {
+                spdlog::error("Unrecognized type of node value");
+                peg_arg.continue_processing = false;
+                peg_arg.expression_result = false;
+            }
+        }
+    };
+
+    // parser["XPATH_FUNC"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+    //     process(vs[0]);
+    //     PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+    //     if (peg_arg.args.empty()) {
+    //         std::clog << "Stop to further processing because there is not argument to xpath function\n";
+    //         peg_arg.expression_result = false;
+    //         return;
+    //     }
+
+    //     auto xpath = peg_arg.args.top();
+    //     peg_arg.args.pop();
+    //     spdlog::info("Resolving xpath: {}", xpath);
+    //     auto xpath_tokens = XPath::parse3(xpath);
+    //     if (xpath_tokens.back() == "value") {
+    //         auto resolved_xpath = XPath::evaluate_xpath2(peg_arg.current_processing_node, xpath);
+    //         spdlog::info("Resolved xpath: {}", resolved_xpath);
+    //         auto node = XPath::select2(peg_arg.root_config, resolved_xpath);
+    //         if (!node) {
+    //             spdlog::info("Not found node: {}", xpath);
+    //             peg_arg.args.push("");
+    //             return;
+    //         }
+
+    //         auto value = std::dynamic_pointer_cast<Leaf>(node)->getValue();
+    //         spdlog::info("Got value {} from xpath {}", value.to_string(), xpath);
+    //         peg_arg.args.push(value.to_string());
+    //     }
+    // };
+
+    // parser["THEN"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+    //     process(vs[0]);
+    //     std::clog << "Last 'if' statement result: \n";
+    //     process(dt);
+    //     PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+    //     std::clog << peg_arg.if_cond_result << std::endl;
+    // };
+
+    parser["Keyword"] = [](const SemanticValues& vs, std::any& dt) { 
+        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+        process(vs[0]);
+        process(dt);
+        PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+        if (!peg_arg.continue_processing) {
+            spdlog::info("Stop to further processing on the rule");
+            return;
+        }
+
+        if (vs.token_to_string() == "true") {
+            peg_arg.bool_stack.push(true);
+        }
+        else if (vs.token_to_string() == "false") {
+            peg_arg.bool_stack.push(false);
+        }
+    };
+
+    parser["CONDITION"] = [](const SemanticValues& vs, std::any& dt) { 
+        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+        process(vs[0]);
+        process(dt);
+        if (vs.size() != 3) {
+            spdlog::info("There are not required 3 arguments");
+            return;
+        }
+
+        PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+        if (!peg_arg.continue_processing) {
+            spdlog::info("Stop to further processing on the rule");
+            return;
+        }
+
+        if ((peg_arg.bool_stack.size() > 1) && (!peg_arg.operator_stack.empty())) {
+            auto arg2 = peg_arg.bool_stack.top();
+            peg_arg.bool_stack.pop();
+            auto arg1 = peg_arg.bool_stack.top();
+            peg_arg.bool_stack.pop();
+            auto op = peg_arg.operator_stack.top();
+            peg_arg.operator_stack.pop();
+            spdlog::info("Comparing 2 booleans: {} {} {}", arg1, op, arg2);
+            if (op == "=") {
+                peg_arg.bool_stack.push(arg1 == arg2);
+            }
+            else if (op == "~") {
+                peg_arg.bool_stack.push(arg1 != arg2);
+            }
+        }
+        else if ((peg_arg.number_stack.size() > 1) && (!peg_arg.operator_stack.empty())) {
+            auto arg2 = peg_arg.number_stack.top();
+            peg_arg.number_stack.pop();
+            auto arg1 = peg_arg.number_stack.top();
+            peg_arg.number_stack.pop();
+            auto op = peg_arg.operator_stack.top();
+            peg_arg.operator_stack.pop();
+            spdlog::info("Comparing 2 numbers: {} {} {}", arg1, op, arg2);
+            if (op == "=") {
+                peg_arg.bool_stack.push(arg1 == arg2);
+            }
+            else if (op == "~") {
+                peg_arg.bool_stack.push(arg1 != arg2);
+            }
+        }
+        else if ((peg_arg.string_stack.size() > 1) && (!peg_arg.operator_stack.empty())) {
+            auto arg2 = peg_arg.string_stack.top();
+            peg_arg.string_stack.pop();
+            auto arg1 = peg_arg.string_stack.top();
+            peg_arg.string_stack.pop();
+            auto op = peg_arg.operator_stack.top();
+            peg_arg.operator_stack.pop();
+            spdlog::info("Comparing 2 strings: {} {} {}", arg1, op, arg2);
+            if (op == "=") {
+                peg_arg.bool_stack.push(arg1 == arg2);
+            }
+            else if (op == "~") {
+                peg_arg.bool_stack.push(arg1 != arg2);
+            }
+        }
+        else {
+            spdlog::error("Cannot recognize type of conditional arguments");
+            peg_arg.continue_processing = peg_arg.expression_result = false;
+        }
+    };
+
+    parser["MUST_FUNC"] = [](const SemanticValues& vs, std::any& dt) { 
+        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+        process(vs[0]);
+        process(dt);
+        PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+        if (peg_arg.bool_stack.empty()) {
+            spdlog::error("There is not boolean result to pass to 'must' function");
+            peg_arg.continue_processing = peg_arg.expression_result = false;
+            return;
+        }
+
+        auto success = peg_arg.bool_stack.top();
+        peg_arg.bool_stack.pop();
+        if (!peg_arg.string_stack.empty()) {
+            spdlog::error("There are still {} unprocessed strings on the stack", peg_arg.string_stack.size());
+            success = false;
+        }
+
+        if (!peg_arg.number_stack.empty()) {
+            spdlog::error("There are still {} unprocessed numbers on the stack", peg_arg.number_stack.size());
+            success = false;
+        }
+
+        if (!peg_arg.bool_stack.empty()) {
+            spdlog::error("There are still {} unprocessed booleans on the stack", peg_arg.bool_stack.size());
+            success = false;
+        }
+
+        if (!peg_arg.operator_stack.empty()) {
+            spdlog::error("There are still {} unprocessed operators on the stack", peg_arg.operator_stack.size());
+            success = false;
+        }
+
+        peg_arg.expression_result = success;
+        spdlog::info("'must' function finished with result: {}", success);
+    };
+
+    // parser["EXPRESSION"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+    //     process(vs[0]);
+    //     process(dt);
+    //     PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+    //     if (peg_arg.bool_stack.empty()) {
+    //         spdlog::error("There is not boolean result to pass to 'expression' rule");
+    //         peg_arg.continue_processing = peg_arg.expression_result = false;
+    //         return;
+    //     }
+
+    //     auto success = peg_arg.bool_stack.top();
+    //     peg_arg.bool_stack.pop();
+        
+
+    //     if (!peg_arg.string_stack.empty()) {
+    //         spdlog::error("There are still {} unprocessed strings on the stack", peg_arg.string_stack.size());
+    //         success = false;
+    //     }
+
+    //     if (!peg_arg.number_stack.empty()) {
+    //         spdlog::error("There are still {} unprocessed numbers on the stack", peg_arg.number_stack.size());
+    //         success = false;
+    //     }
+
+    //     if (!peg_arg.bool_stack.empty()) {
+    //         spdlog::error("There are still {} unprocessed booleans on the stack", peg_arg.bool_stack.size());
+    //         success = false;
+    //     }
+
+    //     if (!peg_arg.operator_stack.empty()) {
+    //         spdlog::error("There are still {} unprocessed operators on the stack", peg_arg.operator_stack.size());
+    //         success = false;
+    //     }
+
+    //     peg_arg.expression_result = success;
+    //     spdlog::info("'expression' rule finished with result: {}", success);
+    // };
+
+    // parser["MUST_STATEMENT"] = [](const SemanticValues& vs, std::any& dt) { 
+    //     std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
+    //     process(vs[0]);
+    //     process(dt);
+    //     PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
+    //     if (peg_arg.args.size() == 3) {
+    //         auto arg2 = peg_arg.args.top();
+    //         peg_arg.args.pop();
+    //         auto op = peg_arg.args.top();
+    //         peg_arg.args.pop();
+    //         auto arg1 = peg_arg.args.top();
+    //         peg_arg.args.pop();
+    //         spdlog::info("Processing 3 tokens expression: {} {} {}", arg1, op, arg2);
+
+    //         switch (op[0]) {
+    //             case '=': {
+    //                 peg_arg.expression_result = (arg1 == arg2);
+    //                 break;
+    //             }
+    //             case '!': {
+    //                 peg_arg.expression_result = (arg1 != arg2);
+    //                 break;
+    //             }
+    //         }
+    //     }
+
+    //     std::clog << "Expression result: \n";
+    //     std::clog << peg_arg.expression_result << std::endl;
+    // };
+
+    // (4) Parse
+    // parser.enable_packrat_parsing(); // Enable packrat parsing.
+
+    // parser.parse("if (1) then puts 5 % 5 == 0 ? 'FizzBuzz' : 'Fizz'", val);
+    // std::string val;
+    // bool val;
+    // auto a = std::any(peg_arg);
+    try {
+        // parser.parse("if (1 ~ 3) then 'true'", val);
+        // parser.parse("if (1 = 3) then 9", val);
+        std::cout << "Start processing\n";
+        // Get all update-contraints and go through for-loop
+        for (auto& xpath : ordered_cmds) {
+            auto schema_node = config_mngr->getSchemaByXPath(xpath);
+            if (!schema_node) {
+                spdlog::info("There isn't schema at node {}", xpath);
+                continue;
+            }
+
+            auto update_constraints = schema_node->findAttr(Config::PropertyName::UPDATE_CONSTRAINTS);
+            for (auto& update_constraint : update_constraints) {
+                spdlog::info("Processing update constraint '{}' at node {}", update_constraint, xpath);
+                auto node = XPath::select2(root_config, xpath);
+                if (!node) {
+                    spdlog::info("Not node indicated by xpath {}", xpath);
+                    continue;
+                }
+
+                PEGArgument peg_arg = {
+                    config_mngr, root_config, node
+                };
+
+                auto peg_arg_opaque = std::any(peg_arg);
+                parser.parse(update_constraint, peg_arg_opaque);
+                process(peg_arg_opaque);
+                spdlog::info("\nFor {} at {} evaluated: {}", update_constraint, xpath, std::any_cast<PEGArgument>(peg_arg_opaque).expression_result);
+            }
+        }
+
+        // parser.parse("if exists('/interface/gigabit-ethernet/ge-1') then 9", a);
+    }
+    catch (std::bad_any_cast& ex) {
+        std::cerr << "Caught exception: " << ex.what() << std::endl;
+    }
+
+    // assert(val == 9);
+
+    
 
     ::exit(EXIT_SUCCESS);
 }

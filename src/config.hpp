@@ -40,6 +40,7 @@ namespace PropertyName {
     static const auto DESCRIPTION = "description";
     static const auto UPDATE_CONSTRAINTS = "update-constraints";
     static const auto UPDATE_DEPENDENCIES = "update-dependencies";
+    static const auto REFERENCE = "reference";
 };
 
 class Manager {

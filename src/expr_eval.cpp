@@ -2,6 +2,7 @@
 #include "visitor.hpp"
 
 #include "node/node.hpp"
+#include "node/leaf.hpp"
 #include "node/composite.hpp"
 #include "xpath.hpp"
 #include "lib/utils.hpp"

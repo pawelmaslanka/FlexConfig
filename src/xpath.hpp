@@ -28,6 +28,8 @@ namespace XPath {
     List<String> parse2(const String xpath);
     Queue<String> parse3(const String xpath);
     SharedPtr<Node> select(SharedPtr<Node> root_node, const String xpath);
+    // Second version of select() iclude recognize "value" on the end of xpath string
+    SharedPtr<Node> select2(SharedPtr<Node> root_node, const String xpath);
     String to_string(SharedPtr<Node> node);
     String to_string2(SharedPtr<Node> node);
     size_t count_members(SharedPtr<Node> root_node, const String xpath);

@@ -102,6 +102,54 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
     return visiting_node;
 }
 
+SharedPtr<Node> XPath::select2(SharedPtr<Node> root_node, const String xpath) {
+    if (!root_node || xpath.empty()) {
+        return nullptr;
+    }
+
+    auto xpath_items = parse(xpath);
+    auto node_finder = std::make_shared<XPath::NodeFinder>();
+    auto visiting_node = root_node;
+    while (!xpath_items->empty()) { 
+        auto item = xpath_items->front();
+        std::cout << "xpath select item: " << item << std::endl;
+        if ((item == "value") && (xpath_items->size() == 1)) {
+            return visiting_node;
+        }
+
+        auto left_pos = item.find(XPath::SUBSCRIPT_LEFT_PARENTHESIS);
+        auto right_pos = item.find(XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
+        if (left_pos != String::npos
+            && right_pos != String::npos) {
+            xpath_items->pop();
+            for (auto new_item : { item.substr(0, left_pos), item.substr(left_pos + 1, (right_pos - left_pos - 1)) }) {
+                std::cout << "Exception visit: " << new_item << std::endl;
+                node_finder->init(new_item);
+                visiting_node->accept(*node_finder);
+                visiting_node = node_finder->get_result();
+                if (!visiting_node) {
+                    std::cout << __LINE__ << ": Failed to get wanted node: " << new_item << std::endl;
+                    return nullptr;
+                }
+            }
+
+            continue;
+        }
+
+        node_finder->init(xpath_items->front());
+        visiting_node->accept(*node_finder);
+        visiting_node = node_finder->get_result();
+        if (!visiting_node) {
+            std::cout << __LINE__ << ": Failed to get wanted node: " << xpath_items->front() << std::endl;
+            return nullptr;
+        }
+
+        xpath_items->pop();
+    }
+
+    return visiting_node;
+}
+
 String XPath::to_string(SharedPtr<Node> node) {
     String xpath;
     Stack<String> xpath_stack;
