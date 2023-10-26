@@ -36,6 +36,10 @@ namespace Config {
 static auto constexpr ROOT_TREE_CONFIG_NAME { "/" };
 
 namespace PropertyName {
+    static const auto ACTION = "action";
+    static const auto ACTION_ON_DELETE_PATH = "action-on-delete-path";
+    static const auto ACTION_ON_UPDATE_PATH = "action-on-update-path";
+    static const auto ACTION_SERVER_ADDRESS = "action-server-address";
     static const auto DEFAULT = "default";
     static const auto DESCRIPTION = "description";
     static const auto UPDATE_CONSTRAINTS = "update-constraints";
@@ -49,6 +53,7 @@ public:
     ~Manager() = default;
     bool load(SharedPtr<Node>& root_config_ptr);
     SharedPtr<SchemaNode> getSchemaByXPath(const String& xpath);
+    String getConfigNode(const String& xpath);
 
 private:
     const std::string m_config_filename;

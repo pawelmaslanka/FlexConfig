@@ -7,6 +7,7 @@
 #include <memory>
 
 #include <spdlog/spdlog.h>
+#include "httplib.h"
 
 #include "node/node.hpp"
 #include "node/leaf.hpp"
@@ -16,6 +17,8 @@
 #include "expr_eval.hpp"
 #include "lib/topo_sort.hpp"
 #include "xpath.hpp"
+
+#include <nlohmann/json.hpp>
 
 #include <fstream>
 #include <variant>
@@ -1120,6 +1123,7 @@ int main(int argc, char* argv[]) {
     // std::string val;
     // bool val;
     // auto a = std::any(peg_arg);
+    // Check if updated nodes pass all constraints
     try {
         // parser.parse("if (1 ~ 3) then 'true'", val);
         // parser.parse("if (1 = 3) then 9", val);
@@ -1149,7 +1153,60 @@ int main(int argc, char* argv[]) {
                 parser.parse(update_constraint, peg_arg_opaque);
                 process(peg_arg_opaque);
                 spdlog::info("\nFor {} at {} evaluated: {}", update_constraint, xpath, std::any_cast<PEGArgument>(peg_arg_opaque).expression_result);
+                if (!std::any_cast<PEGArgument>(peg_arg_opaque).expression_result) {
+                    spdlog::error("Failed to pass constraint on {}: {}", xpath, update_constraint);
+                    ::exit(EXIT_FAILURE);
+                }
             }
+        }
+
+        // Perform action to remote server
+        for (auto& xpath : ordered_cmds) {
+            spdlog::info("Select xpath {} from JSON config", xpath);
+            auto schema_node = config_mngr->getSchemaByXPath(xpath);
+            auto action_attr = schema_node->findAttr(Config::PropertyName::ACTION_ON_UPDATE_PATH);
+            auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
+            if (action_attr.empty() || server_addr_attr.empty()) {
+                continue;
+            }
+            
+            // auto json_node = nlohmann::json().parse(config_mngr->getConfigNode(xpath.substr(0, xpath.find_last_of('/'))));
+            auto json_node2 = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
+            // std::cout << std::setw(4) << json_node << std::endl << std::endl;
+            std::cout << std::setw(4) << json_node2 << std::endl << std::endl;
+            spdlog::info("Patch:");
+            // std::cout << std::setw(4) << nlohmann::json(nlohmann::json(json_node).patch(nlohmann::json(json_node).diff({}, nlohmann::json(json_node)))) << std::endl;
+            // auto diff = json_node.diff(json_node, json_node2);
+            auto diff = json_node2.diff({}, json_node2);
+            std::cout << std::setw(4) << diff << std::endl;
+            diff[0]["path"] = xpath;
+            if (diff[0]["value"].is_object()) {
+                // TODO: We should consider if we could put "string" with single value insead of empty object
+                // "value":{"2":{}}
+                // vs
+                // "value": "2"
+                for (auto it : diff[0]["value"].items()) {
+                    it.value() = nlohmann::json::object();
+                    // diff[0]["value"].front() = nlohmann::json::object();
+                }
+            }
+
+            std::cout << std::setw(4) << diff[0] << std::endl;
+            auto server_addr = server_addr_attr.front();
+            spdlog::info("Connect to server: {}", server_addr);
+            httplib::Client cli(server_addr);
+            auto path = action_attr.front();
+            auto body = diff[0].dump();
+            auto content_type = "application/json";
+            spdlog::info("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
+            auto result = cli.Post(path, body, content_type);
+            if (!result) {
+                spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
+                // TODO: Rollback all changes
+                continue;
+            }
+
+            spdlog::info("POST result, status: {}, body: {}", result->status, result->body);
         }
 
         // parser.parse("if exists('/interface/gigabit-ethernet/ge-1') then 9", a);

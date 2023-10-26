@@ -539,6 +539,12 @@ bool Config::Manager::load(SharedPtr<Node>& root_config_ptr) {
     return false;
 }
 
+String Config::Manager::getConfigNode(const String& xpath) {
+    std::ifstream config_ifs(m_config_filename);
+    nlohmann::json jconfig = nlohmann::json::parse(config_ifs);
+    return jconfig[nlohmann::json::json_pointer(xpath)].dump();
+}
+
 // bool Config::Manager::load2(SharedPtr<Node>& root_config_ptr, SharedPtr<SchemaNode>& root_schema_ptr) {
 //     std::ifstream schema_ifs(m_schema_filename);
 //     nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
@@ -687,6 +693,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     auto root_schema_node = std::make_shared<SchemaComposite>("/");
     auto schema_node = root_schema_node;
     static const Set<String> SUPPORTED_ATTRIBUTES = {
+        Config::PropertyName::ACTION, Config::PropertyName::ACTION_ON_DELETE_PATH, Config::PropertyName::ACTION_ON_UPDATE_PATH, Config::PropertyName::ACTION_SERVER_ADDRESS,
         Config::PropertyName::DEFAULT, Config::PropertyName::DESCRIPTION, Config::PropertyName::REFERENCE, Config::PropertyName::UPDATE_CONSTRAINTS, Config::PropertyName::UPDATE_DEPENDENCIES
     };
 
@@ -699,7 +706,15 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
             spdlog::info("Checking attribute: {}", k);
             if (SUPPORTED_ATTRIBUTES.find(k) != SUPPORTED_ATTRIBUTES.end()) {
                 spdlog::info("Save attribute: {}", k);
-                if (v.is_array()) {
+                if (k == Config::PropertyName::ACTION) {
+                    spdlog::info("Action attributes:");
+                    std::cout << std::setw(4) << v.dump() << std::endl;
+                    for (auto& [action_attr, action_val] : v.items()) {
+                        schema_node->addAttr(String(Config::PropertyName::ACTION) + "-" + action_attr, action_val);
+                        spdlog::info("Added attribute {} -> {}", String(Config::PropertyName::ACTION) + "-" + action_attr, action_val);
+                    }
+                }
+                else if (v.is_array()) {
                     for (auto& [_, item] : v.items()) {
                         schema_node->addAttr(k, item);
                         spdlog::info("Added attribute {} -> {}", k, item);

@@ -17,7 +17,12 @@
                             "properties": {
                                 "breakout-mode": {
                                     "enum": ["none", "4x100G"],
-                                    "default": "none"
+                                    "default": "none",
+                                    "action": {
+                                        "on-update-path": "/update",
+                                        "on-delete-path": "/delete",
+                                        "server-address": "127.0.0.1:8000"
+                                    }
                                 }
                             },
                             "required": [
@@ -26,7 +31,12 @@
                             "additionalProperties": false
                         }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "action": {
+                        "on-update-path": "/update",
+                        "on-delete-path": "/delete",
+                        "server-address": "127.0.0.1:8000"
+                    }
                 }
             },
             "required": [
@@ -50,7 +60,12 @@
                                 "speed": {
                                     "description": "Interface speed",
                                     "enum": ["100G", "400G"],
-                                    "default": "400G"
+                                    "default": "400G",
+                                    "action": {
+                                        "on-update-path": "/update",
+                                        "on-delete-path": "/delete",
+                                        "server-address": "127.0.0.1:8000"
+                                    }
                                 }
                             },
                             "additionalProperties": false,
@@ -84,7 +99,12 @@
                             ]
                         }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "action": {
+                        "on-update-path": "/update",
+                        "on-delete-path": "/delete",
+                        "server-address": "127.0.0.1:8000"
+                    }
                 },
                 "aggregate-ethernet": {
                     "description": "Aggregate Ethernet Interfaces collection",
@@ -107,6 +127,11 @@
                                     "reference": [
                                         "/interface/gigabit-ethernet/@"
                                     ],
+                                    "action": {
+                                        "on-update-path": "/update",
+                                        "on-delete-path": "/delete",
+                                        "server-address": "127.0.0.1:8000"
+                                    },
                                     "update-dependencies": [
                                         "/interface/gigabit-ethernet/*"
                                     ],
@@ -122,11 +147,16 @@
                             },
                             "additionalProperties": false,
                             "delete-constraints": [
-                                "must(count(xpath(/interface/aggregate-ethernet[@key]/members)) = 0)"
+                                "must(count(xpath('/interface/aggregate-ethernet[@key]/members')) = 0)"
                             ]
                         }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "action": {
+                        "on-update-path": "/update",
+                        "on-delete-path": "/delete",
+                        "server-address": "127.0.0.1:8000"
+                    }
                 }
             },
             "required": [
@@ -168,17 +198,10 @@
                                     "update-constraints": [
                                         "must(exists(@))"
                                     ],
-                                    "update-action": {
-                                        "method-name": "add_vlan",
-                                        "port": "8080",
-                                        "path": "@key",
-                                        "value": "@value"
-                                    },
-                                    "delete-action": {
-                                        "method-name": "remove_vlan",
-                                        "port": "8080",
-                                        "path": "@key",
-                                        "value": "@value"
+                                    "action": {
+                                        "on-update-path": "/update",
+                                        "on-delete-path": "/delete",
+                                        "server-address": "127.0.0.1:8000"
                                     }
                                 }
                             },
@@ -188,7 +211,12 @@
                             ]
                         }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "action": {
+                        "on-update-path": "/update",
+                        "on-delete-path": "/delete",
+                        "server-address": "127.0.0.1:8000"
+                    }
                 }
             },
             "additionalProperties": false
