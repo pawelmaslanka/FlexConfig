@@ -42,22 +42,32 @@ namespace PropertyName {
     static const auto ACTION_SERVER_ADDRESS = "action-server-address";
     static const auto DEFAULT = "default";
     static const auto DESCRIPTION = "description";
+    static const auto DELETE_CONSTRAINTS = "delete-constraints";
     static const auto UPDATE_CONSTRAINTS = "update-constraints";
     static const auto UPDATE_DEPENDENCIES = "update-dependencies";
     static const auto REFERENCE = "reference";
 };
 
-class Manager {
+class Manager : public std::enable_shared_from_this<Manager> {
 public:
     Manager(std::string_view config_filename, std::string_view schema_filename, SharedPtr<RegistryClass>& registry);
     ~Manager() = default;
-    bool load(SharedPtr<Node>& root_config_ptr);
+    bool load();
     SharedPtr<SchemaNode> getSchemaByXPath(const String& xpath);
     String getConfigNode(const String& xpath);
+    String getConfigDiff(const String& patch);
+    SharedPtr<Node> getRunningConfig();
+    bool makeCandidateConfig(const String& patch);
+    bool applyCandidateConfig();
+    // bool rollbackCandidateConfig(); ?
+    bool cancelCandidateConfig();
 
 private:
     const std::string m_config_filename;
     const std::string m_schema_filename;
+    SharedPtr<Node> m_running_config;
+    SharedPtr<Node> m_candidate_config;
+    bool m_is_candidate_config_ready = { false };
 }; // class Manager
 
 } // namespace Config

@@ -38,7 +38,7 @@ Node::~Node() {
     
 }
 
-String Node::getName() {
+String Node::getName() const {
     return m_name;
 }
 
@@ -58,8 +58,14 @@ SharedPtr<Node> Node::getSchemaNode() const {
     return m_schema_node;
 }
 
+SharedPtr<Node> Node::makeCopy(SharedPtr<Node> parent) const {
+    auto copy_node = std::make_shared<Node>(m_name);
+    copy_node->m_parent = parent ? parent : m_parent;
+    copy_node->m_schema_node = m_schema_node;
+    return copy_node;
+}
+
 void Node::accept(Visitor& visitor) {
-    std::clog << "Node " << m_name << " with schema " << (m_schema_node ? m_schema_node->getName() : "none") << std::endl;
     visitor.visit(shared_from_this());
 }
 

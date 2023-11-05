@@ -32,11 +32,20 @@ bool Composite::remove(const String node_name) {
     return true;
 }
 
+SharedPtr<Node> Composite::makeCopy(SharedPtr<Node> parent) const {
+    auto copy_node = std::make_shared<Composite>(getName());
+    copy_node->setParent(parent ? parent : getParent());
+    copy_node->setSchemaNode(getSchemaNode());
+    for (auto& [name, node] : m_node_by_name) {
+        copy_node->m_node_by_name.emplace(name, node->makeCopy(copy_node));
+    }
+
+    return copy_node;
+}
+
 // TODO: Get value from Visitor if it prefere DFS or BFS
 void Composite::accept(Visitor& visitor) {
-    std::clog << "Composite " << getName() << " has " << m_node_by_name.size() << " members\n";
     for (auto node : m_node_by_name) {
-        std::clog << "Visiting node " << node.first << " which is parent of " << getName() << std::endl;
         // node.second->accept(visitor);
         if (!visitor.visit(node.second)) {
             break;

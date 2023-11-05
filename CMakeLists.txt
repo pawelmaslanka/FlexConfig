@@ -28,10 +28,13 @@ set(INC_LIST
     "${SRC_DIR}/lib/topo_sort.${CPP_HEADER_EXT}"
     # "${SRC_DIR}/load_config.${CPP_HEADER_EXT}"
     "${SRC_DIR}/config.${CPP_HEADER_EXT}"
+    "${SRC_DIR}/constraint_checking.${CPP_HEADER_EXT}"
     "${SRC_DIR}/node/node.${CPP_HEADER_EXT}"
     "${SRC_DIR}/node/leaf.${CPP_HEADER_EXT}"
     "${SRC_DIR}/node/composite.${CPP_HEADER_EXT}"
     "${SRC_DIR}/node/visitor.${CPP_HEADER_EXT}"
+    "${SRC_DIR}/node/visitor_spec.${CPP_HEADER_EXT}"
+    "${SRC_DIR}/nodes_ordering.${CPP_HEADER_EXT}"
 )
 
 set(SRC_LIST
@@ -39,9 +42,11 @@ set(SRC_LIST
     "${SRC_DIR}/lib/topo_sort.${CPP_SRC_EXT}"
     # "${SRC_DIR}/load_config.${CPP_SRC_EXT}"
     "${SRC_DIR}/config.${CPP_SRC_EXT}"
+    "${SRC_DIR}/constraint_checking.${CPP_SRC_EXT}"
     "${SRC_DIR}/node/node.${CPP_SRC_EXT}"
     "${SRC_DIR}/node/leaf.${CPP_SRC_EXT}"
     "${SRC_DIR}/node/composite.${CPP_SRC_EXT}"
+    "${SRC_DIR}/nodes_ordering.${CPP_SRC_EXT}"
     "${SRC_DIR}/value.${CPP_SRC_EXT}"
     "${SRC_DIR}/xpath.${CPP_SRC_EXT}"
 )

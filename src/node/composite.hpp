@@ -14,6 +14,8 @@ class Composite
     virtual bool add(SharedPtr<Node> node);
     virtual bool remove(const String node_name);
 
+    virtual SharedPtr<Node> makeCopy(SharedPtr<Node> parent = nullptr) const override;
+
     virtual void accept(Visitor& visitor) override;
     virtual SharedPtr<Node> findNode(const String node_name);
     virtual size_t count() const;

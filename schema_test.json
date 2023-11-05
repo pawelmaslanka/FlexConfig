@@ -28,15 +28,15 @@
                             "required": [
                                 "breakout-mode"
                             ],
-                            "additionalProperties": false
+                            "additionalProperties": false,
+                            "action": {
+                                "on-update-path": "/update",
+                                "on-delete-path": "/delete",
+                                "server-address": "127.0.0.1:8000"
+                            }
                         }
                     },
-                    "additionalProperties": false,
-                    "action": {
-                        "on-update-path": "/update",
-                        "on-delete-path": "/delete",
-                        "server-address": "127.0.0.1:8000"
-                    }
+                    "additionalProperties": false
                 }
             },
             "required": [
@@ -63,12 +63,16 @@
                                     "default": "400G",
                                     "action": {
                                         "on-update-path": "/update",
-                                        "on-delete-path": "/delete",
                                         "server-address": "127.0.0.1:8000"
                                     }
                                 }
                             },
                             "additionalProperties": false,
+                            "action": {
+                                "on-update-path": "/update",
+                                "on-delete-path": "/delete",
+                                "server-address": "127.0.0.1:8000"
+                            },
                             "update-dependencies": [
                                 "/platform/port[@key]/breakout-mode"
                             ],
@@ -87,6 +91,11 @@
 
                             },
                             "additionalProperties": false,
+                            "action": {
+                                "on-update-path": "/update",
+                                "on-delete-path": "/delete",
+                                "server-address": "127.0.0.1:8000"
+                            },
                             "update-dependencies": [
                                 "/platform/port[@key]/breakout-mode"
                             ],
@@ -99,12 +108,7 @@
                             ]
                         }
                     },
-                    "additionalProperties": false,
-                    "action": {
-                        "on-update-path": "/update",
-                        "on-delete-path": "/delete",
-                        "server-address": "127.0.0.1:8000"
-                    }
+                    "additionalProperties": false
                 },
                 "aggregate-ethernet": {
                     "description": "Aggregate Ethernet Interfaces collection",
@@ -146,22 +150,20 @@
                                 }
                             },
                             "additionalProperties": false,
+                            "action": {
+                                "on-update-path": "/update",
+                                "on-delete-path": "/delete",
+                                "server-address": "127.0.0.1:8000"
+                            },
                             "delete-constraints": [
-                                "must(count(xpath('/interface/aggregate-ethernet[@key]/members')) = 0)"
+                                "must(count(xpath('//interface/aggregate-ethernet[@key]/members')) = 0)"
                             ]
                         }
                     },
-                    "additionalProperties": false,
-                    "action": {
-                        "on-update-path": "/update",
-                        "on-delete-path": "/delete",
-                        "server-address": "127.0.0.1:8000"
-                    }
+                    "additionalProperties": false
                 }
             },
             "required": [
-                "aggregate-ethernet",
-                "gigabit-ethernet"
             ],
             "additionalProperties": false
         },
@@ -206,17 +208,17 @@
                                 }
                             },
                             "additionalProperties": false,
+                            "action": {
+                                "on-update-path": "/update",
+                                "on-delete-path": "/delete",
+                                "server-address": "127.0.0.1:8000"
+                            },
                             "delete-constraints": [
-                                "must(count(xpath(/vlan/id[@key]/members)) = 0)"
+                                "must(count(xpath('/vlan/id[@key]/members')) = 0)"
                             ]
                         }
                     },
-                    "additionalProperties": false,
-                    "action": {
-                        "on-update-path": "/update",
-                        "on-delete-path": "/delete",
-                        "server-address": "127.0.0.1:8000"
-                    }
+                    "additionalProperties": false
                 }
             },
             "additionalProperties": false

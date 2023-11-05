@@ -13,6 +13,7 @@ public:
     Leaf(const String& name, const Value value, SharedPtr<Node> parent = nullptr, SharedPtr<Node> schema_node = nullptr);
     void setValue(const Value value);
     Value getValue() const;
+    virtual SharedPtr<Node> makeCopy(SharedPtr<Node> parent = nullptr) const override;
     virtual void accept(Visitor& visitor) override;
 
 private:

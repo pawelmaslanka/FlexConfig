@@ -9,11 +9,12 @@ class Node : public IVisitable, public inheritable_enable_shared_from_this<Node>
   public:
     virtual ~Node();
     Node(const String& name, SharedPtr<Node> parent = nullptr, SharedPtr<Node> schema_node = nullptr);
-    String getName();
+    String getName() const;
     void setParent(SharedPtr<Node> parent);
     SharedPtr<Node> getParent() const;
     void setSchemaNode(SharedPtr<Node> schema_node);
     SharedPtr<Node> getSchemaNode() const;
+    virtual SharedPtr<Node> makeCopy(SharedPtr<Node> parent = nullptr) const;
 
     virtual void accept(Visitor& visitor) override;
 
