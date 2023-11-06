@@ -520,7 +520,7 @@ String Config::Manager::getConfigDiff(const String& patch) {
     std::cout << "Diff:\n" << std::setw(4) << diff << std::endl << std::endl;
     // g_running_jconfig.merge_patch(patch);
     // std::cout << "Patched:\n" << std::setw(4) << g_running_jconfig << std::endl << std::endl;
-    return diff.dump();
+    return diff.dump(4);
 }
 
 SharedPtr<Node> Config::Manager::getRunningConfig() {
@@ -1159,4 +1159,8 @@ bool Config::Manager::cancelCandidateConfig() {
     m_is_candidate_config_ready = false;
 
     return true;
+}
+
+String Config::Manager::dumpRunningConfig() {
+    return g_running_jconfig.dump(4);
 }

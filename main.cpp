@@ -9,6 +9,7 @@
 #include <spdlog/spdlog.h>
 #include "httplib.h"
 
+#include "connection_management.hpp"
 #include "constraint_checking.hpp"
 #include "node/node.hpp"
 #include "node/leaf.hpp"
@@ -114,8 +115,16 @@ private:
 };
 
 int main(int argc, char* argv[]) {
+    if (argc < 3) {
+        spdlog::error("Too few arguments passed to {} to run program", argv[0]);
+        spdlog::info("Usage:\n{} <JSON_CONFIG_FILENAME> <JSON_SCHEMA_FILENAME>\n", argv[0]);
+        ::exit(EXIT_FAILURE);
+    }
+
+    auto json_config_filename = argv[1];
+    auto json_schema_filename = argv[2];
     auto registry = std::make_shared<RegistryClass>();
-    auto config_mngr = std::make_shared<Config::Manager>("../config_test.json", "../schema_test.json", registry);
+    auto config_mngr = std::make_shared<Config::Manager>(json_config_filename, json_schema_filename, registry);
     if (!config_mngr->load()) {
         spdlog::error("Failed to load config file");
         ::exit(EXIT_FAILURE);
@@ -325,6 +334,41 @@ int main(int argc, char* argv[]) {
     }
 
     spdlog::info("Successfully operate on config file");
+
+    ConnectionManagement::Server cm;
+    cm.addOnPostConnectionHandler("update_config", [&config_mngr](const String& path, String data_request, String& return_data) {
+        if (path != "/config/update") {
+            return true;
+        }
+
+        spdlog::info("Get request on {} with POST method: {}", path, data_request);
+        return true;
+    });
+
+    cm.addOnGetConnectionHandler("get_config", [&config_mngr](const String& path, String data_request, String& return_data) {
+        if (path != "/config/get") {
+            return true;
+        }
+
+        spdlog::info("Get request on {} with GET method: {}", path, data_request);
+        return_data = config_mngr->dumpRunningConfig();
+        return true;
+    });
+
+    cm.addOnPostConnectionHandler("get_diff", [&config_mngr](const String& path, String data_request, String& return_data) {
+        if (path != "/config/diff") {
+            return true;
+        }
+
+        spdlog::info("Get request on {} with POST diff method: {}", path, data_request);
+        return_data = config_mngr->getConfigDiff(data_request);
+        return true;
+    });
+
+    if (!cm.run("localhost", 8001)) {
+        spdlog::error("Failed to run connection management server");
+        ::exit(EXIT_FAILURE);
+    }
 
     ::exit(EXIT_SUCCESS);
 }

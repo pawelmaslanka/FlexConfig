@@ -30,3 +30,5 @@
 using Regex = std::regex;
 using String = std::string;
 using StringView = std::string_view;
+
+using UInt16 = std::uint16_t;
