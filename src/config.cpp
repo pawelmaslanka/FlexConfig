@@ -13,6 +13,7 @@
 #include "xpath.hpp"
 #include "node/leaf.hpp"
 
+#include <filesystem>
 #include <fstream>
 
 #include "httplib.h"
@@ -267,63 +268,6 @@ bool load_node_schema(const String& xpath, SharedPtr<Node> root_node, const nloh
 
     return true;
 }
-
-// TODO: Is it the same like getSchemaByXpath2() ?
-// nlohmann::json get_schema_by_xpath(const String& xpath, const nlohmann::json& jschema) {
-//     auto root_properties_it = jschema.find("properties");
-//     if (root_properties_it == jschema.end()) {
-//         spdlog::error("Invalid schema - missing 'properties' node on the top");
-//         return false;
-//     }
-
-//     auto schema = *root_properties_it;
-//     auto xpath_tokens = XPath::parse2(xpath);
-//     String schema_xpath_composed = {};
-//     for (auto token : xpath_tokens) {
-//         spdlog::trace("Processing node '{}'", token);
-//         // spdlog::trace("Loaded schema:\n{}", schema.dump());
-//         if (schema.find(token) == schema.end()) {
-//             if (schema.find("patternProperties") == schema.end()) {
-//                 schema_xpath_composed += "/properties/" + token;
-//                 spdlog::trace("Select schema node '{}'", schema_xpath_composed);
-//                 auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
-//                 schema = jschema[selector];
-//                 if (schema.begin() == schema.end()) {
-//                     spdlog::error("Not found token '{}' in schema:\n{}", token, schema.dump());
-//                     return {};
-//                 }
-//             }
-//             else {
-//                 spdlog::trace("Matching token '{}' based on 'patternProperties'", token);
-//                 bool pattern_matched = false;
-//                 for (auto& [k, v] : schema["patternProperties"].items()) {
-//                     if (std::regex_match(token, Regex { k })) {
-//                         spdlog::trace("Matched token '{}' to 'regex {}'", token, k);
-//                         pattern_matched = true;
-//                         schema_xpath_composed += "/patternProperties/" + k;
-//                         spdlog::trace("Select schema node '{}'", schema_xpath_composed);
-//                         auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
-//                         schema = jschema[selector];
-//                         break;
-//                     }
-//                 }
-
-//                 if (!pattern_matched) {
-//                     spdlog::error("Not found node '{}' in schema 'patterProperties'", token);
-//                     return {};
-//                 }
-//             }
-//         }
-//         else {
-//             schema_xpath_composed += "/properties/" + token;
-//             spdlog::trace("Select schema node '{}'", schema_xpath_composed);
-//             auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
-//             schema = jschema[selector];
-//         }
-//     }
-
-//     return schema;
-// }
 
 // TODO:
 // SharedPtr<Node> make_schema_tree(const nlohmann::json& jschema) {
@@ -1153,6 +1097,42 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
 
 bool Config::Manager::applyCandidateConfig() {
     if (m_is_candidate_config_ready) {
+        auto config_filename_tmp = m_config_filename + ".tmp";
+        // spdlog::info("Save JSON config file to temporary file {}", config_filename_tmp);
+        // spdlog::info("{}", 
+        std::ofstream json_file(config_filename_tmp);
+        if (!json_file) {
+            spdlog::error("Failed to open file {} to save candidate config", config_filename_tmp);
+            return false;
+        }
+
+        json_file << std::setw(4) << g_candidate_jconfig;
+        if (!json_file) {
+            spdlog::error("Failed to write candidate config to file {}", config_filename_tmp);
+            return false;
+        }
+
+        json_file.flush();
+        json_file.close();
+        // auto end_of_dir_pos = config_filename_tmp.find_last_of("/");
+        // auto path = end_of_dir_pos != String::npos ? config_filename_tmp.substr(0, end_of_dir_pos + 1) : "./";
+        // auto filename = end_of_dir_pos != String::npos ? config_filename_tmp.substr(end_of_dir_pos + 1) : 
+        //  file_path = path;
+        std::error_code err_code = {};
+        std::filesystem::rename(std::filesystem::path(config_filename_tmp), m_config_filename, err_code);
+        if (err_code) {
+            spdlog::error("Failed to save temporary filename {} into final config filename {}: {}",
+                config_filename_tmp, m_config_filename, err_code.message());
+            return false;
+        }
+
+        err_code.clear();
+        std::filesystem::remove(std::filesystem::path(config_filename_tmp), err_code);
+        if (err_code) {
+            spdlog::warn("Failed to remove temporary filename {}: {}",
+                config_filename_tmp, err_code.message());
+        }
+
         // TODO: Do action on nodes
         // TODO: Clear old m_running_config
         m_running_config = m_candidate_config;

@@ -319,5 +319,12 @@ int main(int argc, char* argv[]) {
         ::exit(EXIT_FAILURE);
     }
 
+    if (!config_mngr->applyCandidateConfig()) {
+        spdlog::error("Failed to apply new candidate config");
+        ::exit(EXIT_FAILURE);
+    }
+
+    spdlog::info("Successfully operate on config file");
+
     ::exit(EXIT_SUCCESS);
 }
