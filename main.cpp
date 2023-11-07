@@ -87,8 +87,8 @@ class VisitorImpl : public Visitor {
   public:
     virtual ~VisitorImpl() = default;
     virtual bool visit(SharedPtr<Node> node) override {
-        std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Visit node: " << node->getName() << std::endl;
-        std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Node " << node->getName() << " with schema " << (node->getSchemaNode() ? node->getSchemaNode()->getName() : "none") << std::endl;
+        // std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Visit node: " << node->getName() << std::endl;
+        // std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Node " << node->getName() << " with schema " << (node->getSchemaNode() ? node->getSchemaNode()->getName() : "none") << std::endl;
         // node->accept(*this);
         return true;
     }
@@ -98,8 +98,8 @@ class VisitorGE1Speed : public Visitor {
   public:
     virtual ~VisitorGE1Speed() = default;
     virtual bool visit(SharedPtr<Node> node) override {
-        std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Visit node: " << node->getName() << std::endl;
-        std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Node " << node->getName() << " with schema " << (node->getSchemaNode() ? node->getSchemaNode()->getName() : "none") << std::endl;
+        // std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Visit node: " << node->getName() << std::endl;
+        // std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Node " << node->getName() << " with schema " << (node->getSchemaNode() ? node->getSchemaNode()->getName() : "none") << std::endl;
         if (node->getName() == "speed") {
             m_speed_node = node;
             return false;
@@ -117,7 +117,7 @@ private:
 int main(int argc, char* argv[]) {
     if (argc < 3) {
         spdlog::error("Too few arguments passed to {} to run program", argv[0]);
-        spdlog::info("Usage:\n{} <JSON_CONFIG_FILENAME> <JSON_SCHEMA_FILENAME>\n", argv[0]);
+        spdlog::debug("Usage:\n{} <JSON_CONFIG_FILENAME> <JSON_SCHEMA_FILENAME>\n", argv[0]);
         ::exit(EXIT_FAILURE);
     }
 
@@ -140,17 +140,15 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
     else {
-        spdlog::info("Found interface speed");
+        spdlog::debug("Found interface speed");
     }
 
     auto dependency_mngr = std::make_shared<NodeDependencyManager>(config_mngr);
     List<String> ordered_nodes_by_xpath = {};
-    spdlog::info("{}:{}", __func__, __LINE__);
     if (!dependency_mngr->resolve(config_mngr->getRunningConfig(), ordered_nodes_by_xpath)) {
         spdlog::error("Failed to resolve nodes dependency");
         ::exit(EXIT_FAILURE);
     }
-    spdlog::info("{}:{}", __func__, __LINE__);
 
     // Check if updated nodes pass all constraints
     try {
@@ -161,7 +159,7 @@ int main(int argc, char* argv[]) {
         for (auto& xpath : ordered_nodes_by_xpath) {
             auto schema_node = config_mngr->getSchemaByXPath(xpath);
             if (!schema_node) {
-                spdlog::info("There isn't schema at node {}", xpath);
+                spdlog::debug("There isn't schema at node {}", xpath);
                 continue;
             }
 
@@ -169,10 +167,10 @@ int main(int argc, char* argv[]) {
             auto constraint_checker = std::make_shared<ConstraintChecker>(config_mngr, config);
             auto update_constraints = schema_node->findAttr(Config::PropertyName::UPDATE_CONSTRAINTS);
             for (auto& update_constraint : update_constraints) {
-                spdlog::info("Processing update constraint '{}' at node {}", update_constraint, xpath);
+                spdlog::debug("Processing update constraint '{}' at node {}", update_constraint, xpath);
                 auto node = XPath::select2(config_mngr->getRunningConfig(), xpath);
                 if (!node) {
-                    spdlog::info("Not node indicated by xpath {}", xpath);
+                    spdlog::debug("Not node indicated by xpath {}", xpath);
                     continue;
                 }
 
@@ -185,7 +183,7 @@ int main(int argc, char* argv[]) {
 
         // Perform action to remote server
         for (auto& xpath : ordered_nodes_by_xpath) {
-            spdlog::info("Select xpath {} from JSON config", xpath);
+            spdlog::debug("Select xpath {} from JSON config", xpath);
             auto schema_node = config_mngr->getSchemaByXPath(xpath);
             auto action_attr = schema_node->findAttr(Config::PropertyName::ACTION_ON_UPDATE_PATH);
             auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
@@ -197,7 +195,7 @@ int main(int argc, char* argv[]) {
             auto json_node2 = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
             // std::cout << std::setw(4) << json_node << std::endl << std::endl;
             std::cout << std::setw(4) << json_node2 << std::endl << std::endl;
-            spdlog::info("Patch:");
+            spdlog::debug("Patch:");
             // std::cout << std::setw(4) << nlohmann::json(nlohmann::json(json_node).patch(nlohmann::json(json_node).diff({}, nlohmann::json(json_node)))) << std::endl;
             // auto diff = json_node.diff(json_node, json_node2);
             auto diff = json_node2.diff({}, json_node2);
@@ -217,76 +215,25 @@ int main(int argc, char* argv[]) {
 
             std::cout << std::setw(4) << diff[0] << std::endl;
             auto server_addr = server_addr_attr.front();
-            spdlog::info("Connect to server: {}", server_addr);
+            spdlog::debug("Connect to server: {}", server_addr);
             httplib::Client cli(server_addr);
             auto path = action_attr.front();
             auto body = diff[0].dump();
             auto content_type = "application/json";
-            spdlog::info("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
+            spdlog::debug("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
             auto result = cli.Post(path, body, content_type);
             if (!result) {
                 spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
                 // TODO: Rollback all changes
-                continue;
+                ::exit(EXIT_FAILURE);
             }
 
-            spdlog::info("POST result, status: {}, body: {}", result->status, result->body);
+            spdlog::debug("POST result, status: {}, body: {}", result->status, result->body);
         }
-
-        // parser.parse("if exists('/interface/gigabit-ethernet/ge-1') then 9", a);
     }
     catch (std::bad_any_cast& ex) {
         std::cerr << "Caught exception: " << ex.what() << std::endl;
     }
-
-    // Config is already loaded here. Let's do some action on this config
-
-    // auto ge3_string = R"(
-    //     {
-    //         "interface": {
-    //             "gigabit-ethernet": {
-    //                 "ge-3": {
-    //                     "speed": "100G"
-    //                 }
-    //             }
-    //         }
-    //     }
-    // )";
-
-    // auto ge3_config_diff = config_mngr->getConfigDiff(ge3_string);
-    // spdlog::info("Get config diff: {}", ge3_config_diff);
-    
-    // if (!config_mngr->makeCandidateConfig(ge3_string)) {
-    //     spdlog::error("Failed to make a candidate config");
-    //     ::exit(EXIT_FAILURE);
-    // }
-
-    // if (!config_mngr->applyCandidateConfig()) {
-    //     spdlog::error("Failed to appply a candidate config");
-    //     ::exit(EXIT_FAILURE);
-    // }
-
-    // config_mngr->getRunningConfig()->accept(visitor);
-    // TODO: Apply and create nodes
-    // TODO: Go through all constraints
-    // TODO: Copy candidate config to running
-
-    // auto ge4_diff = R"(
-    //     [
-    //         {
-    //             "op": "add",
-    //             "path": "/interface/gigabit-ethernet/ge-4",
-    //             "value": {
-    //                 "speed": "100G"
-    //             }
-    //         }
-    //     ]
-    // )";
-
-    // if (!config_mngr->makeCandidateConfig(ge4_diff)) {
-    //     spdlog::error("Failed to patch config");
-    //     ::exit(EXIT_FAILURE);
-    // }
 
     auto ge2_ae1_diff = R"(
         [
@@ -333,7 +280,7 @@ int main(int argc, char* argv[]) {
         ::exit(EXIT_FAILURE);
     }
 
-    spdlog::info("Successfully operate on config file");
+    spdlog::debug("Successfully operate on config file");
 
     ConnectionManagement::Server cm;
     cm.addOnPostConnectionHandler("config_running_update", [&config_mngr](const String& path, String data_request, String& return_data) {
@@ -341,7 +288,7 @@ int main(int argc, char* argv[]) {
             return true;
         }
 
-        spdlog::info("Get request on {} with POST method: {}", path, data_request);
+        spdlog::debug("Get request on {} with POST method: {}", path, data_request);
         config_mngr->makeCandidateConfig(data_request);
         return true;
     });
@@ -351,7 +298,7 @@ int main(int argc, char* argv[]) {
             return true;
         }
 
-        spdlog::info("Get request running on {} with GET method: {}", path, data_request);
+        spdlog::debug("Get request running on {} with GET method: {}", path, data_request);
         return_data = config_mngr->dumpRunningConfig();
         return true;
     });
@@ -361,7 +308,7 @@ int main(int argc, char* argv[]) {
             return true;
         }
 
-        spdlog::info("Get request on {} with POST diff method: {}", path, data_request);
+        spdlog::debug("Get request on {} with POST diff method: {}", path, data_request);
         return_data = config_mngr->getConfigDiff(data_request);
         return true;
     });
@@ -371,7 +318,7 @@ int main(int argc, char* argv[]) {
             return true;
         }
 
-        spdlog::info("Get request candidate on {} with GET method: {}", path, data_request);
+        spdlog::debug("Get request candidate on {} with GET method: {}", path, data_request);
         return_data = config_mngr->dumpCandidateConfig();
         return true;
     });
@@ -381,7 +328,7 @@ int main(int argc, char* argv[]) {
             return true;
         }
 
-        spdlog::info("Get request candidate on {} with PUT method: {}", path, data_request);
+        spdlog::debug("Get request candidate on {} with PUT method: {}", path, data_request);
         return_data = config_mngr->applyCandidateConfig();
         return true;
     });
@@ -391,7 +338,7 @@ int main(int argc, char* argv[]) {
             return true;
         }
 
-        spdlog::info("Get request candidate on {} with DELETE method: {}", path, data_request);
+        spdlog::debug("Get request candidate on {} with DELETE method: {}", path, data_request);
         return_data = config_mngr->cancelCandidateConfig();
         return true;
     });

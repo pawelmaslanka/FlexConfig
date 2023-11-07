@@ -13,7 +13,7 @@ Composite::~Composite() {
 
 bool Composite::add(SharedPtr<Node> node) {
     if (!m_node_by_name.insert({ node->getName(), node }).second) {
-        std::cerr << "Node '" << node->getName() << "' already exists in set of '" << getName() << "'\n";
+        // std::cerr << "Node '" << node->getName() << "' already exists in set of '" << getName() << "'\n";
         return false;
     }
 

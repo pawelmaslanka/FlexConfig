@@ -24,5 +24,5 @@ SharedPtr<Node> Leaf::makeCopy(SharedPtr<Node> parent) const {
 }
 
 void Leaf::accept(Visitor& visitor) {
-    std::clog << getName() << " is a leaf so skip visiting" << std::endl;
+
 }

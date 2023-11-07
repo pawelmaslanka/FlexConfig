@@ -124,10 +124,9 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
     assert(ok);
 
     parser["REFERENCE"] = [](const SemanticValues& vs, std::any& dt) { 
-        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         if (!peg_arg.continue_processing) {
-            spdlog::info("Stop to further processing on the rule");
+            spdlog::debug("Stop to further processing on the rule");
             return;
         }
 
@@ -136,10 +135,9 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
     };
 
     parser["Number"] = [](const SemanticValues& vs, std::any& dt) { 
-        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         if (!peg_arg.continue_processing) {
-            spdlog::info("Stop to further processing on the rule");
+            spdlog::debug("Stop to further processing on the rule");
             return;
         }
 
@@ -148,16 +146,15 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
     };
 
     parser["String"] = [](const SemanticValues& vs, std::any& dt) { 
-        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         if (!peg_arg.continue_processing) {
-            spdlog::info("Stop to further processing on the rule");
+            spdlog::debug("Stop to further processing on the rule");
             return;
         }
 
         auto token = vs.token_to_string();
         // if (token.find("'") != String::npos) {
-        //     spdlog::info("String has extra ' character. Skip it");
+        //     spdlog::debug("String has extra ' character. Skip it");
         //     return;
         // }
 
@@ -169,17 +166,16 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
         //     }
         // }
 
-        // spdlog::info("Converted to {}", token);
+        // spdlog::debug("Converted to {}", token);
 
         peg_arg.string_stack.push(token);
         // return vs.sv();
     };
 
     parser["ConditionOperator"] = [](const SemanticValues& vs, std::any& dt) { 
-        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.choice_count() << ")" << std::endl;
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         if (!peg_arg.continue_processing) {
-            spdlog::info("Stop to further processing on the rule");
+            spdlog::debug("Stop to further processing on the rule");
             return;
         }
 
@@ -188,12 +184,9 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
     };
 
     parser["COUNT_FUNC"] = [](const SemanticValues& vs, std::any& dt) { 
-        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
-        process(vs[0]);
-        process(dt);
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         if (!peg_arg.continue_processing) {
-            spdlog::info("Stop to further processing on the rule");
+            spdlog::debug("Stop to further processing on the rule");
             return;
         }
 
@@ -212,7 +205,6 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
             return;
         }
 
-        std::clog << "'count' function's argument: " << peg_arg.node_stack.top()->getName() << std::endl;
         auto node = peg_arg.node_stack.top();
         peg_arg.node_stack.pop();
         
@@ -224,17 +216,14 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
             ++subnodes_count;
         }
 
-        spdlog::info("Counted {} subnodes of parent {}", subnodes_count, node->getName());
+        spdlog::debug("Counted {} subnodes of parent {}", subnodes_count, node->getName());
         peg_arg.number_stack.push(subnodes_count);
     };
 
     parser["EXISTS_FUNC"] = [](const SemanticValues& vs, std::any& dt) { 
-        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
-        process(vs[0]);
-        process(dt);
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         if (!peg_arg.continue_processing) {
-            spdlog::info("Stop to further processing on the rule");
+            spdlog::debug("Stop to further processing on the rule");
             return;
         }
 
@@ -263,23 +252,23 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
                 return;
             }
 
-            spdlog::info("Found attribute reference: {}", ref_attrs.front());
+            spdlog::debug("Found attribute reference: {}", ref_attrs.front());
             for (auto& subnode_name : subnode_names) {
-                spdlog::info("Checking if {} exists", subnode_name);
+                spdlog::debug("Checking if {} exists", subnode_name);
                 bool found = false;
                 for (auto& ref_attr : ref_attrs) {
                     String ref_xpath = ref_attr;
                     Utils::find_and_replace_all(ref_xpath, "@", subnode_name);
-                    spdlog::info("Created new reference xpath: {}", ref_xpath);
+                    spdlog::debug("Created new reference xpath: {}", ref_xpath);
                     if (XPath::select2(peg_arg.root_config, ref_xpath)) {
-                        spdlog::info("Found node {}", ref_xpath);
+                        spdlog::debug("Found node {}", ref_xpath);
                         found = true;
                         break;
                     }
                 }
 
                 if (!found) {
-                    spdlog::info("Not found reference node {}", subnode_name);
+                    spdlog::debug("Not found reference node {}", subnode_name);
                     peg_arg.bool_stack.push(false);
                     return;
                 }
@@ -298,22 +287,19 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
 
         if (!peg_arg.node_stack.top()) {
             peg_arg.node_stack.pop();
-            spdlog::info("Node is null");
+            spdlog::debug("Node is null");
             peg_arg.bool_stack.push(false);
             return;
         }
 
-        std::clog << "Exists() argument: " << peg_arg.node_stack.top()->getName() << std::endl;
         peg_arg.bool_stack.push(peg_arg.node_stack.top() != nullptr);
         peg_arg.node_stack.pop();
     };
 
     parser["XPATH_FUNC"] = [](const SemanticValues& vs, std::any& dt) { 
-        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
-        process(vs[0]);
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         if (!peg_arg.continue_processing) {
-            spdlog::info("Stop to further processing on the rule");
+            spdlog::debug("Stop to further processing on the rule");
             return;
         }
 
@@ -337,24 +323,24 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
                 && (xpath[1] == '/')) {
                 // This is hack because peglib has problem with string like '/interface/' or '/interface/aggregate-ethernet[@key]/members'
                 xpath = xpath.substr(1, xpath.size() - 1);
-                spdlog::info("Converted to string {}", xpath);
+                spdlog::debug("Converted to string {}", xpath);
             }
         }
 
-        spdlog::info("Resolving xpath: {}", xpath);
+        spdlog::debug("Resolving xpath: {}", xpath);
         auto xpath_tokens = XPath::parse3(xpath);
         auto resolved_xpath = XPath::evaluate_xpath2(peg_arg.current_processing_node, xpath);
-        spdlog::info("Resolved xpath: {}", resolved_xpath);
+        spdlog::debug("Resolved xpath: {}", resolved_xpath);
         auto node = XPath::select2(peg_arg.root_config, resolved_xpath);
         peg_arg.node_stack.push(node);
         if (!node) {
-            spdlog::info("Not found node: {}", xpath);
+            spdlog::debug("Not found node: {}", xpath);
             return;
         }
 
         if (xpath_tokens.back() == "value") {
             auto value = std::dynamic_pointer_cast<Leaf>(node)->getValue();
-            spdlog::info("Got value {} from xpath {}", value.to_string(), xpath);
+            spdlog::debug("Got value {} from xpath {}", value.to_string(), xpath);
             if (value.is_bool()) {
                 peg_arg.bool_stack.push(value.get_bool());
             }
@@ -373,12 +359,9 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
     };
 
     parser["Keyword"] = [](const SemanticValues& vs, std::any& dt) { 
-        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
-        process(vs[0]);
-        process(dt);
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         if (!peg_arg.continue_processing) {
-            spdlog::info("Stop to further processing on the rule");
+            spdlog::debug("Stop to further processing on the rule");
             return;
         }
 
@@ -391,17 +374,14 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
     };
 
     parser["CONDITION"] = [](const SemanticValues& vs, std::any& dt) { 
-        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
-        process(vs[0]);
-        process(dt);
         if (vs.size() != 3) {
-            spdlog::info("There are not required 3 arguments");
+            spdlog::debug("There are not required 3 arguments");
             return;
         }
 
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         if (!peg_arg.continue_processing) {
-            spdlog::info("Stop to further processing on the rule");
+            spdlog::debug("Stop to further processing on the rule");
             return;
         }
 
@@ -412,7 +392,7 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
             peg_arg.bool_stack.pop();
             auto op = peg_arg.operator_stack.top();
             peg_arg.operator_stack.pop();
-            spdlog::info("Comparing 2 booleans: {} {} {}", arg1, op, arg2);
+            spdlog::debug("Comparing 2 booleans: {} {} {}", arg1, op, arg2);
             if (op == "=") {
                 peg_arg.bool_stack.push(arg1 == arg2);
             }
@@ -427,7 +407,7 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
             peg_arg.number_stack.pop();
             auto op = peg_arg.operator_stack.top();
             peg_arg.operator_stack.pop();
-            spdlog::info("Comparing 2 numbers: {} {} {}", arg1, op, arg2);
+            spdlog::debug("Comparing 2 numbers: {} {} {}", arg1, op, arg2);
             if (op == "=") {
                 peg_arg.bool_stack.push(arg1 == arg2);
             }
@@ -442,7 +422,7 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
             peg_arg.string_stack.pop();
             auto op = peg_arg.operator_stack.top();
             peg_arg.operator_stack.pop();
-            spdlog::info("Comparing 2 strings: {} {} {}", arg1, op, arg2);
+            spdlog::debug("Comparing 2 strings: {} {} {}", arg1, op, arg2);
             if (op == "=") {
                 peg_arg.bool_stack.push(arg1 == arg2);
             }
@@ -457,13 +437,10 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
     };
 
     parser["MUST_FUNC"] = [](const SemanticValues& vs, std::any& dt) { 
-        std::clog << vs.name() << ": " << vs.token_to_string() << " (" << vs.size() << ")" << std::endl;
-        process(vs[0]);
-        process(dt);
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         // Added due to not resolved xpath
         if (!peg_arg.continue_processing) {
-            spdlog::info("Stop to further processing on the rule");
+            spdlog::debug("Stop to further processing on the rule");
             return;
         }
 
@@ -496,7 +473,7 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
         }
 
         peg_arg.expression_result = success;
-        spdlog::info("'must' function finished with result: {}", success);
+        spdlog::debug("'must' function finished with result: {}", success);
     };
 
     // (4) Parse
@@ -508,9 +485,8 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
 
     auto peg_arg_opaque = std::any(peg_arg);
     parser.parse(constraint_definition, peg_arg_opaque);
-    process(peg_arg_opaque);
     auto result = std::any_cast<PEGArgument>(peg_arg_opaque).expression_result;
-    spdlog::info("\nFor {} evaluated: {}", constraint_definition, result);
+    spdlog::debug("\nFor {} evaluated: {}", constraint_definition, result);
     if (!result) {
         spdlog::error("Failed to pass constraint: {}", constraint_definition);
         return false;

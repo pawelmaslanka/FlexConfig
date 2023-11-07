@@ -53,42 +53,42 @@ bool Server::run(const String& host, const UInt16 port) {
     Http::Server srv;
     srv.Post("/config/update", [this](const Http::Request & req, Http::Response &res) {
         String return_data;
-        spdlog::info("Got POST request:\n {}", req.body);
+        spdlog::debug("Got POST request:\n {}", req.body);
         auto return_message = processRequest(Method::POST, "/config/update", req.body, return_data) ? return_data : "Failed";
         res.set_content(return_message, "text/plain");
     });
 
     srv.Get("/config/running/get", [this](const Http::Request & req, Http::Response &res) {
         String return_data;
-        spdlog::info("Got GET request:\n {}", req.body);
+        spdlog::debug("Got running GET request:\n {}", req.body);
         auto return_message = processRequest(Method::GET, "/config/running/get", req.body, return_data) ? return_data : "Failed";
         res.set_content(return_message, "text/plain");
     });
 
     srv.Post("/config/running/diff", [this](const Http::Request & req, Http::Response &res) {
         String return_data;
-        spdlog::info("Got POST diff request:\n {}", req.body);
+        spdlog::debug("Got POST diff request:\n {}", req.body);
         auto return_message = processRequest(Method::POST, "/config/running/diff", req.body, return_data) ? return_data : "Failed";
         res.set_content(return_message, "text/plain");
     });
 
     srv.Get("/config/candidate", [this](const Http::Request & req, Http::Response &res) {
         String return_data;
-        spdlog::info("Got GET request:\n {}", req.body);
+        spdlog::debug("Got candidate GET request:\n {}", req.body);
         auto return_message = processRequest(Method::GET, "/config/candidate", req.body, return_data) ? return_data : "Failed";
         res.set_content(return_message, "text/plain");
     });
 
     srv.Put("/config/candidate", [this](const Http::Request & req, Http::Response &res) {
         String return_data;
-        spdlog::info("Got PUT request:\n {}", req.body);
+        spdlog::debug("Got PUT request:\n {}", req.body);
         auto return_message = processRequest(Method::PUT, "/config/candidate", req.body, return_data) ? return_data : "Failed";
         res.set_content(return_message, "text/plain");
     });
 
     srv.Delete("/config/candidate", [this](const Http::Request & req, Http::Response &res) {
         String return_data;
-        spdlog::info("Got DELETE request:\n {}", req.body);
+        spdlog::debug("Got DELETE request:\n {}", req.body);
         auto return_message = processRequest(Method::DELETE, "/config/candidate", req.body, return_data) ? return_data : "Failed";
         res.set_content(return_message, "text/plain");
     });

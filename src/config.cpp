@@ -49,7 +49,7 @@ bool validateJsonConfig(nlohmann::json& jconfig, nlohmann::json& jschema) {
 bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config);
 // bool parseAndLoadConfig2(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config, std::shared_ptr<SchemaComposite>& root_schema);
 bool loadPatternProperties(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config) {
-    spdlog::info("\n[{}:{}] {}\n ->\n {}\n\n", __func__, __LINE__, jconfig.dump(), jschema.dump());
+    spdlog::debug("\n[{}:{}] {}\n ->\n {}\n\n", __func__, __LINE__, jconfig.dump(), jschema.dump());
     SharedPtr<Composite> node = root_config;
     for (auto& [k, v] : jconfig.items()) {
         spdlog::trace("{} -> {}\n", k, v.dump());
@@ -59,7 +59,7 @@ bool loadPatternProperties(nlohmann::json& jconfig, nlohmann::json& jschema, std
                 // Composite::Factory(k, root_config).get_object<Composite>()
                 node = std::make_shared<Composite>(k, root_config);
                 root_config->add(node);
-                spdlog::info("{} -> {}\n", node->getParent()->getName(), node->getName());
+                spdlog::debug("{} -> {}\n", node->getParent()->getName(), node->getName());
                 if ((vsch.find("properties") == vsch.end())
                     && (vsch.find("patternProperties") == vsch.end())) {
                     spdlog::trace("Reached schema leaf node '{}'", ksch);
@@ -80,20 +80,20 @@ bool loadPatternProperties(nlohmann::json& jconfig, nlohmann::json& jschema, std
 }
 
 bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config) {
-    spdlog::info("\n[{}:{}] {}\n -> \n{}\n\n", __func__, __LINE__, jconfig.dump(), jschema.dump());
+    spdlog::debug("\n[{}:{}] {}\n -> \n{}\n\n", __func__, __LINE__, jconfig.dump(), jschema.dump());
     SharedPtr<Composite> node = root_config;
     for (auto& [k, v] : jschema.items()) {
-        spdlog::info("Processing schema node {}", k);
+        spdlog::debug("Processing schema node {}", k);
         if (jconfig.find(k) == jconfig.end()) {
             continue;
         }
 
-        spdlog::info("Found {} in config based on schema", k);
+        spdlog::debug("Found {} in config based on schema", k);
 
         // Composite::Factory(k, root_config).get_object<Composite>();
 
         if ((v.find("type") != v.end()) && (v.at("type") == "array")) {
-            spdlog::info("Found {} is array. Load its items", k);
+            spdlog::debug("Found {} is array. Load its items", k);
             auto leaf = std::make_shared<Composite>(k, root_config);
             root_config->add(leaf);
             for (const auto& item : jconfig.at(k)) {
@@ -110,7 +110,7 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
             // leaf node is not "object"
             || ((v.find("type") != v.end()) && (v.at("type") != "object"))) {
             // TODO: Check is the leaf is a string or other specific type
-            spdlog::info("Reached config leaf node '{}' -> '{}'", k, jconfig.at(k).get<String>());
+            spdlog::debug("Reached config leaf node '{}' -> '{}'", k, jconfig.at(k).get<String>());
             // TODO: Replace Value with std::variant
             Value val(Value::Type::STRING);
             val.set_string(jconfig.at(k).get<String>());
@@ -123,7 +123,7 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
         else {
             node = std::make_shared<Composite>(k, root_config);
             root_config->add(node);
-            spdlog::info("{} -> {}\n", node->getParent()->getName(), node->getName());
+            spdlog::debug("{} -> {}\n", node->getParent()->getName(), node->getName());
         }
 
         if (!parseAndLoadConfig(jconfig[k], v, node)) {
@@ -132,10 +132,10 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
         }
     }
 
-    spdlog::info("Further processing");
+    spdlog::debug("Further processing");
     for (auto& [k, v] : jschema.items()) {
         if (k == "patternProperties") {
-            spdlog::info("Found patternProperties");
+            spdlog::debug("Found patternProperties");
             if (!loadPatternProperties(jconfig, v, node)) {
                 spdlog::error("Failed to parse schema node '{}'", k);
                 return false;
@@ -143,7 +143,7 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
         }
 
         if (k == "properties") {
-            spdlog::info("Found properties");
+            spdlog::debug("Found properties");
             if (!parseAndLoadConfig(jconfig, v, node)) {
                 spdlog::error("Failed to parse schema node '{}'", k);
                 return false;
@@ -281,6 +281,103 @@ Config::Manager::Manager(StringView config_filename, StringView schema_filename,
 
 }
 
+bool gPerformAction(SharedPtr<Config::Manager> config_mngr) {
+    auto dependency_mngr = std::make_shared<NodeDependencyManager>(config_mngr);
+    List<String> ordered_nodes_by_xpath = {};
+    if (!dependency_mngr->resolve(config_mngr->getRunningConfig(), ordered_nodes_by_xpath)) {
+        spdlog::error("Failed to resolve nodes dependency");
+        return false;
+    }
+
+    // Check if updated nodes pass all constraints
+    try {
+        // parser.parse("if (1 ~ 3) then 'true'", val);
+        // parser.parse("if (1 = 3) then 9", val);
+        std::cout << "Start processing\n";
+        // Get all update-contraints and go through for-loop
+        for (auto& xpath : ordered_nodes_by_xpath) {
+            auto schema_node = config_mngr->getSchemaByXPath(xpath);
+            if (!schema_node) {
+                spdlog::debug("There isn't schema at node {}", xpath);
+                continue;
+            }
+
+            auto config = config_mngr->getRunningConfig();
+            auto constraint_checker = std::make_shared<ConstraintChecker>(config_mngr, config);
+            auto update_constraints = schema_node->findAttr(Config::PropertyName::UPDATE_CONSTRAINTS);
+            for (auto& update_constraint : update_constraints) {
+                spdlog::debug("Processing update constraint '{}' at node {}", update_constraint, xpath);
+                auto node = XPath::select2(config_mngr->getRunningConfig(), xpath);
+                if (!node) {
+                    spdlog::debug("Not node indicated by xpath {}", xpath);
+                    continue;
+                }
+
+                if (!constraint_checker->validate(node, update_constraint)) {
+                    spdlog::error("Failed to validate againts constraints {} for node {}", update_constraint, xpath);
+                    return false;
+                }
+            }
+        }
+
+        // Perform action to remote server
+        for (auto& xpath : ordered_nodes_by_xpath) {
+            spdlog::debug("Select xpath {} from JSON config", xpath);
+            auto schema_node = config_mngr->getSchemaByXPath(xpath);
+            auto action_attr = schema_node->findAttr(Config::PropertyName::ACTION_ON_UPDATE_PATH);
+            auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
+            if (action_attr.empty() || server_addr_attr.empty()) {
+                continue;
+            }
+            
+            // auto json_node = nlohmann::json().parse(config_mngr->getConfigNode(xpath.substr(0, xpath.find_last_of('/'))));
+            auto json_node2 = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
+            // std::cout << std::setw(4) << json_node << std::endl << std::endl;
+            std::cout << std::setw(4) << json_node2 << std::endl << std::endl;
+            spdlog::debug("Patch:");
+            // std::cout << std::setw(4) << nlohmann::json(nlohmann::json(json_node).patch(nlohmann::json(json_node).diff({}, nlohmann::json(json_node)))) << std::endl;
+            // auto diff = json_node.diff(json_node, json_node2);
+            auto diff = json_node2.diff({}, json_node2);
+            std::cout << std::setw(4) << diff << std::endl;
+            diff[0]["op"] = "add";
+            diff[0]["path"] = xpath;
+            if (diff[0]["value"].is_object()) {
+                // TODO: We should consider if we could put "string" with single value insead of empty object
+                // "value":{"2":{}}
+                // vs
+                // "value": "2"
+                for (auto it : diff[0]["value"].items()) {
+                    it.value() = nlohmann::json::object();
+                    // diff[0]["value"].front() = nlohmann::json::object();
+                }
+            }
+
+            std::cout << std::setw(4) << diff[0] << std::endl;
+            auto server_addr = server_addr_attr.front();
+            spdlog::debug("Connect to server: {}", server_addr);
+            httplib::Client cli(server_addr);
+            auto path = action_attr.front();
+            auto body = diff[0].dump();
+            auto content_type = "application/json";
+            spdlog::debug("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
+            auto result = cli.Post(path, body, content_type);
+            if (!result) {
+                spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
+                // TODO: Rollback all changes
+                return false;
+            }
+
+            spdlog::debug("POST result, status: {}, body: {}", result->status, result->body);
+        }
+    }
+    catch (std::bad_any_cast& ex) {
+        std::cerr << "Caught exception: " << ex.what() << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 bool Config::Manager::load() {
     std::ifstream schema_ifs(m_schema_filename);
     nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
@@ -303,12 +400,15 @@ bool Config::Manager::load() {
             return false;
         }
 
-        spdlog::info("{}:{}", __func__, __LINE__);
         if (!dependency_mngr->resolve(root_config, ordered_nodes_by_xpath)) {
             spdlog::error("Failed to resolve nodes dependency");
             return false;
         }
-        spdlog::info("{}:{}", __func__, __LINE__);
+
+        // if (!gPerformAction(shared_from_this())) {
+        //     spdlog::error("Failed to perform action on the config");
+        //     return false;
+        // }
 
         m_running_config = root_config;
         g_running_jconfig = jconfig;
@@ -322,12 +422,15 @@ bool Config::Manager::load() {
             return false;
         }
 
-        spdlog::info("{}:{}", __func__, __LINE__);
         if (!dependency_mngr->resolve(root_config, ordered_nodes_by_xpath)) {
             spdlog::error("Failed to resolve nodes dependency");
             return false;
         }
-        spdlog::info("{}:{}", __func__, __LINE__);
+
+        // if (!gPerformAction(shared_from_this())) {
+        //     spdlog::error("Failed to perform action on the config");
+        //     return false;
+        // }
 
         m_running_config = root_config;
         g_running_jconfig = jconfig;
@@ -346,7 +449,7 @@ String Config::Manager::getConfigNode(const String& xpath) {
 
 #include <iostream>
 SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
-    // spdlog::info("Find schema for xpath: {}", xpath);
+    // spdlog::debug("Find schema for xpath: {}", xpath);
     std::ifstream schema_ifs(m_schema_filename);
     nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
     auto root_properties_it = jschema.find("properties");
@@ -393,11 +496,9 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     String schema_xpath_composed = {};
     // TODO: Create node hierarchy dynamically. Save in cache. Chek cache next time before traverse
     for (auto token : xpath_tokens) {
-        // spdlog::info("Loaded schema:\n{}", schema.dump());
         if (schema.find(token) == schema.end()) {
             if (schema.find("patternProperties") == schema.end()) {
                 schema_xpath_composed += "/properties/" + token;
-                // spdlog::info("Select schema node '{}'", schema_xpath_composed);
                 auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
                 schema = jschema[selector];
                 if (schema.begin() == schema.end()) {
@@ -408,7 +509,6 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
                 schema_node = load_schema_attributes(schema, token, schema_node);
             }
             else {
-                // spdlog::info("Matching token '{}' based on 'patternProperties'", token);
                 bool pattern_matched = false;
                 for (auto& [k, v] : schema["patternProperties"].items()) {
                     if (std::regex_match(token, Regex { k })) {
@@ -429,7 +529,6 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
         }
         else {
             schema_xpath_composed += "/properties/" + token;
-            // spdlog::info("Select schema node '{}'", schema_xpath_composed);
             auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
             schema = jschema[selector];
             schema_node = load_schema_attributes(schema, token, schema_node);
@@ -437,11 +536,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
         }
     }
 
-    // spdlog::info("Selected schema: {}", schema.patch(schema.diff({}, schema)).dump());
     // TODO: Load all schema nodes
-
-    // std::cout << std::setw(4) << attributes << std::endl;
-
     return schema_node;
 }
 
@@ -460,7 +555,7 @@ nlohmann::json getSchemaByXPath2(const String& xpath, const String& schema_filen
     String schema_xpath_composed = {};
     // TODO: Create node hierarchy dynamically. Save in cache. Chek cache next time before traverse
     for (auto token : xpath_tokens) {
-        // spdlog::info("Loaded schema:\n{}", schema.dump());
+        // spdlog::debug("Loaded schema:\n{}", schema.dump());
         if (schema.find(token) == schema.end()) {
             if (schema.find("patternProperties") == schema.end()) {
                 schema_xpath_composed += "/properties/" + token;
@@ -558,7 +653,7 @@ class PrintVisitor : public Visitor {
   public:
     virtual ~PrintVisitor() = default;
     virtual bool visit(SharedPtr<Node> node) override {
-        spdlog::info("{}", node->getName());
+        spdlog::debug("{}", node->getName());
         return true;
     }
 };
@@ -584,7 +679,7 @@ public:
 
         auto node_it = m_nodes_to_collect.find(xpath);
         if (node_it != m_nodes_to_collect.end()) {
-            spdlog::info("Found xpath {} in collect of nodes", xpath);
+            spdlog::debug("Found xpath {} in collect of nodes", xpath);
             auto xpath_tokens = XPath::parse4(xpath);
             xpath_tokens.pop_back();
             auto parent_node = m_root_config;
@@ -652,15 +747,13 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
     NodeCopyMakerVisitor node_copy_maker;
     m_running_config->accept(node_copy_maker);
     auto candidate_config = node_copy_maker.getNodeConfigCopy();
-    // spdlog::info("Print candidate config to perform changes:");
     PrintVisitor print_visitor;
-    // candidate_config->accept(print_visitor);
 
     auto candidate_jconfig = g_running_jconfig;
-    spdlog::info("Patching...");
+    spdlog::debug("Patching...");
     auto patched_jconfig = candidate_jconfig.patch(nlohmann::json::parse(patch));
-    std::cout << "Patched config:\n" << std::setw(4) << patched_jconfig << std::endl << std::endl;
-    std::cout << "Diff config:\n" << std::setw(4) << nlohmann::json::diff(patched_jconfig, g_running_jconfig) << std::endl << std::endl;
+    spdlog::debug("Patched config:\n", patched_jconfig .dump(4));
+    spdlog::debug("Diff config:\n", nlohmann::json::diff(patched_jconfig, g_running_jconfig).dump(4));
     std::ifstream schema_ifs(m_schema_filename);
     nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
     auto new_jconfig = patched_jconfig;
@@ -670,19 +763,19 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         return false;
     }
 
-    std::cout << std::setw(4) << nlohmann::json::parse(patch).flatten() << std::endl;
+    spdlog::debug("{}", nlohmann::json::parse(patch).flatten().dump(4));
 
     Set<String> xpaths_to_remove = {};
     Set<String> path_nodes = {};
     Set<String> subnodes_xpath = {};
     for (auto& diff_item : nlohmann::json::parse(patch)) {
-        std::cout << std::setw(4) << diff_item << std::endl;
+        spdlog::debug("{}", diff_item.dump(4));
         auto op = diff_item["op"];
         auto path = diff_item["path"];
         auto value = diff_item["value"];
-        // spdlog::info("OP: {}", op);
-        // spdlog::info("PATH: {}", path);
-        // spdlog::info("VALUE: {}", value.dump());
+        spdlog::debug("OP: {}", op);
+        spdlog::debug("PATH: {}", path);
+        spdlog::debug("VALUE: {}", value.dump());
         if (op != "remove") {
             continue;
         }
@@ -730,7 +823,7 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         });
     }
 
-    spdlog::info("Found list of subnodes to remove:");
+    spdlog::debug("Found list of subnodes to remove:");
     for (auto& subnode : xpaths_to_remove) {
         // Check if all nodes (xpath) exists in config
         if (!XPath::select2(candidate_config, subnode)) {
@@ -757,9 +850,9 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         return path_nodes.find(xpath) != path_nodes.end();
     });
 
-    spdlog::info("Ordered nodes to remove after filtered out nodes from path_nodes:");
+    spdlog::debug("Ordered nodes to remove after filtered out nodes from path_nodes:");
     for (const auto& xpath : ordered_nodes_by_xpath) {
-        spdlog::info("{}", xpath);
+        spdlog::debug("{}", xpath);
     }
 
     // Select only these which has appear in path of remove changes
@@ -789,7 +882,7 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         }
 
         if (!should_be_removed) {
-            spdlog::info("{} is not marked to be removed", xpath);
+            spdlog::debug("{} is not marked to be removed", xpath);
             not_marked_to_be_removed.insert(xpath);
         }
     }
@@ -830,17 +923,17 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         node_to_remove.reset();
     }
 
-    spdlog::info("Nodes to perform delete action:");
+    spdlog::debug("Nodes to perform delete action:");
     for (auto& xpath : ordered_nodes_by_xpath) {
         auto schema_node = config_mngr->getSchemaByXPath(xpath);
         auto action_attr = schema_node->findAttr(Config::PropertyName::ACTION_ON_DELETE_PATH);
         auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
         if (action_attr.empty() || server_addr_attr.empty()) {
-            spdlog::info("{} has NOT delete action", xpath);
+            spdlog::debug("{} has NOT delete action", xpath);
             continue;
         }
 
-        spdlog::info("{} HAS delete action", xpath);
+        spdlog::debug("{} HAS delete action", xpath);
         // auto json_node = nlohmann::json().parse(config_mngr->getConfigNode(xpath.substr(0, xpath.find_last_of('/'))));
         auto json_node2 = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
         // std::cout << std::setw(4) << json_node << std::endl << std::endl;
@@ -856,12 +949,12 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
 
         std::cout << std::setw(4) << diff[0] << std::endl;
         auto server_addr = server_addr_attr.front();
-        spdlog::info("Connect to server: {}", server_addr);
+        spdlog::debug("Connect to server: {}", server_addr);
         httplib::Client cli(server_addr);
         auto path = action_attr.front();
         auto body = diff[0].dump();
         auto content_type = "application/json";
-        spdlog::info("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
+        spdlog::debug("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
         auto result = cli.Post(path, body, content_type);
         if (!result) {
             spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
@@ -869,7 +962,7 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
             continue;
         }
 
-        spdlog::info("POST result, status: {}, body: {}", result->status, result->body);
+        spdlog::debug("POST result, status: {}, body: {}", result->status, result->body);
     }
 
     for (auto& xpath : ordered_nodes_by_xpath) {
@@ -888,15 +981,15 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         }
 
         if (auto node_leaf_ptr = std::dynamic_pointer_cast<Leaf>(node)) {
-            spdlog::info("Node {} is a leaf so clear its value", node_leaf_ptr->getName());
+            spdlog::debug("Node {} is a leaf so clear its value", node_leaf_ptr->getName());
         }
 
         node.reset();
     }
 
-    spdlog::info("Successfully removed all changes");
+    spdlog::debug("Successfully removed all changes");
 
-    spdlog::info("New config dump:");
+    spdlog::debug("New config dump:");
     std::cout << std::setw(4) << new_jconfig << std::endl;
 
     path_nodes.clear();
@@ -905,16 +998,13 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         auto op = diff_item["op"];
         auto path = diff_item["path"];
         auto value = diff_item["value"];
-        spdlog::info("OP: {}", op);
-        spdlog::info("PATH: {}", path);
-        spdlog::info("VALUE: {}", value.dump());
-        // TODO: Create PATH node
-        // TODO: Then let's iterate over value
+        spdlog::debug("OP: {}", op);
+        spdlog::debug("PATH: {}", path);
+        spdlog::debug("VALUE: {}", value.dump());
         if (op == "remove") {
             continue;
         }
 
-        // TODO: Create json from path
         auto xpath_tokens = XPath::parse3(path);
         if (xpath_tokens.empty()) {
             spdlog::error("Path is empty!");
@@ -930,10 +1020,10 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
             xpath += xpath_tokens.front();
             xpath_tokens.pop();
             path_nodes.insert(xpath);
-            spdlog::info("Added {} to path nodes", xpath);
+            spdlog::debug("Added {} to path nodes", xpath);
         }
 
-        spdlog::info("XPath to parent of new node: {}", xpath);
+        spdlog::debug("XPath to parent of new node: {}", xpath);
 
         auto jschema = getSchemaByXPath2(xpath, m_schema_filename);
         if (jschema == nlohmann::json({})) {
@@ -948,7 +1038,7 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
             return false;
         }
 
-        spdlog::info("JSON config before load:");
+        spdlog::debug("JSON config before load:");
         std::cout << std::setw(4) << new_jconfig[nlohmann::json::json_pointer(xpath)] << std::endl;
         auto properties_it = jschema.find(SCHEMA_NODE_PROPERTIES_NAME);
         if (properties_it != jschema.end()) {
@@ -971,7 +1061,7 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
             }
         }
 
-        spdlog::info("JSON config after load:");
+        spdlog::debug("JSON config after load:");
         std::cout << std::setw(4) << new_jconfig[nlohmann::json::json_pointer(xpath)] << std::endl;
     }
 
@@ -981,9 +1071,9 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         return false;
     }
     
-    spdlog::info("Nodes ordered by its xpath:");
+    spdlog::debug("Nodes ordered by its xpath:");
     for (auto& xpath : ordered_nodes_by_xpath) {
-        spdlog::info("{}", xpath);
+        spdlog::debug("{}", xpath);
     }
 
     // Exclude nodes which had been loaded already
@@ -1002,7 +1092,7 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         }
 
         if (!should_be_added) {
-            spdlog::info("{} is not marked to be added", xpath);
+            spdlog::debug("{} is not marked to be added", xpath);
             not_marked_to_be_added.insert(xpath);
         }
     }
@@ -1011,9 +1101,9 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         return not_marked_to_be_added.find(xpath) != not_marked_to_be_added.end();
     });
 
-    spdlog::info("Nodes ordered by its xpath after remove the nodes which should be updated:");
+    spdlog::debug("Nodes ordered by its xpath after remove the nodes which should be updated:");
     for (auto& xpath : ordered_nodes_by_xpath) {
-        spdlog::info("{}", xpath);
+        spdlog::debug("{}", xpath);
     }
 
     constraint_checker = std::make_shared<ConstraintChecker>(config_mngr, candidate_config);
@@ -1039,24 +1129,18 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         }
     }
 
-    spdlog::info("Candidate JSON config:");
-    std::cout << std::setw(4) << new_jconfig << std::endl;
-    spdlog::info("Nodes to perform update action:");
+    spdlog::debug("Candidate JSON config:\n{}", new_jconfig.dump(4));
+    spdlog::debug("Nodes to perform update action:");
     for (auto& xpath : ordered_nodes_by_xpath) {
         auto schema_node = config_mngr->getSchemaByXPath(xpath);
         auto action_attr = schema_node->findAttr(Config::PropertyName::ACTION_ON_UPDATE_PATH);
         auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
         if (action_attr.empty() || server_addr_attr.empty()) {
-            spdlog::info("{} has NOT update action", xpath);
             continue;
         }
 
-        spdlog::info("{} HAS update action", xpath);
-        // auto json_node = nlohmann::json().parse(config_mngr->getConfigNode(xpath.substr(0, xpath.find_last_of('/'))));
         auto json_node2 = nlohmann::json().parse(new_jconfig[nlohmann::json::json_pointer(xpath)].dump());
         std::cout << std::setw(4) << json_node2 << std::endl << std::endl;
-        // std::cout << std::setw(4) << nlohmann::json(nlohmann::json(json_node).patch(nlohmann::json(json_node).diff({}, nlohmann::json(json_node)))) << std::endl;
-        // auto diff = json_node.diff(json_node, json_node2);
         auto diff = json_node2.diff({}, json_node2);
         std::cout << std::setw(4) << diff << std::endl;
         diff[0]["op"] = XPath::select2(m_running_config, xpath) ? "replace" : "add";
@@ -1065,31 +1149,27 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
             diff[0]["value"] = nullptr;
         }
 
-        std::cout << std::setw(4) << diff[0] << std::endl;
         auto server_addr = server_addr_attr.front();
-        spdlog::info("Connect to server: {}", server_addr);
+        spdlog::debug("Connect to server: {}", server_addr);
         httplib::Client cli(server_addr);
         auto path = action_attr.front();
         auto body = diff[0].dump();
         auto content_type = "application/json";
-        spdlog::info("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
+        spdlog::debug("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
         auto result = cli.Post(path, body, content_type);
         if (!result) {
             spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
             // TODO: Rollback all changes
-            continue;
+            return false;
         }
-
-        spdlog::info("POST result, status: {}, body: {}", result->status, result->body);
     }
 
     m_candidate_config = candidate_config;
     g_candidate_jconfig = new_jconfig;
     m_is_candidate_config_ready = true;
 
-    spdlog::info("Candidate JSON config:");
-    std::cout << std::setw(4) << g_candidate_jconfig << std::endl;
-    spdlog::info("Candidate nodes config:");
+    spdlog::debug("Candidate JSON config:\n{}", g_candidate_jconfig.dump(4));
+    spdlog::debug("Candidate nodes config:");
     m_candidate_config->accept(print_visitor);
 
     return true;
@@ -1098,8 +1178,8 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
 bool Config::Manager::applyCandidateConfig() {
     if (m_is_candidate_config_ready) {
         auto config_filename_tmp = m_config_filename + ".tmp";
-        // spdlog::info("Save JSON config file to temporary file {}", config_filename_tmp);
-        // spdlog::info("{}", 
+        // spdlog::debug("Save JSON config file to temporary file {}", config_filename_tmp);
+        // spdlog::debug("{}", 
         std::ofstream json_file(config_filename_tmp);
         if (!json_file) {
             spdlog::error("Failed to open file {} to save candidate config", config_filename_tmp);
@@ -1152,6 +1232,8 @@ bool Config::Manager::cancelCandidateConfig() {
         spdlog::warn("There is not candidate config");
         return false;
     }
+
+    // TODO: Restore config
 
     // TODO: Release config node by node?
     m_candidate_config = nullptr;

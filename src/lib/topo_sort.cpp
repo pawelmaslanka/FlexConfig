@@ -53,10 +53,10 @@ std::optional<std::string> Graph::depResolve(SharedPtr<Graph::Node> node,
 }
 
 std::optional<std::string> makeGraphNode(std::map<std::string, std::set<std::string>>& adj_list, Graph::Node& node) {
-    std::cout << "Node name: " << node.name() << std::endl;
+    // std::cout << "Node name: " << node.name() << std::endl;
     auto adj_it = adj_list.find(node.name());
     if (adj_it == adj_list.end()) {
-            std::cerr << "Empty adjacency list\n";
+            // std::cerr << "Empty adjacency list\n";
         //     auto edge = std::make_shared<Graph::Node>("");
         //     node.addEdge(edge);
         //     makeGraphNode(adj_list, *edge);
@@ -64,7 +64,7 @@ std::optional<std::string> makeGraphNode(std::map<std::string, std::set<std::str
     }
 
     for (auto& edge_name : adj_it->second) { // go through all node adjacency
-        std::cout << "Edge: " << edge_name << std::endl;
+        // std::cout << "Edge: " << edge_name << std::endl;
         auto edge = std::make_shared<Graph::Node>(edge_name);
         node.addEdge(edge);
         // Break cyclic
@@ -88,15 +88,15 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
     if (!cmds) {
         return "Not pass data!";
     }
-    std::cout << "Elements: " << cmds->size() << std::endl;
+    // std::cout << "Elements: " << cmds->size() << std::endl;
     // TODO: First sort by operation to delete and then operation to update
     std::map<std::string, std::set<std::string>> adj_list; // adjacency list
     // Build adjacency list
     for (auto& cmd : *cmds) {
-        std::cout << "Build adjacency list for " << cmd.first << std::endl;
+        // std::cout << "Build adjacency list for " << cmd.first << std::endl;
         auto comp = cmd.first;
         auto depends = cmd.second;
-        std::cout << comp << ": " << depends.size() << std::endl;
+        // std::cout << comp << ": " << depends.size() << std::endl;
         if (depends.empty()) {
             if (adj_list.find(comp) == adj_list.end()) {
                 adj_list.emplace(comp, std::set<std::string>{});
@@ -106,7 +106,7 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
         }
 
         for (auto& dep : depends) {
-            std::cout << comp << " -> " << dep << std::endl;
+            // std::cout << comp << " -> " << dep << std::endl;
             auto it = adj_list.find(comp);
             if (it != adj_list.end()) {
                 it->second.insert(dep);
@@ -118,7 +118,7 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
         }
     }
 
-    std::cout << "Adjacency list size: " << adj_list.size() << std::endl;
+    // std::cout << "Adjacency list size: " << adj_list.size() << std::endl;
     std::list<SharedPtr<Graph::Node>> graph_nodes;
     for (auto& node : adj_list) {
         graph_nodes.emplace_front(std::make_shared<Graph::Node>(node.first));
@@ -129,7 +129,7 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
 
     std::list<SharedPtr<Graph::Node>> resolved, unresolved;
     for (auto& node : graph_nodes) {
-        std::cout << "Resolving " << node->name() << std::endl;
+        // std::cout << "Resolving " << node->name() << std::endl;
         if (auto err = Graph::depResolve(node, resolved, unresolved)) {
             return err;
         }
@@ -141,12 +141,12 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
     for (auto& res : resolved) {
         auto it = adj_list.find(res->name());
         if (it != adj_list.end()) {
-                std::cout << "Resolved " << res->name() << std::endl;
+                // std::cout << "Resolved " << res->name() << std::endl;
                 // Check if there is already xpath which is parent of processing xpath
                 std::list<String>::iterator find_it = std::find_if(ordered_cmds.begin(), ordered_cmds.end(), [&res](String& node_xpath) -> bool {
                         if ((node_xpath.find(res->name()) != std::string::npos)
                                         && (res->name().size() < node_xpath.size())) {
-                                std::cout << "Found shorter xpath " << res->name() << " than " << node_xpath << std::endl;
+                                // std::cout << "Found shorter xpath " << res->name() << " than " << node_xpath << std::endl;
                                 return true;
                         }
 
@@ -172,7 +172,7 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
             for (auto it = corrected_ordered_cmds.begin(); it != corrected_ordered_cmds.end(); ++it) {
                 if (item.find(*it) != String::npos) {
                     if (longest_xpath->size() < it->size()) {
-                        std::cout << item << " is longer than " << *it << std::endl;
+                        // std::cout << item << " is longer than " << *it << std::endl;
                         longest_xpath = it;
                     }
                 }
@@ -187,11 +187,11 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
         }
     }
 
-    std::cout << "Resolved " << ordered_cmds.size() << " items:\n";
-    for (auto& r : ordered_cmds) {
-        std::cout << r << " ";
-    }
+    // std::cout << "Resolved " << ordered_cmds.size() << " items:\n";
+    // for (auto& r : ordered_cmds) {
+    //     std::cout << r << " ";
+    // }
 
-    std::cout << std::endl;
+    // std::cout << std::endl;
     return std::nullopt;
 }
