@@ -62,6 +62,7 @@ public:
     // bool rollbackCandidateConfig(); ?
     bool cancelCandidateConfig();
     String dumpRunningConfig();
+    String dumpCandidateConfig();
 
 private:
     const std::string m_config_filename;

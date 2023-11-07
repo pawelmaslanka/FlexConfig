@@ -1,8 +1,17 @@
 {
     "interface": {
-        "aggregate-ethernet": {},
+        "aggregate-ethernet": {
+            "ae-1": {
+                "members": [
+                    "ge-2"
+                ]
+            }
+        },
         "gigabit-ethernet": {
             "ge-1": {
+                "speed": "100G"
+            },
+            "ge-2": {
                 "speed": "100G"
             },
             "ge-4": {

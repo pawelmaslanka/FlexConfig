@@ -17,6 +17,14 @@ bool Server::removeConnectionHandler(Map<String, RequestCallback>& callbacks, co
     return true;
 }
 
+bool Server::addOnDeleteConnectionHandler(const String& id, RequestCallback handler) {
+    return addConnectionHandler(m_on_delete_callback_by_id, id, handler);
+}
+
+bool Server::removeOnDeleteConnectionHandler(const String& id) {
+    return removeConnectionHandler(m_on_delete_callback_by_id, id);
+}
+
 bool Server::addOnGetConnectionHandler(const String& id, RequestCallback handler) {
     return addConnectionHandler(m_on_get_callback_by_id, id, handler);
 }
@@ -33,6 +41,14 @@ bool Server::removeOnPostConnectionHandler(const String& id) {
     return removeConnectionHandler(m_on_post_callback_by_id, id);
 }
 
+bool Server::addOnPutConnectionHandler(const String& id, RequestCallback handler) {
+    return addConnectionHandler(m_on_put_callback_by_id, id, handler);
+}
+
+bool Server::removeOnPutConnectionHandler(const String& id) {
+    return removeConnectionHandler(m_on_put_callback_by_id, id);
+}
+
 bool Server::run(const String& host, const UInt16 port) {
     Http::Server srv;
     srv.Post("/config/update", [this](const Http::Request & req, Http::Response &res) {
@@ -42,17 +58,38 @@ bool Server::run(const String& host, const UInt16 port) {
         res.set_content(return_message, "text/plain");
     });
 
-    srv.Get("/config/get", [this](const Http::Request & req, Http::Response &res) {
+    srv.Get("/config/running/get", [this](const Http::Request & req, Http::Response &res) {
         String return_data;
         spdlog::info("Got GET request:\n {}", req.body);
-        auto return_message = processRequest(Method::GET, "/config/get", req.body, return_data) ? return_data : "Failed";
+        auto return_message = processRequest(Method::GET, "/config/running/get", req.body, return_data) ? return_data : "Failed";
         res.set_content(return_message, "text/plain");
     });
 
-    srv.Post("/config/diff", [this](const Http::Request & req, Http::Response &res) {
+    srv.Post("/config/running/diff", [this](const Http::Request & req, Http::Response &res) {
         String return_data;
         spdlog::info("Got POST diff request:\n {}", req.body);
-        auto return_message = processRequest(Method::POST, "/config/diff", req.body, return_data) ? return_data : "Failed";
+        auto return_message = processRequest(Method::POST, "/config/running/diff", req.body, return_data) ? return_data : "Failed";
+        res.set_content(return_message, "text/plain");
+    });
+
+    srv.Get("/config/candidate", [this](const Http::Request & req, Http::Response &res) {
+        String return_data;
+        spdlog::info("Got GET request:\n {}", req.body);
+        auto return_message = processRequest(Method::GET, "/config/candidate", req.body, return_data) ? return_data : "Failed";
+        res.set_content(return_message, "text/plain");
+    });
+
+    srv.Put("/config/candidate", [this](const Http::Request & req, Http::Response &res) {
+        String return_data;
+        spdlog::info("Got PUT request:\n {}", req.body);
+        auto return_message = processRequest(Method::PUT, "/config/candidate", req.body, return_data) ? return_data : "Failed";
+        res.set_content(return_message, "text/plain");
+    });
+
+    srv.Delete("/config/candidate", [this](const Http::Request & req, Http::Response &res) {
+        String return_data;
+        spdlog::info("Got DELETE request:\n {}", req.body);
+        auto return_message = processRequest(Method::DELETE, "/config/candidate", req.body, return_data) ? return_data : "Failed";
         res.set_content(return_message, "text/plain");
     });
 
@@ -79,8 +116,24 @@ bool Server::processRequest(const Method method, const String& path, const Strin
 
         break;
     }
-    case Method::PUT:
-    case Method::DELETE:
+    case Method::PUT: {
+        for (auto& [_, cb] : m_on_put_callback_by_id) {
+            if (!cb(path, request_data, return_data)) {
+                return false;
+            }
+        }
+
+        break;
+    }
+    case Method::DELETE: {
+        for (auto& [_, cb] : m_on_delete_callback_by_id) {
+            if (!cb(path, request_data, return_data)) {
+                return false;
+            }
+        }
+
+        break;
+    }
     default: {
         spdlog::error("Unsupported HTTP method request");
         return false;

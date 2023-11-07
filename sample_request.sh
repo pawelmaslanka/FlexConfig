@@ -1,31 +1,38 @@
-curl -X POST http://localhost:8001/config/update \
-   -H 'Content-Type: application/json' \
-   -d '{
-            "interface": {
-               "gigabit-ethernet": {
-                  "ge-5": {
-                     "speed": "100G"
-                  }
-               }
-            }
-      }'
+echo "Get running config"
 
-curl -X POST http://localhost:8001/config/diff \
-   -H 'Content-Type: application/json' \
-   -d '{
-            "interface": {
-               "gigabit-ethernet": {
-                  "ge-5": {
-                     "speed": "100G"
-                  }
-               }
-            }
-      }'
+curl -s -X GET http://localhost:8001/config/running/get \
+   -H 'Content-Type: application/json' | jq
 
-curl -X GET http://localhost:8001/config/get \
-   -H 'Content-Type: application/json'
+echo
+echo "Update config about new gigabit-ethernet interface"
 
-curl -X POST http://localhost:8001/config/diff \
+# curl -s -X POST http://localhost:8001/config/running/update \
+#    -H 'Content-Type: application/json' \
+#    -d '{
+#             "platform": {
+#                "port": {
+#                   "ge-5": {
+#                      "breakout-mode": "none"
+#                   }
+#                }
+#             },
+#             "interface": {
+#                "gigabit-ethernet": {
+#                   "ge-5": {
+#                      "speed": "100G"
+#                   }
+#                }
+#             }
+#       }'
+
+echo "Get running config"
+curl -s -X GET http://localhost:8001/config/running/get \
+   -H 'Content-Type: application/json' | jq
+
+echo
+
+echo "Get diff config"
+curl -s -X POST http://localhost:8001/config/running/diff \
    -H 'Content-Type: application/json' \
    -d '{
     "interface": {
@@ -66,4 +73,38 @@ curl -X POST http://localhost:8001/config/diff \
             }
         }
     }
-}'
+}' | jq
+
+echo "Patch running config"
+curl -s -X POST http://localhost:8001/config/update \
+   -H 'Content-Type: application/json' \
+   -d '[
+  {
+    "op": "add",
+    "path": "/interface/aggregate-ethernet/ae-1",
+    "value": {
+      "members": [
+        "ge-2"
+      ]
+    }
+  },
+  {
+    "op": "add",
+    "path": "/interface/gigabit-ethernet/ge-2",
+    "value": {
+      "speed": "100G"
+    }
+  }
+]'
+
+echo "Get candidate config"
+curl -s -X GET http://localhost:8001/config/candidate \
+   -H 'Content-Type: application/json' | jq
+
+echo "Apply candidate config"
+curl -s -X PUT http://localhost:8001/config/candidate \
+   -H 'Content-Type: application/json' -d ''
+
+echo "Get running config"
+curl -s -X GET http://localhost:8001/config/running/get \
+   -H 'Content-Type: application/json' | jq

@@ -336,27 +336,28 @@ int main(int argc, char* argv[]) {
     spdlog::info("Successfully operate on config file");
 
     ConnectionManagement::Server cm;
-    cm.addOnPostConnectionHandler("update_config", [&config_mngr](const String& path, String data_request, String& return_data) {
+    cm.addOnPostConnectionHandler("config_running_update", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != "/config/update") {
             return true;
         }
 
         spdlog::info("Get request on {} with POST method: {}", path, data_request);
+        config_mngr->makeCandidateConfig(data_request);
         return true;
     });
 
-    cm.addOnGetConnectionHandler("get_config", [&config_mngr](const String& path, String data_request, String& return_data) {
-        if (path != "/config/get") {
+    cm.addOnGetConnectionHandler("config_running_get", [&config_mngr](const String& path, String data_request, String& return_data) {
+        if (path != "/config/running/get") {
             return true;
         }
 
-        spdlog::info("Get request on {} with GET method: {}", path, data_request);
+        spdlog::info("Get request running on {} with GET method: {}", path, data_request);
         return_data = config_mngr->dumpRunningConfig();
         return true;
     });
 
-    cm.addOnPostConnectionHandler("get_diff", [&config_mngr](const String& path, String data_request, String& return_data) {
-        if (path != "/config/diff") {
+    cm.addOnPostConnectionHandler("config_running_diff", [&config_mngr](const String& path, String data_request, String& return_data) {
+        if (path != "/config/running/diff") {
             return true;
         }
 
@@ -364,6 +365,39 @@ int main(int argc, char* argv[]) {
         return_data = config_mngr->getConfigDiff(data_request);
         return true;
     });
+
+    cm.addOnGetConnectionHandler("config_candidate_get", [&config_mngr](const String& path, String data_request, String& return_data) {
+        if (path != "/config/candidate") {
+            return true;
+        }
+
+        spdlog::info("Get request candidate on {} with GET method: {}", path, data_request);
+        return_data = config_mngr->dumpCandidateConfig();
+        return true;
+    });
+
+    cm.addOnPutConnectionHandler("config_candidate_apply", [&config_mngr](const String& path, String data_request, String& return_data) {
+        if (path != "/config/candidate") {
+            return true;
+        }
+
+        spdlog::info("Get request candidate on {} with PUT method: {}", path, data_request);
+        return_data = config_mngr->applyCandidateConfig();
+        return true;
+    });
+
+    cm.addOnDeleteConnectionHandler("config_candidate_delete", [&config_mngr](const String& path, String data_request, String& return_data) {
+        if (path != "/config/candidate") {
+            return true;
+        }
+
+        spdlog::info("Get request candidate on {} with DELETE method: {}", path, data_request);
+        return_data = config_mngr->cancelCandidateConfig();
+        return true;
+    });
+
+    // TODO: Make candidate config with diff
+    // TODO: Apply candidate config
 
     if (!cm.run("localhost", 8001)) {
         spdlog::error("Failed to run connection management server");
