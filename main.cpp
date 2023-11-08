@@ -275,12 +275,20 @@ int main(int argc, char* argv[]) {
         ::exit(EXIT_FAILURE);
     }
 
+    spdlog::info("Dump running config:\n{}", config_mngr->dumpRunningConfig());
+    spdlog::info("Dump candidate config:\n{}", config_mngr->dumpCandidateConfig());
+
     if (!config_mngr->applyCandidateConfig()) {
         spdlog::error("Failed to apply new candidate config");
         ::exit(EXIT_FAILURE);
     }
 
-    spdlog::debug("Successfully operate on config file");
+    spdlog::info("Successfully operate on config file");
+
+    // if (!config_mngr->cancelCandidateConfig()) {
+    //     spdlog::error("Failed to cancel candidate config");
+    //     ::exit(EXIT_FAILURE);
+    // }
 
     ConnectionManagement::Server cm;
     cm.addOnPostConnectionHandler("config_running_update", [&config_mngr](const String& path, String data_request, String& return_data) {
