@@ -281,18 +281,16 @@ Config::Manager::Manager(StringView config_filename, StringView schema_filename,
 
 }
 
-bool gPerformAction(SharedPtr<Config::Manager> config_mngr) {
+bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node_config) {
     auto dependency_mngr = std::make_shared<NodeDependencyManager>(config_mngr);
     List<String> ordered_nodes_by_xpath = {};
-    if (!dependency_mngr->resolve(config_mngr->getRunningConfig(), ordered_nodes_by_xpath)) {
+    if (!dependency_mngr->resolve(node_config, ordered_nodes_by_xpath)) {
         spdlog::error("Failed to resolve nodes dependency");
         return false;
     }
 
     // Check if updated nodes pass all constraints
     try {
-        // parser.parse("if (1 ~ 3) then 'true'", val);
-        // parser.parse("if (1 = 3) then 9", val);
         std::cout << "Start processing\n";
         // Get all update-contraints and go through for-loop
         for (auto& xpath : ordered_nodes_by_xpath) {
@@ -302,12 +300,12 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr) {
                 continue;
             }
 
-            auto config = config_mngr->getRunningConfig();
+            auto config = node_config;
             auto constraint_checker = std::make_shared<ConstraintChecker>(config_mngr, config);
             auto update_constraints = schema_node->findAttr(Config::PropertyName::UPDATE_CONSTRAINTS);
             for (auto& update_constraint : update_constraints) {
                 spdlog::debug("Processing update constraint '{}' at node {}", update_constraint, xpath);
-                auto node = XPath::select2(config_mngr->getRunningConfig(), xpath);
+                auto node = XPath::select2(node_config, xpath);
                 if (!node) {
                     spdlog::debug("Not node indicated by xpath {}", xpath);
                     continue;
@@ -405,10 +403,10 @@ bool Config::Manager::load() {
             return false;
         }
 
-        // if (!gPerformAction(shared_from_this())) {
-        //     spdlog::error("Failed to perform action on the config");
-        //     return false;
-        // }
+        if (!gPerformAction(shared_from_this(), root_config)) {
+            spdlog::error("Failed to perform action on the config");
+            return false;
+        }
 
         m_running_config = root_config;
         g_running_jconfig = jconfig;
@@ -427,10 +425,10 @@ bool Config::Manager::load() {
             return false;
         }
 
-        // if (!gPerformAction(shared_from_this())) {
-        //     spdlog::error("Failed to perform action on the config");
-        //     return false;
-        // }
+        if (!gPerformAction(shared_from_this(), root_config)) {
+            spdlog::error("Failed to perform action on the config");
+            return false;
+        }
 
         m_running_config = root_config;
         g_running_jconfig = jconfig;
@@ -1182,431 +1180,8 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         spdlog::error("Failed to make candidate config");
         return false;
     }
-    // spdlog::debug("Patching...");
-    // auto patched_jconfig = candidate_jconfig.patch(nlohmann::json::parse(patch));
-    // spdlog::debug("Patched config:\n", patched_jconfig .dump(4));
-    // spdlog::debug("Diff config:\n", nlohmann::json::diff(patched_jconfig, g_running_jconfig).dump(4));
-    // std::ifstream schema_ifs(m_schema_filename);
-    // nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
-    // auto new_jconfig = patched_jconfig;
-
-    // if (!validateJsonConfig(new_jconfig, jschema)) {
-    //     spdlog::error("Failed to validate config");
-    //     return false;
-    // }
-
-    // spdlog::debug("{}", nlohmann::json::parse(patch).flatten().dump(4));
-
-    // Set<String> xpaths_to_remove = {};
-    // Set<String> path_nodes = {};
-    // Set<String> subnodes_xpath = {};
-    // for (auto& diff_item : nlohmann::json::parse(patch)) {
-    //     auto op = diff_item["op"];
-    //     auto path = diff_item["path"];
-    //     if (diff_item.find("value") == diff_item.end()) {
-    //         spdlog::info("There is not 'value' field in diff... restoring it from config");
-    //         diff_item["value"] = candidate_jconfig[nlohmann::json::json_pointer(path)];
-    //     }
-
-    //     spdlog::debug("{}", diff_item.dump(4));
-    //     auto value = diff_item["value"];
-    //     spdlog::debug("OP: {}", op);
-    //     spdlog::debug("PATH: {}", path);
-    //     spdlog::debug("VALUE: {}", value.dump());
-    //     if (op != "remove") {
-    //         continue;
-    //     }
-
-    //     auto xpath_tokens = XPath::parse3(path.get<String>());
-    //     if (xpath_tokens.empty()) {
-    //         spdlog::error("Path is empty!");
-    //         return false;
-    //     }
-
-    //     String xpath = ROOT_TREE_CONFIG_NAME;
-    //     // 'path_nodes' will include set of xpath as follows:
-    //     // /interface -> /interface/gigabit-ethernet -> /interface/gigabit-ethernet/ge-1 -> ...
-    //     while (xpath_tokens.size() > 1) {
-    //         if (xpath.at(xpath.size() - 1) != '/') {
-    //             xpath += "/";
-    //         }
-
-    //         xpath += xpath_tokens.front();
-    //         xpath_tokens.pop();
-    //         path_nodes.insert(xpath);
-    //     }
-
-    //     auto root_node_name_to_remove = xpath_tokens.front();
-    //     // auto root_node_name_to_remove = value.begin().key();
-    //     auto root_node_xpath_to_remove = xpath + "/" + root_node_name_to_remove;
-    //     // auto root_node_xpath_to_remove = path.get<String>() + "/" + root_node_name_to_remove;
-    //     auto root_node_to_remove = XPath::select2(candidate_config, root_node_xpath_to_remove);
-    //     if (!root_node_to_remove) {
-    //         spdlog::error("Failed to find root node to remove!");
-    //         return false;
-    //     }
-
-    //     SubnodesGetterVisitor subnodes_getter_visitor;
-    //     root_node_to_remove->accept(subnodes_getter_visitor);
-    //     subnodes_xpath.merge(subnodes_getter_visitor.getSubnodesXPath());
-    //     subnodes_xpath.insert(root_node_xpath_to_remove);
-    //     // xpaths_to_remove.merge(path_nodes); // Extracts elements from source
-    //     std::for_each(path_nodes.begin(), path_nodes.end(), [&xpaths_to_remove](const String& xpath) {
-    //         xpaths_to_remove.insert(xpath);
-    //     });
-    //     // xpaths_to_remove.merge(subnodes_xpath);
-    //     std::for_each(subnodes_xpath.begin(), subnodes_xpath.end(), [&xpaths_to_remove](const String& xpath) {
-    //         xpaths_to_remove.insert(xpath);
-    //     });
-    // }
-
-    // spdlog::debug("Found list of subnodes to remove:");
-    // for (auto& subnode : xpaths_to_remove) {
-    //     // Check if all nodes (xpath) exists in config
-    //     if (!XPath::select2(candidate_config, subnode)) {
-    //         spdlog::error("There is not {} in config", subnode);
-    //         return false;
-    //     }
-    // }
-
-    // NodesCollectorVisitor nodes_collector_visitor(xpaths_to_remove);
-    // candidate_config->accept(nodes_collector_visitor);
-    // auto nodes_by_xpath = nodes_collector_visitor.getNodesByXPath();
-
-    // auto root_config_to_remove = nodes_collector_visitor.getRootConfig();
-
-    // auto config_mngr = shared_from_this();
-    // auto dependency_mngr = std::make_shared<NodeDependencyManager>(config_mngr);
-    // List<String> ordered_nodes_by_xpath = {};
-    // if (!dependency_mngr->resolve(root_config_to_remove, ordered_nodes_by_xpath)) {
-    //     spdlog::error("Failed to resolve nodes dependency");
-    //     return false;
-    // }
-
-    // ordered_nodes_by_xpath.remove_if([&path_nodes](const String& xpath) {
-    //     return path_nodes.find(xpath) != path_nodes.end();
-    // });
-
-    // spdlog::debug("Ordered nodes to remove after filtered out nodes from path_nodes:");
-    // for (const auto& xpath : ordered_nodes_by_xpath) {
-    //     spdlog::debug("{}", xpath);
-    // }
-
-    // // Select only these which has appear in path of remove changes
-    // // This is hack when parent of removed node has more childrens so all childrens are marked to remove
-    // // "gigabit-ethernet": {
-    // //     "ge-1": {
-    // //         "speed": "100G"
-    // //     },
-    // // -   "ge-4": {
-    // // -       "speed": "100G"
-    // // -   }
-    // // }
-    // //
-    // // "ge-4" node is marked to remove but "ge-1" is also in ordered_nodes_by_xpath 
-    // Set<String> not_marked_to_be_removed = {};
-    // for (const auto& xpath : ordered_nodes_by_xpath) {
-    //     bool should_be_removed = false;
-    //     for (auto& diff_item : nlohmann::json::parse(patch)) {
-    //         auto op = diff_item["op"];
-    //         if (op == "remove") {
-    //             auto path = diff_item["path"];
-    //             if (xpath.find(path) != String::npos) {
-    //                 should_be_removed = true;
-    //                 break;
-    //             }
-    //         }
-    //     }
-
-    //     if (!should_be_removed) {
-    //         spdlog::debug("{} is not marked to be removed", xpath);
-    //         not_marked_to_be_removed.insert(xpath);
-    //     }
-    // }
-
-    // ordered_nodes_by_xpath.remove_if([&not_marked_to_be_removed](const String& xpath) {
-    //     return not_marked_to_be_removed.find(xpath) != not_marked_to_be_removed.end();
-    // });
-
-    // ordered_nodes_by_xpath.reverse();
-    // auto constraint_checker = std::make_shared<ConstraintChecker>(config_mngr, root_config_to_remove);
-    // for (auto& xpath : ordered_nodes_by_xpath) {
-    //     auto schema_node = getSchemaByXPath(xpath);
-    //     if (!schema_node) {
-    //         spdlog::error("Failed to find schema node for {}", xpath);
-    //         return false;
-    //     }
-
-    //     auto delete_constraint_attr = schema_node->findAttr("delete-constraints");
-    //     auto node_to_remove = XPath::select2(root_config_to_remove, xpath);
-    //     if (!node_to_remove) {
-    //         spdlog::error("Failed to find node to remove {}", xpath);
-    //         return false;
-    //     }
-
-    //     for (auto& constraint : delete_constraint_attr) {
-    //         if (!constraint_checker->validate(node_to_remove, constraint)) {
-    //             spdlog::error("Failed to validate againts constraints {} for node {}", constraint, xpath);
-    //             return false;
-    //         }
-    //     }
-
-    //     auto parent_node = std::dynamic_pointer_cast<Composite>(node_to_remove->getParent());
-    //     if (!parent_node->remove(node_to_remove->getName())) {
-    //         spdlog::error("Failed to remove node {} from collection of {}", node_to_remove->getName(), parent_node->getName());
-    //         return false;
-    //     }
-        
-    //     node_to_remove.reset();
-    // }
-
-    // spdlog::debug("Nodes to perform delete action:");
-    // for (auto& xpath : ordered_nodes_by_xpath) {
-    //     auto schema_node = config_mngr->getSchemaByXPath(xpath);
-    //     auto action_attr = schema_node->findAttr(Config::PropertyName::ACTION_ON_DELETE_PATH);
-    //     auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
-    //     if (action_attr.empty() || server_addr_attr.empty()) {
-    //         spdlog::debug("{} has NOT delete action", xpath);
-    //         continue;
-    //     }
-
-    //     spdlog::debug("{} HAS delete action", xpath);
-    //     // auto json_node = nlohmann::json().parse(config_mngr->getConfigNode(xpath.substr(0, xpath.find_last_of('/'))));
-    //     auto json_node2 = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
-    //     // std::cout << std::setw(4) << json_node << std::endl << std::endl;
-    //     // std::cout << std::setw(4) << nlohmann::json(nlohmann::json(json_node).patch(nlohmann::json(json_node).diff({}, nlohmann::json(json_node)))) << std::endl;
-    //     // auto diff = json_node.diff(json_node, json_node2);
-    //     auto diff = json_node2.diff({}, json_node2);
-    //     std::cout << std::setw(4) << diff << std::endl;
-    //     diff[0]["op"] = "remove";
-    //     diff[0]["path"] = xpath;
-    //     if (diff[0]["value"].is_object()) {
-    //         diff[0]["value"] = nullptr;
-    //     }
-
-    //     std::cout << std::setw(4) << diff[0] << std::endl;
-    //     auto server_addr = server_addr_attr.front();
-    //     spdlog::debug("Connect to server: {}", server_addr);
-    //     httplib::Client cli(server_addr);
-    //     auto path = action_attr.front();
-    //     auto body = diff[0].dump();
-    //     auto content_type = "application/json";
-    //     spdlog::debug("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
-    //     auto result = cli.Post(path, body, content_type);
-    //     if (!result) {
-    //         spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
-    //         // TODO: Rollback all changes
-    //         continue;
-    //     }
-
-    //     spdlog::debug("POST result, status: {}, body: {}", result->status, result->body);
-    // }
-
-    // for (auto& xpath : ordered_nodes_by_xpath) {
-    //     auto node = XPath::select2(candidate_config, xpath);
-    //     if (!node) {
-    //         spdlog::error("Failed to select node to remove at xpath {}", xpath);
-    //         return false;
-    //     }
-
-    //     auto node_parent = node->getParent();
-    //     if (auto node_parent_ptr = std::dynamic_pointer_cast<Composite>(node_parent)) {
-    //         if (!node_parent_ptr->remove(node->getName())) {
-    //             spdlog::error("Failed to remove node {} from collection of nodes come from its parent {}", node->getName(), node_parent_ptr->getName());
-    //             return false;
-    //         }
-    //     }
-
-    //     if (auto node_leaf_ptr = std::dynamic_pointer_cast<Leaf>(node)) {
-    //         spdlog::debug("Node {} is a leaf so clear its value", node_leaf_ptr->getName());
-    //     }
-
-    //     node.reset();
-    // }
-
-    // spdlog::debug("Successfully removed all changes");
-
-    // spdlog::debug("New config dump:");
-    // std::cout << std::setw(4) << new_jconfig << std::endl;
-
-    // path_nodes.clear();
-    // for (auto& diff_item : nlohmann::json::parse(patch)) {
-    //     auto op = diff_item["op"];
-    //     auto path = diff_item["path"];
-    //     if (diff_item.find("value") == diff_item.end()) {
-    //         spdlog::info("There is not 'value' field in diff... restoring it from config");
-    //         diff_item["value"] = candidate_jconfig[nlohmann::json::json_pointer(path)];
-    //     }
-    //     // std::cout << __LINE__ << std::setw(4) << diff_item << std::endl;
-    //     auto value = diff_item["value"];
-    //     spdlog::debug("OP: {}", op);
-    //     spdlog::debug("PATH: {}", path);
-    //     spdlog::debug("VALUE: {}", value.dump());
-    //     if (op == "remove") {
-    //         continue;
-    //     }
-
-    //     auto xpath_tokens = XPath::parse3(path);
-    //     if (xpath_tokens.empty()) {
-    //         spdlog::error("Path is empty!");
-    //         return false;
-    //     }
-
-    //     String xpath = ROOT_TREE_CONFIG_NAME;
-    //     while (xpath_tokens.size() > 1) {
-    //         if (xpath.at(xpath.size() - 1) != '/') {
-    //             xpath += "/";
-    //         }
-
-    //         xpath += xpath_tokens.front();
-    //         xpath_tokens.pop();
-    //         path_nodes.insert(xpath);
-    //         spdlog::debug("Added {} to path nodes", xpath);
-    //     }
-
-    //     spdlog::debug("XPath to parent of new node: {}", xpath);
-
-    //     auto jschema = getSchemaByXPath2(xpath, m_schema_filename);
-    //     if (jschema == nlohmann::json({})) {
-    //         spdlog::error("Not found schema at xpath {}", xpath);
-    //         // TODO: Rollback all changes
-    //         return false;
-    //     }
-
-    //     auto root_node = XPath::select2(candidate_config, xpath);
-    //     if (!root_node) {
-    //         spdlog::error("Failed to find node at xpath {}", xpath);
-    //         return false;
-    //     }
-
-    //     spdlog::debug("JSON config before load:");
-    //     std::cout << std::setw(4) << new_jconfig[nlohmann::json::json_pointer(xpath)] << std::endl;
-    //     auto properties_it = jschema.find(SCHEMA_NODE_PROPERTIES_NAME);
-    //     if (properties_it != jschema.end()) {
-    //         auto node = std::dynamic_pointer_cast<Composite>(root_node);
-    //         if (!parseAndLoadConfig(new_jconfig[nlohmann::json::json_pointer(xpath)], *properties_it, node)) {
-    //             spdlog::error("Failed to load config based on 'properties' node");
-    //             g_candidate_jconfig = nlohmann::json();
-    //             return false;
-    //         }
-    //     }
-    //     else {
-    //         properties_it = jschema.find(SCHEMA_NODE_PATTERN_PROPERTIES_NAME);
-    //         if (properties_it != jschema.end()) {
-    //             auto node = std::dynamic_pointer_cast<Composite>(root_node);
-    //             if (!loadPatternProperties(new_jconfig[nlohmann::json::json_pointer(xpath)], *properties_it, node)) {
-    //                 spdlog::error("Failed to load config based on 'patternProperties' node");
-    //                 g_candidate_jconfig = nlohmann::json();
-    //                 return false;
-    //             }
-    //         }
-    //     }
-
-    //     spdlog::debug("JSON config after load:");
-    //     std::cout << std::setw(4) << new_jconfig[nlohmann::json::json_pointer(xpath)] << std::endl;
-    // }
-
-    // ordered_nodes_by_xpath.clear();
-    // if (!dependency_mngr->resolve(candidate_config, ordered_nodes_by_xpath)) {
-    //     spdlog::error("Failed to resolve nodes dependency");
-    //     return false;
-    // }
-    
-    // spdlog::debug("Nodes ordered by its xpath:");
-    // for (auto& xpath : ordered_nodes_by_xpath) {
-    //     spdlog::debug("{}", xpath);
-    // }
-
-    // // Exclude nodes which had been loaded already
-    // Set<String> not_marked_to_be_added = {};
-    // for (const auto& xpath : ordered_nodes_by_xpath) {
-    //     bool should_be_added = false;
-    //     for (auto& diff_item : nlohmann::json::parse(patch)) {
-    //         auto op = diff_item["op"];
-    //         if (op != "remove") {
-    //             auto path = diff_item["path"];
-    //             if (xpath.find(path) != String::npos) {
-    //                 should_be_added = true;
-    //                 break;
-    //             }
-    //         }
-    //     }
-
-    //     if (!should_be_added) {
-    //         spdlog::debug("{} is not marked to be added", xpath);
-    //         not_marked_to_be_added.insert(xpath);
-    //     }
-    // }
-
-    // ordered_nodes_by_xpath.remove_if([&not_marked_to_be_added](const String& xpath) {
-    //     return not_marked_to_be_added.find(xpath) != not_marked_to_be_added.end();
-    // });
-
-    // spdlog::debug("Nodes ordered by its xpath after remove the nodes which should be updated:");
-    // for (auto& xpath : ordered_nodes_by_xpath) {
-    //     spdlog::debug("{}", xpath);
-    // }
-
-    // constraint_checker = std::make_shared<ConstraintChecker>(config_mngr, candidate_config);
-    // for (auto& xpath : ordered_nodes_by_xpath) {
-    //     auto schema_node = getSchemaByXPath(xpath);
-    //     if (!schema_node) {
-    //         spdlog::error("Failed to find schema node for {}", xpath);
-    //         return false;
-    //     }
-
-    //     auto constraint_attr = schema_node->findAttr("update-constraints");
-    //     auto node_to_check = XPath::select2(candidate_config, xpath);
-    //     if (!node_to_check) {
-    //         spdlog::error("Failed to find node to check {}", xpath);
-    //         return false;
-    //     }
-
-    //     for (auto& constraint : constraint_attr) {
-    //         if (!constraint_checker->validate(node_to_check, constraint)) {
-    //             spdlog::error("Failed to validate againts constraints {} for node {}", constraint, xpath);
-    //             return false;
-    //         }
-    //     }
-    // }
-
-    // spdlog::debug("Candidate JSON config:\n{}", new_jconfig.dump(4));
-    // spdlog::debug("Nodes to perform update action:");
-    // for (auto& xpath : ordered_nodes_by_xpath) {
-    //     auto schema_node = config_mngr->getSchemaByXPath(xpath);
-    //     auto action_attr = schema_node->findAttr(Config::PropertyName::ACTION_ON_UPDATE_PATH);
-    //     auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
-    //     if (action_attr.empty() || server_addr_attr.empty()) {
-    //         continue;
-    //     }
-
-    //     auto json_node2 = nlohmann::json().parse(new_jconfig[nlohmann::json::json_pointer(xpath)].dump());
-    //     std::cout << std::setw(4) << json_node2 << std::endl << std::endl;
-    //     auto diff = json_node2.diff({}, json_node2);
-    //     std::cout << std::setw(4) << diff << std::endl;
-    //     diff[0]["op"] = XPath::select2(m_running_config, xpath) ? "replace" : "add";
-    //     diff[0]["path"] = xpath;
-    //     if (diff[0]["value"].is_object()) {
-    //         diff[0]["value"] = nullptr;
-    //     }
-
-    //     auto server_addr = server_addr_attr.front();
-    //     spdlog::debug("Connect to server: {}", server_addr);
-    //     httplib::Client cli(server_addr);
-    //     auto path = action_attr.front();
-    //     auto body = diff[0].dump();
-    //     auto content_type = "application/json";
-    //     spdlog::debug("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
-    //     auto result = cli.Post(path, body, content_type);
-    //     if (!result) {
-    //         spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
-    //         // TODO: Rollback all changes
-    //         return false;
-    //     }
-    // }
 
     m_candidate_config = candidate_config;
-    // g_candidate_jconfig = new_jconfig;
     g_candidate_jconfig = candidate_jconfig;
     m_is_candidate_config_ready = true;
 
