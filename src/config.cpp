@@ -919,6 +919,74 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         node_to_remove.reset();
     }
 
+    Stack<String> removed_nodes_by_xpath;
+    auto rollback_removed_nodes = [&removed_nodes_by_xpath, &config_mngr]() {
+        while (!removed_nodes_by_xpath.empty()) {
+            auto xpath = removed_nodes_by_xpath.top();
+            auto jnode = g_running_jconfig[nlohmann::json::json_pointer(xpath)];
+            // if (jnode == g_running_jconfig.end()) {
+            //     spdlog::error("Failed to get JSON config for node at xpath {}", xpath);
+            //     return false;
+            // }
+
+            removed_nodes_by_xpath.pop();
+            auto schema_node = config_mngr->getSchemaByXPath(xpath);
+            auto action_attr = schema_node->findAttr(Config::PropertyName::ACTION_ON_UPDATE_PATH);
+            auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
+            if (action_attr.empty() || server_addr_attr.empty()) {
+                spdlog::info("There is not update action under the path {}", xpath);
+                continue;
+            }
+
+            // NOTE: For added_node_by_xpath use node_config
+            auto node = XPath::select2(config_mngr->getRunningConfig(), xpath);
+            if (!node) {
+                spdlog::error("There is not exists node under the path {}", xpath);
+                continue;
+            }
+
+            spdlog::info("Procesing rollback node {}", node->getName());
+
+            nlohmann::json action = nlohmann::json::object();
+            action["op"] = "add";
+            action["path"] = xpath;
+            action["value"] = nullptr; // nlohmann::json::object();
+            if (jnode.is_array()) {
+                spdlog::info("It is array:\n{}", jnode.dump(4));
+                action["value"] = /* * */ jnode;
+            }
+            else if (std::dynamic_pointer_cast<Leaf>(node)) {
+                spdlog::info("It is leaf:\n{}", jnode.dump(4));
+                action["value"] = /* * */ jnode;
+            }
+
+            // if (std::dynamic_pointer_cast<Leaf>(node)) {
+            //     spdlog::info("Node {} is a leaf", node->getName());
+            //     action["value"] = /* * */ jnode;
+            // }
+
+            spdlog::info("Action to rollback:\n{}", action.dump(4));
+
+            auto server_addr = server_addr_attr.front();
+            spdlog::debug("Connect to server: {}", server_addr);
+            httplib::Client cli(server_addr);
+            auto path = action_attr.front();
+            auto body = action.dump();
+            auto content_type = "application/json";
+            spdlog::debug("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
+            auto result = cli.Post(path, body, content_type);
+            if (!result) {
+                spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
+                spdlog::error("Failed to rollback removed nodes");
+                ::exit(EXIT_FAILURE);
+            }
+
+            spdlog::debug("POST result, status: {}, body: {}", result->status, result->body);
+        }
+
+        return true;
+    };
+
     spdlog::debug("Nodes to perform delete action:");
     for (auto& xpath : ordered_nodes_by_xpath) {
         auto schema_node = config_mngr->getSchemaByXPath(xpath);
@@ -926,6 +994,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
         if (action_attr.empty() || server_addr_attr.empty()) {
             spdlog::debug("{} has NOT delete action", xpath);
+            removed_nodes_by_xpath.push(xpath);
             continue;
         }
 
@@ -955,8 +1024,15 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         if (!result) {
             spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
             // TODO: Rollback all changes
-            continue;
+            if (!rollback_removed_nodes()) {
+                spdlog::error("Failed to rollback removed nodes");
+                ::exit(EXIT_FAILURE);
+            }
+
+            return false;
         }
+
+        removed_nodes_by_xpath.push(xpath);
 
         spdlog::debug("POST result, status: {}, body: {}", result->status, result->body);
     }
@@ -1028,7 +1104,11 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         auto jschema = getSchemaByXPath2(xpath, schema_filename);
         if (jschema == nlohmann::json({})) {
             spdlog::error("Not found schema at xpath {}", xpath);
-            // TODO: Rollback all changes
+            if (!rollback_removed_nodes()) {
+                spdlog::error("Failed to rollback removed nodes");
+                ::exit(EXIT_FAILURE);
+            }
+
             return false;
         }
 
@@ -1129,6 +1209,67 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         }
     }
 
+    Stack<String> added_nodes_by_xpath;
+    auto rollback_added_nodes = [&added_nodes_by_xpath, &config_mngr, &node_config, &json_config]() {
+        while (!added_nodes_by_xpath.empty()) {
+            auto xpath = added_nodes_by_xpath.top();
+            // auto jnode = json_config.find(nlohmann::json::json_pointer(xpath));
+            auto jnode = json_config[nlohmann::json::json_pointer(xpath)];
+            // if (jnode == json_config.end()) {
+            //     spdlog::error("Failed to get JSON config for node at xpath {}", xpath);
+            //     return false;
+            // }
+
+            added_nodes_by_xpath.pop();
+            auto schema_node = config_mngr->getSchemaByXPath(xpath);
+            auto action_attr = schema_node->findAttr(Config::PropertyName::ACTION_ON_DELETE_PATH);
+            auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
+            if (action_attr.empty() || server_addr_attr.empty()) {
+                spdlog::info("There is not delete action under the path {}", xpath);
+                continue;
+            }
+
+            // NOTE: For added_node_by_xpath use node_config
+            auto node = XPath::select2(node_config, xpath);
+            if (!node) {
+                spdlog::error("There is not exists node under the path {}", xpath);
+                continue;
+            }
+
+            spdlog::info("Processing node:\n{}", node->getName());
+
+            nlohmann::json action = nlohmann::json::object();
+            action["op"] = "remove";
+            action["path"] = xpath;
+            action["value"] = nullptr;
+            if (auto leaf_ptr = std::dynamic_pointer_cast<Leaf>(node)) {
+                spdlog::info("Node {} is leaf", node->getName());
+                if (leaf_ptr->getValue().is_string_array()) {
+                    action["value"] = /* * */ jnode;
+                }
+            }
+
+            spdlog::info("Action item to send:\n{}", action.dump(4));
+            auto server_addr = server_addr_attr.front();
+            spdlog::debug("Connect to server: {}", server_addr);
+            httplib::Client cli(server_addr);
+            auto path = action_attr.front();
+            auto body = action.dump();
+            auto content_type = "application/json";
+            spdlog::debug("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
+            auto result = cli.Post(path, body, content_type);
+            if (!result) {
+                spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
+                spdlog::error("Failed to rollback removed nodes");
+                ::exit(EXIT_FAILURE);
+            }
+
+            spdlog::debug("POST result, status: {}, body: {}", result->status, result->body);
+        }
+
+        return true;
+    };
+
     spdlog::debug("Candidate JSON config:\n{}", json_config.dump(4));
     spdlog::debug("Nodes to perform update action:");
     for (auto& xpath : ordered_nodes_by_xpath) {
@@ -1136,6 +1277,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         auto action_attr = schema_node->findAttr(Config::PropertyName::ACTION_ON_UPDATE_PATH);
         auto server_addr_attr = schema_node->findAttr(Config::PropertyName::ACTION_SERVER_ADDRESS);
         if (action_attr.empty() || server_addr_attr.empty()) {
+            added_nodes_by_xpath.push(xpath);
             continue;
         }
 
@@ -1149,6 +1291,9 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
             diff[0]["value"] = nullptr;
         }
 
+        spdlog::info("Apply:\n{}", diff.dump(4));
+        spdlog::info("Rollback:\n{}", json_node2.diff(json_node2, {}).dump(4));
+
         auto server_addr = server_addr_attr.front();
         spdlog::debug("Connect to server: {}", server_addr);
         httplib::Client cli(server_addr);
@@ -1160,9 +1305,31 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         if (!result) {
             spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
             // TODO: Rollback all changes
+            // Apply diff_item every time, and on failed action, just grab diff and reverse changes
+            if (!rollback_added_nodes()) {
+                spdlog::error("Failed to rollback added nodes");
+                ::exit(EXIT_FAILURE);
+            }
+
+            if (!rollback_removed_nodes()) {
+                spdlog::error("Failed to rollback removed nodes");
+                ::exit(EXIT_FAILURE);
+            }
+
             return false;
         }
+
+        // TODO: Add node to rollback
+        // TODO: Based on xpath of node, just take jconfig of this node from g_running_jconfig
+        added_nodes_by_xpath.push(xpath);
     }
+
+#if 0
+    spdlog::info("Test rollback changes");
+    rollback_added_nodes();
+    rollback_removed_nodes();
+    return false;
+#endif
 
     return true;
 }
