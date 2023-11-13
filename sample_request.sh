@@ -1,67 +1,22 @@
 echo "Get running config"
-
 curl -s -X GET http://localhost:8001/config/running/get \
    -H 'Content-Type: application/json' | jq
 
 echo
-echo "Update config about new gigabit-ethernet interface"
-
-# curl -s -X POST http://localhost:8001/config/running/update \
-#    -H 'Content-Type: application/json' \
-#    -d '{
-#             "platform": {
-#                "port": {
-#                   "ge-5": {
-#                      "breakout-mode": "none"
-#                   }
-#                }
-#             },
-#             "interface": {
-#                "gigabit-ethernet": {
-#                   "ge-5": {
-#                      "speed": "100G"
-#                   }
-#                }
-#             }
-#       }'
-
-echo "Get running config"
-curl -s -X GET http://localhost:8001/config/running/get \
-   -H 'Content-Type: application/json' | jq
-
-echo
-
 echo "Get diff config"
 curl -s -X POST http://localhost:8001/config/running/diff \
    -H 'Content-Type: application/json' \
    -d '{
     "interface": {
+        "aggregate-ethernet": {},
         "gigabit-ethernet": {
             "ge-1": {
                 "speed": "100G"
             },
-            "ge-2": {
+            "ge-4": {
                 "speed": "100G"
             }
-        },
-        "aggregate-ethernet": {
-            "ae-1": {
-                "members": [
-                    "ge-2"
-                ]
-            }
         }
-    },
-    "vlan": {
-        "id": {
-            "2": {
-                "members": [
-                    "ge-1"
-                ]
-            }
-        }
-    },
-    "protocol": {
     },
     "platform": {
         "port": {
@@ -70,6 +25,19 @@ curl -s -X POST http://localhost:8001/config/running/diff \
             },
             "ge-2": {
                 "breakout-mode": "none"
+            },
+            "ge-4": {
+                "breakout-mode": "none"
+            }
+        }
+    },
+    "protocol": {},
+    "vlan": {
+        "id": {
+            "2": {
+                "members": [
+                    "ge-1"
+                ]
             }
         }
     }
@@ -80,25 +48,35 @@ curl -s -X POST http://localhost:8001/config/update \
    -H 'Content-Type: application/json' \
    -d '[
   {
+    "op": "remove",
+    "path": "/interface/aggregate-ethernet/ae-1"
+  },
+  {
+    "op": "remove",
+    "path": "/interface/gigabit-ethernet/ge-2"
+  },
+  {
     "op": "add",
-    "path": "/interface/aggregate-ethernet/ae-1",
+    "path": "/interface/gigabit-ethernet/ge-4",
     "value": {
-      "members": [
-        "ge-2"
-      ]
+      "speed": "100G"
     }
   },
   {
     "op": "add",
-    "path": "/interface/gigabit-ethernet/ge-2",
+    "path": "/platform/port/ge-4",
     "value": {
-      "speed": "100G"
+      "breakout-mode": "none"
     }
   }
 ]'
 
 echo "Get candidate config"
 curl -s -X GET http://localhost:8001/config/candidate \
+   -H 'Content-Type: application/json' | jq
+
+echo "Get running config"
+curl -s -X GET http://localhost:8001/config/running/get \
    -H 'Content-Type: application/json' | jq
 
 echo "Apply candidate config"
@@ -108,3 +86,16 @@ curl -s -X PUT http://localhost:8001/config/candidate \
 echo "Get running config"
 curl -s -X GET http://localhost:8001/config/running/get \
    -H 'Content-Type: application/json' | jq
+
+# echo "Patch running config"
+# curl -s -X POST http://localhost:8001/config/update \
+#    -H 'Content-Type: application/json' \
+#    -d '[
+#   {
+#     "op": "remove",
+#     "path": "/interface/gigabit-ethernet/ge-1",
+#     "value": {
+#       "speed": "100G"
+#     }
+#   }
+# ]'

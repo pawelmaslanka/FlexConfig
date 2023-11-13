@@ -17,7 +17,7 @@ class Value {
     STRING,
     STRING_ARRAY,
     NODE_ARRAY,
-    REF // if leafref then attach_on_update
+    REF // if leafref then attach_onUpdate
   };
 
   Value() = delete;

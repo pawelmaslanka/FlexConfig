@@ -6,6 +6,8 @@
 #include <string>
 #include <string_view>
 
+#include "nlohmann/json.hpp"
+
 template <typename T>
 union RVT {
     std::string err_msg;
@@ -64,12 +66,23 @@ public:
     String dumpRunningConfig();
     String dumpCandidateConfig();
 
+    bool saveXPathReference(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config);
+    bool removeXPathReference(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config);
+
 private:
     const std::string m_config_filename;
     const std::string m_schema_filename;
     SharedPtr<Node> m_running_config;
     SharedPtr<Node> m_candidate_config;
     bool m_is_candidate_config_ready = { false };
+
+    // /interface/gigabit-ethernet/ge-1 -> /vlan/id/2/members/ge2
+    Map<String, Set<String>> m_running_xpath_source_reference_by_target;
+    Map<String, Set<String>> m_candidate_xpath_source_reference_by_target;
+    // Map<String, Set<String>> m_candidate_xpath_source_reference_by_target; // Double keyed for faster lookup?
+    // TODO: Hide nlohman::json
+    bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_config, SharedPtr<Node>& node_config, const String& schema_filename, SharedPtr<Config::Manager>& config_mngr);
+
 }; // class Manager
 
 } // namespace Config

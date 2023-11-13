@@ -130,68 +130,68 @@ int main(int argc, char* argv[]) {
         ::exit(EXIT_FAILURE);
     }
 
-    VisitorImpl visitor;
-    config_mngr->getRunningConfig()->accept(visitor);
+    // VisitorImpl visitor;
+    // config_mngr->getRunningConfig()->accept(visitor);
 
-    VisitorGE1Speed visit_ge1_speed;
-    config_mngr->getRunningConfig()->accept(visit_ge1_speed);
-    if (!visit_ge1_speed.getSpeedNode()) {
-        std::cerr << "Not found speed node!\n";
-        exit(EXIT_FAILURE);
-    }
-    else {
-        spdlog::debug("Found interface speed");
-    }
+    // VisitorGE1Speed visit_ge1_speed;
+    // config_mngr->getRunningConfig()->accept(visit_ge1_speed);
+    // if (!visit_ge1_speed.getSpeedNode()) {
+    //     std::cerr << "Not found speed node!\n";
+    //     exit(EXIT_FAILURE);
+    // }
+    // else {
+    //     spdlog::debug("Found interface speed");
+    // }
 
-    auto ge2_ae1_diff = R"(
-        [
-            {
-                "op": "add",
-                "path": "/platform/port/ge-4",
-                "value": {
-                    "breakout-mode": "none"
-                }
-            },
-            {
-                "op": "add",
-                "path": "/interface/gigabit-ethernet/ge-4",
-                "value": {
-                    "speed": "100G"
-                }
-            },
-            {
-                "op": "remove",
-                "path": "/interface/gigabit-ethernet/ge-2",
-                "value": {
-                    "speed": "100G"
-                }
-            },
-            {
-                "op": "remove",
-                "path": "/interface/aggregate-ethernet/ae-1",
-                "value": {
-                    "members": [
-                        "ge-2"
-                    ]
-                }
-            }
-        ]
-    )";
+    // auto ge2_ae1_diff = R"(
+    //     [
+    //         {
+    //             "op": "add",
+    //             "path": "/platform/port/ge-4",
+    //             "value": {
+    //                 "breakout-mode": "none"
+    //             }
+    //         },
+    //         {
+    //             "op": "add",
+    //             "path": "/interface/gigabit-ethernet/ge-4",
+    //             "value": {
+    //                 "speed": "100G"
+    //             }
+    //         },
+    //         {
+    //             "op": "remove",
+    //             "path": "/interface/gigabit-ethernet/ge-2",
+    //             "value": {
+    //                 "speed": "100G"
+    //             }
+    //         },
+    //         {
+    //             "op": "remove",
+    //             "path": "/interface/aggregate-ethernet/ae-1",
+    //             "value": {
+    //                 "members": [
+    //                     "ge-2"
+    //                 ]
+    //             }
+    //         }
+    //     ]
+    // )";
 
-    if (!config_mngr->makeCandidateConfig(ge2_ae1_diff)) {
-        spdlog::error("Failed to patch config");
-        ::exit(EXIT_FAILURE);
-    }
+    // if (!config_mngr->makeCandidateConfig(ge2_ae1_diff)) {
+    //     spdlog::error("Failed to patch config");
+    //     ::exit(EXIT_FAILURE);
+    // }
 
-    spdlog::info("Dump running config:\n{}", config_mngr->dumpRunningConfig());
-    spdlog::info("Dump candidate config:\n{}", config_mngr->dumpCandidateConfig());
+    // spdlog::info("Dump running config:\n{}", config_mngr->dumpRunningConfig());
+    // spdlog::info("Dump candidate config:\n{}", config_mngr->dumpCandidateConfig());
 
-    if (!config_mngr->applyCandidateConfig()) {
-        spdlog::error("Failed to apply new candidate config");
-        ::exit(EXIT_FAILURE);
-    }
+    // if (!config_mngr->applyCandidateConfig()) {
+    //     spdlog::error("Failed to apply new candidate config");
+    //     ::exit(EXIT_FAILURE);
+    // }
 
-    spdlog::info("Successfully operate on config file");
+    // spdlog::info("Successfully operate on config file");
 
     // if (!config_mngr->cancelCandidateConfig()) {
     //     spdlog::error("Failed to cancel candidate config");
@@ -258,9 +258,6 @@ int main(int argc, char* argv[]) {
         return_data = config_mngr->cancelCandidateConfig();
         return true;
     });
-
-    // TODO: Make candidate config with diff
-    // TODO: Apply candidate config
 
     if (!cm.run("localhost", 8001)) {
         spdlog::error("Failed to run connection management server");

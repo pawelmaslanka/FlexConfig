@@ -18,11 +18,11 @@ bool Server::removeConnectionHandler(Map<String, RequestCallback>& callbacks, co
 }
 
 bool Server::addOnDeleteConnectionHandler(const String& id, RequestCallback handler) {
-    return addConnectionHandler(m_on_delete_callback_by_id, id, handler);
+    return addConnectionHandler(m_onDelete_callback_by_id, id, handler);
 }
 
 bool Server::removeOnDeleteConnectionHandler(const String& id) {
-    return removeConnectionHandler(m_on_delete_callback_by_id, id);
+    return removeConnectionHandler(m_onDelete_callback_by_id, id);
 }
 
 bool Server::addOnGetConnectionHandler(const String& id, RequestCallback handler) {
@@ -126,7 +126,7 @@ bool Server::processRequest(const Method method, const String& path, const Strin
         break;
     }
     case Method::DELETE: {
-        for (auto& [_, cb] : m_on_delete_callback_by_id) {
+        for (auto& [_, cb] : m_onDelete_callback_by_id) {
             if (!cb(path, request_data, return_data)) {
                 return false;
             }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "observer.hpp"
 #include "visitor.hpp"
 
 #include <lib/multiinherit_shared.hpp>
