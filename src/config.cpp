@@ -350,7 +350,7 @@ bool Config::Manager::removeXPathReference(const List<String>& ordered_nodes_by_
         auto ref_target_it = candidate_xpath_source_reference_by_target.find(xpath);
         if (ref_target_it != candidate_xpath_source_reference_by_target.end()) {
             if (!ref_target_it->second.empty()) {
-                spdlog::error("There are still reference to {}", xpath);
+                spdlog::debug("There are still reference to {}", xpath);
                 for (const auto& ref_source : ref_target_it->second) {
                     spdlog::error("There is still reference from {} to {}", ref_source, xpath);
                 }
@@ -506,7 +506,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
                 auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
                 schema = jschema[selector];
                 if (schema.begin() == schema.end()) {
-                    spdlog::info("At xpath {} not found token '{}' in schema:\n{}", xpath, token, schema.dump());
+                    spdlog::debug("At xpath {} not found token '{}' in schema:\n{}", xpath, token, schema.dump());
                     return {};
                 }
 
@@ -566,7 +566,7 @@ nlohmann::json getSchemaByXPath2(const String& xpath, const String& schema_filen
                 auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
                 schema = jschema[selector];
                 if (schema.begin() == schema.end()) {
-                    spdlog::info("At xpath {} not found token '{}' in schema:\n{}", xpath, token, schema.dump());
+                    spdlog::debug("At xpath {} not found token '{}' in schema:\n{}", xpath, token, schema.dump());
                     return {};
                 }
             }
@@ -1447,6 +1447,8 @@ bool Config::Manager::applyCandidateConfig() {
         // TODO: Clear old m_running_config
         m_running_config = m_candidate_config;
         g_running_jconfig = g_candidate_jconfig;
+        m_candidate_config = nullptr;
+        g_candidate_jconfig = nlohmann::json();
     }
     else {
         spdlog::warn("There is not candidate config");

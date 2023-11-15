@@ -28,12 +28,7 @@
                             "required": [
                                 "breakout-mode"
                             ],
-                            "additionalProperties": false,
-                            "action": {
-                                "on-update-path": "/update",
-                                "on-delete-path": "/delete",
-                                "server-address": "127.0.0.1:8000"
-                            }
+                            "additionalProperties": false
                         }
                     },
                     "additionalProperties": false

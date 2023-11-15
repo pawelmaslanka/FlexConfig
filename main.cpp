@@ -16,7 +16,6 @@
 #include "node/composite.hpp"
 #include "lib/utils.hpp"
 #include "config.hpp"
-#include "expr_eval.hpp"
 #include "lib/topo_sort.hpp"
 #include "xpath.hpp"
 
@@ -210,7 +209,7 @@ int main(int argc, char* argv[]) {
     });
 
     cm.addOnGetConnectionHandler("config_running_get", [&config_mngr](const String& path, String data_request, String& return_data) {
-        if (path != "/config/running/get") {
+        if (path != "/config/running") {
             return true;
         }
 

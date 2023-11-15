@@ -198,7 +198,7 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
         }
 
         if (!peg_arg.node_stack.top()) {
-            spdlog::info("The node is null so cannot to count its members");
+            spdlog::debug("The node is null so cannot to count its members");
             peg_arg.node_stack.pop();
             peg_arg.continue_processing = false;
             peg_arg.expression_result = true;

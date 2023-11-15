@@ -58,10 +58,10 @@ bool Server::run(const String& host, const UInt16 port) {
         res.set_content(return_message, "text/plain");
     });
 
-    srv.Get("/config/running/get", [this](const Http::Request & req, Http::Response &res) {
+    srv.Get("/config/running", [this](const Http::Request & req, Http::Response &res) {
         String return_data;
         spdlog::debug("Got running GET request:\n {}", req.body);
-        auto return_message = processRequest(Method::GET, "/config/running/get", req.body, return_data) ? return_data : "Failed";
+        auto return_message = processRequest(Method::GET, "/config/running", req.body, return_data) ? return_data : "Failed";
         res.set_content(return_message, "text/plain");
     });
 

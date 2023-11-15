@@ -3,9 +3,18 @@
         "gigabit-ethernet": {
             "ge-1": {
                 "speed": "100G"
+            },
+            "ge-2": {
+                "speed": "100G"
             }
         },
-        "aggregate-ethernet": {}
+        "aggregate-ethernet": {
+            "ae-1": {
+                "members": [
+                    "ge-2"
+                ]
+            }
+        }
     },
     "vlan": {
         "id": {
@@ -22,6 +31,9 @@
     "platform": {
         "port": {
             "ge-1": {
+                "breakout-mode": "none"
+            },
+            "ge-2": {
                 "breakout-mode": "none"
             }
         }

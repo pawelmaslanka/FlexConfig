@@ -1,5 +1,5 @@
 echo "Get running config"
-curl -s -X GET http://localhost:8001/config/running/get \
+curl -s -X GET http://localhost:8001/config/running \
    -H 'Content-Type: application/json' | jq
 
 echo
@@ -76,7 +76,7 @@ curl -s -X GET http://localhost:8001/config/candidate \
    -H 'Content-Type: application/json' | jq
 
 echo "Get running config"
-curl -s -X GET http://localhost:8001/config/running/get \
+curl -s -X GET http://localhost:8001/config/running \
    -H 'Content-Type: application/json' | jq
 
 echo "Apply candidate config"
@@ -84,7 +84,7 @@ curl -s -X PUT http://localhost:8001/config/candidate \
    -H 'Content-Type: application/json' -d ''
 
 echo "Get running config"
-curl -s -X GET http://localhost:8001/config/running/get \
+curl -s -X GET http://localhost:8001/config/running \
    -H 'Content-Type: application/json' | jq
 
 # echo "Patch running config"
