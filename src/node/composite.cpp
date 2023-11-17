@@ -12,11 +12,12 @@ Composite::~Composite() {
 }
 
 bool Composite::add(SharedPtr<Node> node) {
-    if (!m_node_by_name.insert({ node->getName(), node }).second) {
-        // std::cerr << "Node '" << node->getName() << "' already exists in set of '" << getName() << "'\n";
-        return false;
-    }
+    // if (!m_node_by_name.insert({ node->getName(), node }).second) {
+    //     // std::cerr << "Node '" << node->getName() << "' already exists in set of '" << getName() << "'\n";
+    //     return false;
+    // }
 
+    m_node_by_name[node->getName()] = node;
     node->setParent(Node::downcasted_shared_from_this<Composite>());
     return true;
 }
