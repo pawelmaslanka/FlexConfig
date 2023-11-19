@@ -261,6 +261,28 @@ SharedPtr<Node> XPath::get_root(SharedPtr<Node> start_node) {
     return start_node;
 }
 
+String XPath::evaluate_xpath_key(SharedPtr<Node> start_node, String xpath) {
+    if (xpath.at(0) != XPath::SEPARATOR[0]) {
+        return {};
+    }
+
+    Utils::find_and_replace_all(xpath, XPath::KEY_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::KEY_NAME_SUBSCRIPT);
+    auto node_xpath = to_string2(start_node);
+    auto xpath_tokens = parse3(xpath);
+    auto node_xpath_tokens = parse3(node_xpath);
+    while (!xpath_tokens.empty()) {
+        auto token = xpath_tokens.front();
+        xpath_tokens.pop();
+        if (token == XPath::KEY_NAME_SUBSCRIPT) {
+            return node_xpath_tokens.front();
+        }
+
+        node_xpath_tokens.pop();
+    }
+
+    return {};
+}
+
 String XPath::evaluate_xpath2(SharedPtr<Node> start_node, String xpath) {
     if (xpath.at(0) != XPath::SEPARATOR[0]) {
         return {};

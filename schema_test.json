@@ -18,6 +18,10 @@
                                 "breakout-mode": {
                                     "enum": ["none", "4x100G"],
                                     "default": "none",
+                                    "update-constraints": [
+                                        "if (xpath('/platform/port[@key]/breakout-mode/value') ~ 'none') then (must(exists(xpath_key_based('//interface/gigabit-ethernet[@key]', '/platform/port[@key]')) = false))",
+                                        "if (xpath('/platform/port[@key]/breakout-mode/value') = 'none') then (must(exists(xpath_match_regex('//interface/gigabit-ethernet[@key]', '//interface/gigabit-ethernet/*', '^ge-(6[5-6])||ge-(6[0-6]||5[0-9]||4[0-9]||3[0-9]||2[0-9]||1[0-9]||[1-9])(_[1-4])?$')) = false))"
+                                    ],
                                     "action": {
                                         "on-update-path": "/update",
                                         "on-delete-path": "/delete",
@@ -28,11 +32,7 @@
                             "required": [
                                 "breakout-mode"
                             ],
-                            "additionalProperties": false,
-                            "update-constraints": [
-                                "if (xpath('/platform/port[@key]/breakout-mode/value') ~ 'none') then (must(exists(xpath('//interface/gigabit-ethernet[@key]')) = false))",
-                                "if (xpath('/platform/port[@key]/breakout-mode/value') = 'none') then (must(exists(xpath_match_regex('//interface/gigabit-ethernet[@key]', '//interface/gigabit-ethernet/*', '^ge-(6[5-6])||ge-(6[0-6]||5[0-9]||4[0-9]||3[0-9]||2[0-9]||1[0-9]||[1-9])(_[1-4])?$')) = false))"
-                            ]
+                            "additionalProperties": false
                         }
                     },
                     "additionalProperties": false
@@ -98,9 +98,8 @@
                             "update-dependencies": [
                                 "/platform/port[@key]/breakout-mode"
                             ],
-                            "delete-dependencies": [
-                                "/interface/aggregate-ethernet",
-                                "/vlan"
+                            "update-constraints": [
+                                "must(xpath_key_regex_replace('/platform/port[@key]/breakout-mode/value', '^ge-(6[5-6])||ge-(6[0-6]||5[0-9]||4[0-9]||3[0-9]||2[0-9]||1[0-9]||[1-9])') ~ 'none')"
                             ]
                         }
                     },
@@ -117,27 +116,28 @@
                             "properties": {
                                 "members": {
                                     "description": "Members of Aggregate Interface",
-                                    "type": "array",
-                                    "uniqueItems": true,
-                                    "items": {
-                                        "type": "string",
-                                        "pattern": "^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(\/[1-4])?$",
-                                        "additionalProperties": false
+                                    "type": "object",
+                                    "patternProperties": {
+                                        "^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$": {
+                                            "type": "null",
+                                            "additionalProperties": false,
+                                            "reference": [
+                                                "/interface/gigabit-ethernet/@"
+                                            ],
+                                            "action": {
+                                                "on-update-path": "/update",
+                                                "on-delete-path": "/delete",
+                                                "server-address": "127.0.0.1:8000"
+                                            },
+                                            "update-dependencies": [
+                                                "/interface/gigabit-ethernet[@key]"
+                                            ],
+                                            "update-constraints": [
+                                                "must(exists(@))"
+                                            ]
+                                        }
                                     },
-                                    "reference": [
-                                        "/interface/gigabit-ethernet/@"
-                                    ],
-                                    "action": {
-                                        "on-update-path": "/update",
-                                        "on-delete-path": "/delete",
-                                        "server-address": "127.0.0.1:8000"
-                                    },
-                                    "update-dependencies": [
-                                        "/interface/gigabit-ethernet/*"
-                                    ],
-                                    "update-constraints": [
-                                        "must(exists(@))"
-                                    ]
+                                    "additionalProperties": false
                                 },
                                 "control-protocol": {
                                     "description": "Control protocol",
@@ -178,29 +178,46 @@
                             "properties": {
                                 "members": {
                                     "description": "Members of VLAN",
-                                    "type": "array",
-                                    "uniqueItems": true,
-                                    "items": {
-                                        "type": "string",
-                                        "pattern": "^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$",
-                                        "additionalProperties": false
+                                    "type": "object",
+                                    "patternProperties": {
+                                        "^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$": {
+                                            "type": "null",
+                                            "additionalProperties": false,
+                                            "reference": [
+                                                "/interface/gigabit-ethernet/@"
+                                            ],
+                                            "update-dependencies": [
+                                                "/interface/gigabit-ethernet[@key]"
+                                            ],
+                                            "update-constraints": [
+                                                "must(exists(@))"
+                                            ],
+                                            "action": {
+                                                "on-update-path": "/update",
+                                                "on-delete-path": "/delete",
+                                                "server-address": "127.0.0.1:8000"
+                                            }
+                                        },
+                                        "^ae-(6[5-6])|ae-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])$": {
+                                            "type": "null",
+                                            "additionalProperties": false,
+                                            "reference": [
+                                                "/interface/aggregate-ethernet/@"
+                                            ],
+                                            "update-dependencies": [
+                                                "/interface/aggregate-ethernet[@key]/members"
+                                            ],
+                                            "update-constraints": [
+                                                "must(exists(@))"
+                                            ],
+                                            "action": {
+                                                "on-update-path": "/update",
+                                                "on-delete-path": "/delete",
+                                                "server-address": "127.0.0.1:8000"
+                                            }
+                                        }
                                     },
-                                    "reference": [
-                                        "/interface/aggregate-ethernet/@",
-                                        "/interface/gigabit-ethernet/@"
-                                    ],
-                                    "update-dependencies": [
-                                        "/interface/aggregate-ethernet/*/members",
-                                        "/interface/gigabit-ethernet/*"
-                                    ],
-                                    "update-constraints": [
-                                        "must(exists(@))"
-                                    ],
-                                    "action": {
-                                        "on-update-path": "/update",
-                                        "on-delete-path": "/delete",
-                                        "server-address": "127.0.0.1:8000"
-                                    }
+                                    "additionalProperties": false
                                 }
                             },
                             "additionalProperties": false,

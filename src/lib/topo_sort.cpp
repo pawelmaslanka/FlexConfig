@@ -135,6 +135,11 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
         }
     }
 
+    // std::cout << "Dependency resolved:\n";
+    for (const auto& res : resolved) {
+        // std::cout << res->name() << std::endl;
+    }
+
     // Merge result from all "trees".
     // Remove duplicated nodes.
     // Keep "resolved order" of nodes.
@@ -159,33 +164,62 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
         }
     }
 
+    // std::cout << "Dependency resolved2:\n";
+    for (const auto& res : ordered_cmds) {
+        // std::cout << res << std::endl;
+    }
+
     // TODO: Check if this step won't mess dependencies
+    // NOTE: Unfortunately, the following algorithm causes incorrect ordering (e.g. /interface/gigabit-ethernet/ge-2_1):
+    /*
+        /platform
+        /platform/port
+        /platform/port/ge-1
+        /platform/port/ge-1/breakout-mode
+        /platform/port/ge-2
+        /platform/port/ge-2/breakout-mode
+        /interface
+        /interface/gigabit-ethernet
+        /interface/gigabit-ethernet/ge-1
+        /interface/gigabit-ethernet/ge-1/speed
+        /interface/aggregate-ethernet
+        /interface/aggregate-ethernet/ae-1
+        /interface/aggregate-ethernet/ae-1/members
+        /interface/aggregate-ethernet/ae-1/members/ge-2_1
+        /interface/gigabit-ethernet/ge-2_1
+        /vlan
+        /vlan/id
+        /vlan/id/2
+        /vlan/id/2/members
+        /vlan/id/2/members/ge-1
+        /protocol
+    */
     // Find last xpath which is a substring of currently processing xpath and put it after that xpath
     // Got: /interface/gigabit-ethernet/ge-2 /interface/aggregate-ethernet /interface/aggregate-ethernet/ae-1 /interface/gigabit-ethernet/ge-2/speed
     // Expected: /interface/gigabit-ethernet/ge-2 /interface/gigabit-ethernet/ge-2/speed /interface/aggregate-ethernet /interface/aggregate-ethernet/ae-1
-    ForwardList<String> corrected_ordered_cmds {};
-    if (ordered_cmds.size() > 0) {
-        corrected_ordered_cmds.push_front(*ordered_cmds.begin());
-        ordered_cmds.erase(ordered_cmds.begin());
-        ForwardList<String>::iterator longest_xpath = corrected_ordered_cmds.begin();
-        for (auto& item : ordered_cmds) {
-            for (auto it = corrected_ordered_cmds.begin(); it != corrected_ordered_cmds.end(); ++it) {
-                if (item.find(*it) != String::npos) {
-                    if (longest_xpath->size() < it->size()) {
-                        // std::cout << item << " is longer than " << *it << std::endl;
-                        longest_xpath = it;
-                    }
-                }
-            }
+    // ForwardList<String> corrected_ordered_cmds {};
+    // if (ordered_cmds.size() > 0) {
+    //     corrected_ordered_cmds.push_front(*ordered_cmds.begin());
+    //     ordered_cmds.erase(ordered_cmds.begin());
+    //     ForwardList<String>::iterator longest_xpath = corrected_ordered_cmds.begin();
+    //     for (auto& item : ordered_cmds) {
+    //         for (auto it = corrected_ordered_cmds.begin(); it != corrected_ordered_cmds.end(); ++it) {
+    //             if (item.find(*it) != String::npos) {
+    //                 if (longest_xpath->size() < it->size()) {
+    //                     // std::cout << item << " is longer than " << *it << std::endl;
+    //                     longest_xpath = it;
+    //                 }
+    //             }
+    //         }
 
-            longest_xpath = corrected_ordered_cmds.insert_after(longest_xpath, item);
-        }
+    //         longest_xpath = corrected_ordered_cmds.insert_after(longest_xpath, item);
+    //     }
 
-        ordered_cmds.clear();
-        for (auto& item : corrected_ordered_cmds) {
-            ordered_cmds.push_back(item);
-        }
-    }
+    //     ordered_cmds.clear();
+    //     for (auto& item : corrected_ordered_cmds) {
+    //         ordered_cmds.push_back(item);
+    //     }
+    // }
 
     // std::cout << "Resolved " << ordered_cmds.size() << " items:\n";
     // for (auto& r : ordered_cmds) {

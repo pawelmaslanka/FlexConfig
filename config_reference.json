@@ -10,9 +10,9 @@
     "vlan": {
         "id": {
             "2": {
-                "members": [
-                    "ge-1"
-                ]
+                "members": {
+                    "ge-1": null
+                }
             }
         }
     },

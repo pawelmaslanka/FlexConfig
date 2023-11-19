@@ -5,7 +5,9 @@
             "ge-1": {
                 "speed": "100G"
             },
-            "ge-2_1": {}
+            "ge-2": {
+                "speed": "100G"
+            }
         }
     },
     "platform": {
@@ -14,7 +16,7 @@
                 "breakout-mode": "none"
             },
             "ge-2": {
-                "breakout-mode": "4x100G"
+                "breakout-mode": "none"
             }
         }
     },
@@ -22,9 +24,10 @@
     "vlan": {
         "id": {
             "2": {
-                "members": [
-                    "ge-1"
-                ]
+                "members": {
+                    "ge-1": null,
+                    "ge-2": null
+                }
             }
         }
     }

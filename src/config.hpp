@@ -69,6 +69,9 @@ public:
     bool saveXPathReference(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config);
     bool removeXPathReference(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config);
 
+    bool saveXPathReference_backup(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config);
+    bool removeXPathReference_backup(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config);
+
 private:
     const std::string m_config_filename;
     const std::string m_schema_filename;

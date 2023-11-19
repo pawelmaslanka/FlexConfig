@@ -38,4 +38,5 @@ namespace XPath {
     SharedPtr<Node> get_root(SharedPtr<Node> start_node);
     String evaluate_xpath(SharedPtr<Node> start_node, String xpath);
     String evaluate_xpath2(SharedPtr<Node> start_node, String xpath);
+    String evaluate_xpath_key(SharedPtr<Node> start_node, String xpath);
 };
