@@ -107,7 +107,7 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
         # Token Rules
         ConditionOperator           <- < [=~&|] >
         MultiplicativeOperator      <- '%'
-        String                      <- "'" < ([^'] .)* > "'"
+        String                      <- "'" < ([^'] )* > "'"
         Number                      <- < [0-9]+ >
 
         Keyword                     <- ('if' / 'then' / 'else' / 'true' / 'false') ![a-zA-Z]
@@ -920,7 +920,7 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
     };
 
     // (4) Parse
-    // parser.enable_packrat_parsing(); // Enable packrat parsing.
+    parser.enable_packrat_parsing(); // Enable packrat parsing.
 
     PEGArgument peg_arg = {
         m_config_mngr, m_root_config, node_to_validate
