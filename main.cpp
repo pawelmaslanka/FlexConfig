@@ -146,21 +146,21 @@ int main(int argc, char* argv[]) {
     //     [
     //         {
     //             "op": "add",
-    //             "path": "/platform/port/ge-4",
+    //             "path": "/platform/port/eth-4",
     //             "value": {
     //                 "breakout-mode": "none"
     //             }
     //         },
     //         {
     //             "op": "add",
-    //             "path": "/interface/gigabit-ethernet/ge-4",
+    //             "path": "/interface/ethernet/eth-4",
     //             "value": {
     //                 "speed": "100G"
     //             }
     //         },
     //         {
     //             "op": "remove",
-    //             "path": "/interface/gigabit-ethernet/ge-2",
+    //             "path": "/interface/ethernet/eth-2",
     //             "value": {
     //                 "speed": "100G"
     //             }
@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
     //             "path": "/interface/aggregate-ethernet/ae-1",
     //             "value": {
     //                 "members": [
-    //                     "ge-2"
+    //                     "eth-2"
     //                 ]
     //             }
     //         }

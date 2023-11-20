@@ -12,15 +12,15 @@
                     "type": "object",
                     "maxProperties": 64,
                     "patternProperties": {
-                        "^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])$": {
+                        "^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])$": {
                             "type": "object",
                             "properties": {
                                 "breakout-mode": {
                                     "enum": ["none", "4x100G"],
                                     "default": "none",
                                     "update-constraints": [
-                                        "if (xpath('/platform/port[@key]/breakout-mode/value') ~ 'none') then (must(exists(xpath_key_based('/interface/gigabit-ethernet[@key]', '/platform/port[@key]')) = false))",
-                                        "if (xpath('/platform/port[@key]/breakout-mode/value') = 'none') then (must(exists(xpath_match_regex('/interface/gigabit-ethernet[@key]', '/interface/gigabit-ethernet/*', '^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$')) = false))"
+                                        "if (xpath('/platform/port[@key]/breakout-mode/value') ~ 'none') then (must(exists(xpath_key_based('/interface/ethernet[@key]', '/platform/port[@key]')) = false))",
+                                        "if (xpath('/platform/port[@key]/breakout-mode/value') = 'none') then (must(exists(xpath_match_regex('/interface/ethernet[@key]', '/interface/ethernet/*', '^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$')) = false))"
                                     ],
                                     "action": {
                                         "on-update-path": "/update",
@@ -47,12 +47,12 @@
             "description": "Interface configuration",
             "type": "object",
             "properties": {
-                "gigabit-ethernet": {
+                "ethernet": {
                     "description": "Ethernet interfaces collection",
                     "type": "object",
                     "maxProperties": 64,
                     "patternProperties": {
-                        "^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])$": {
+                        "^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])$": {
                             "description": "Main interface configuration",
                             "type": "object",
                             "properties": {
@@ -83,7 +83,7 @@
                                 "must(xpath('/platform/port[@key]/breakout-mode/value') = 'none')"
                             ]
                         },
-                        "^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])$": {
+                        "^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])$": {
                             "description": "Sub-interface configuration",
                             "type": "object",
                             "properties": {
@@ -99,7 +99,7 @@
                                 "/platform/port[@key]/breakout-mode"
                             ],
                             "update-constraints": [
-                                "must(xpath_key_regex_replace('/platform/port[@key]/breakout-mode/value', '^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])') ~ 'none')"
+                                "must(xpath_key_regex_replace('/platform/port[@key]/breakout-mode/value', '^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])') ~ 'none')"
                             ]
                         }
                     },
@@ -118,11 +118,11 @@
                                     "description": "Members of Aggregate Interface",
                                     "type": "object",
                                     "patternProperties": {
-                                        "^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$": {
+                                        "^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$": {
                                             "type": "null",
                                             "additionalProperties": false,
                                             "reference": [
-                                                "/interface/gigabit-ethernet/@"
+                                                "/interface/ethernet/@"
                                             ],
                                             "action": {
                                                 "on-update-path": "/update",
@@ -130,7 +130,7 @@
                                                 "server-address": "127.0.0.1:8000"
                                             },
                                             "update-dependencies": [
-                                                "/interface/gigabit-ethernet[@key]"
+                                                "/interface/ethernet[@key]"
                                             ],
                                             "update-constraints": [
                                                 "must(exists(@))"
@@ -180,14 +180,14 @@
                                     "description": "Members of VLAN",
                                     "type": "object",
                                     "patternProperties": {
-                                        "^ge-(6[5-6])|ge-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$": {
+                                        "^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$": {
                                             "type": "null",
                                             "additionalProperties": false,
                                             "reference": [
-                                                "/interface/gigabit-ethernet/@"
+                                                "/interface/ethernet/@"
                                             ],
                                             "update-dependencies": [
-                                                "/interface/gigabit-ethernet[@key]"
+                                                "/interface/ethernet[@key]"
                                             ],
                                             "update-constraints": [
                                                 "must(exists(@))"

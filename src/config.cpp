@@ -834,7 +834,7 @@ bool Config::Manager::gMakeCandidateConfigInternal(const String& patch, nlohmann
 
         String xpath = Config::ROOT_TREE_CONFIG_NAME;
         // 'path_nodes' will include set of xpath as follows:
-        // /interface -> /interface/gigabit-ethernet -> /interface/gigabit-ethernet/ge-1 -> ...
+        // /interface -> /interface/ethernet -> /interface/ethernet/eth-1 -> ...
         while (xpath_tokens.size() > 1) {
             if (xpath.at(xpath.size() - 1) != '/') {
                 xpath += "/";
@@ -906,16 +906,16 @@ bool Config::Manager::gMakeCandidateConfigInternal(const String& patch, nlohmann
 
     // Select only these which has appear in path of remove changes
     // This is hack when parent of removed node has more childrens so all childrens are marked to remove
-    // "gigabit-ethernet": {
-    //     "ge-1": {
+    // "ethernet": {
+    //     "eth-1": {
     //         "speed": "100G"
     //     },
-    // -   "ge-4": {
+    // -   "eth-4": {
     // -       "speed": "100G"
     // -   }
     // }
     //
-    // "ge-4" node is marked to remove but "ge-1" is also in ordered_nodes_by_xpath 
+    // "eth-4" node is marked to remove but "eth-1" is also in ordered_nodes_by_xpath 
     Set<String> not_marked_to_be_removed = {};
     for (const auto& xpath : ordered_nodes_by_xpath) {
         bool should_be_removed = false;

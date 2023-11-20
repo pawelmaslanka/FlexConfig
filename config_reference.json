@@ -1,7 +1,7 @@
 {
     "interface": {
-        "gigabit-ethernet": {
-            "ge-1": {
+        "ethernet": {
+            "eth-1": {
                 "speed": "100G"
             }
         },
@@ -11,7 +11,7 @@
         "id": {
             "2": {
                 "members": {
-                    "ge-1": null
+                    "eth-1": null
                 }
             }
         }
@@ -21,7 +21,7 @@
     },
     "platform": {
         "port": {
-            "ge-1": {
+            "eth-1": {
                 "breakout-mode": "none"
             }
         }

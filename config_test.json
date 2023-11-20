@@ -1,21 +1,21 @@
 {
     "interface": {
         "aggregate-ethernet": {},
-        "gigabit-ethernet": {
-            "ge-1": {
+        "ethernet": {
+            "eth-1": {
                 "speed": "100G"
             },
-            "ge-2": {
+            "eth-2": {
                 "speed": "100G"
             }
         }
     },
     "platform": {
         "port": {
-            "ge-1": {
+            "eth-1": {
                 "breakout-mode": "none"
             },
-            "ge-2": {
+            "eth-2": {
                 "breakout-mode": "none"
             }
         }
@@ -25,8 +25,8 @@
         "id": {
             "2": {
                 "members": {
-                    "ge-1": null,
-                    "ge-2": null
+                    "eth-1": null,
+                    "eth-2": null
                 }
             }
         }

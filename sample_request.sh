@@ -3,21 +3,21 @@ curl -s -X POST http://localhost:8001/config/update \
    -d '[
     {
         "op": "add",
-        "path": "/interface/gigabit-ethernet/ge-2",
+        "path": "/interface/ethernet/eth-2",
         "value": {
             "speed": "100G"
         }
     },
     {
         "op": "add",
-        "path": "/platform/port/ge-2",
+        "path": "/platform/port/eth-2",
         "value": {
             "breakout-mode": "none"
         }
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/ge-2",
+        "path": "/vlan/id/2/members/eth-2",
         "value": null
     }
 ]'
@@ -33,27 +33,27 @@ curl -s -X POST http://localhost:8001/config/update \
         "path": "/interface/aggregate-ethernet/ae-1",
         "value": {
             "members": {
-                "ge-2_1": null
+                "eth-2_1": null
             }
         }
     },
     {
         "op": "remove",
-        "path": "/interface/gigabit-ethernet/ge-2"
+        "path": "/interface/ethernet/eth-2"
     },
     {
         "op": "add",
-        "path": "/interface/gigabit-ethernet/ge-2_1",
+        "path": "/interface/ethernet/eth-2_1",
         "value": {}
     },
     {
         "op": "replace",
-        "path": "/platform/port/ge-2/breakout-mode",
+        "path": "/platform/port/eth-2/breakout-mode",
         "value": "4x100G"
     },
     {
         "op": "remove",
-        "path": "/vlan/id/2/members/ge-2"
+        "path": "/vlan/id/2/members/eth-2"
     },
     {
         "op": "add",
@@ -78,24 +78,24 @@ curl -s -X POST http://localhost:8001/config/running/diff \
    -d '{
     "interface": {
         "aggregate-ethernet": {},
-        "gigabit-ethernet": {
-            "ge-1": {
+        "ethernet": {
+            "eth-1": {
                 "speed": "100G"
             },
-            "ge-4": {
+            "eth-4": {
                 "speed": "100G"
             }
         }
     },
     "platform": {
         "port": {
-            "ge-1": {
+            "eth-1": {
                 "breakout-mode": "none"
             },
-            "ge-2": {
+            "eth-2": {
                 "breakout-mode": "none"
             },
-            "ge-4": {
+            "eth-4": {
                 "breakout-mode": "none"
             }
         }
@@ -105,7 +105,7 @@ curl -s -X POST http://localhost:8001/config/running/diff \
         "id": {
             "2": {
                 "members": [
-                    "ge-1"
+                    "eth-1"
                 ]
             }
         }
@@ -122,18 +122,18 @@ curl -s -X POST http://localhost:8001/config/update \
   },
   {
     "op": "remove",
-    "path": "/interface/gigabit-ethernet/ge-2"
+    "path": "/interface/ethernet/eth-2"
   },
   {
     "op": "add",
-    "path": "/interface/gigabit-ethernet/ge-4",
+    "path": "/interface/ethernet/eth-4",
     "value": {
       "speed": "100G"
     }
   },
   {
     "op": "add",
-    "path": "/platform/port/ge-4",
+    "path": "/platform/port/eth-4",
     "value": {
       "breakout-mode": "none"
     }
@@ -162,7 +162,7 @@ curl -s -X GET http://localhost:8001/config/running \
 #    -d '[
 #   {
 #     "op": "remove",
-#     "path": "/interface/gigabit-ethernet/ge-1",
+#     "path": "/interface/ethernet/eth-1",
 #     "value": {
 #       "speed": "100G"
 #     }

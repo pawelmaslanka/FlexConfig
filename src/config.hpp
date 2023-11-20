@@ -79,7 +79,7 @@ private:
     SharedPtr<Node> m_candidate_config;
     bool m_is_candidate_config_ready = { false };
 
-    // /interface/gigabit-ethernet/ge-1 -> /vlan/id/2/members/ge2
+    // /interface/ethernet/eth-1 -> /vlan/id/2/members/ge2
     Map<String, Set<String>> m_running_xpath_source_reference_by_target;
     Map<String, Set<String>> m_candidate_xpath_source_reference_by_target;
     // Map<String, Set<String>> m_candidate_xpath_source_reference_by_target; // Double keyed for faster lookup?
