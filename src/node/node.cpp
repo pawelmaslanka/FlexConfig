@@ -92,7 +92,6 @@ ForwardList<String> SchemaNode::findAttr(const String& attr_name) {
 }
 
 void SchemaNode::accept(Visitor& visitor) {
-    std::clog << "[" << __FILE__ << ":" << __func__ << ":" << __LINE__ << "] " << "Members for node " << getName() << ":\n";
     for (auto& [attr, value] : m_attr_by_name) {
         for (auto& val : value) {
             std::clog << attr << " -> " << val << std::endl;

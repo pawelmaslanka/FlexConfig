@@ -47,7 +47,6 @@ SharedPtr<Node> Composite::makeCopy(SharedPtr<Node> parent) const {
 // TODO: Get value from Visitor if it prefere DFS or BFS
 void Composite::accept(Visitor& visitor) {
     for (auto node : m_node_by_name) {
-        // node.second->accept(visitor);
         if (!visitor.visit(node.second)) {
             break;
         }

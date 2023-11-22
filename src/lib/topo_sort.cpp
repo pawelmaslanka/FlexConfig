@@ -56,11 +56,7 @@ std::optional<std::string> makeGraphNode(std::map<std::string, std::set<std::str
     // std::cout << "Node name: " << node.name() << std::endl;
     auto adj_it = adj_list.find(node.name());
     if (adj_it == adj_list.end()) {
-            // std::cerr << "Empty adjacency list\n";
-        //     auto edge = std::make_shared<Graph::Node>("");
-        //     node.addEdge(edge);
-        //     makeGraphNode(adj_list, *edge);
-            return std::nullopt;
+        return std::nullopt;
     }
 
     for (auto& edge_name : adj_it->second) { // go through all node adjacency
@@ -136,9 +132,9 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
     }
 
     // std::cout << "Dependency resolved:\n";
-    for (const auto& res : resolved) {
+    // for (const auto& res : resolved) {
         // std::cout << res->name() << std::endl;
-    }
+    // }
 
     // Merge result from all "trees".
     // Remove duplicated nodes.
@@ -165,9 +161,9 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
     }
 
     // std::cout << "Dependency resolved2:\n";
-    for (const auto& res : ordered_cmds) {
+    // for (const auto& res : ordered_cmds) {
         // std::cout << res << std::endl;
-    }
+    // }
 
     // TODO: Check if this step won't mess dependencies
     // NOTE: Unfortunately, the following algorithm causes incorrect ordering (e.g. /interface/ethernet/eth-2_1):

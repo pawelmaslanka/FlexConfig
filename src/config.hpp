@@ -8,27 +8,6 @@
 
 #include "nlohmann/json.hpp"
 
-template <typename T>
-union RVT {
-    std::string err_msg;
-    T value;
-};
-// template <typename ValueType>
-// struct Result : std::pair<bool, RVT<ValueType>&&> {
-//     Result(const bool success, RVT<ValueType>&& value)
-//     : m_success { success }, m_value(value) {
-        
-//     }
-
-//     operator bool() const {
-
-//     }
-// }
-
-// class Logger {
-    // seet_module_level_log() logging from modules
-// }
-
 class RegistryClass {
     // Logger logger
 };
@@ -61,7 +40,6 @@ public:
     SharedPtr<Node> getRunningConfig();
     bool makeCandidateConfig(const String& patch);
     bool applyCandidateConfig();
-    // bool rollbackCandidateConfig(); ?
     bool cancelCandidateConfig();
     String dumpRunningConfig();
     String dumpCandidateConfig();
@@ -82,7 +60,6 @@ private:
     // /interface/ethernet/eth-1 -> /vlan/id/2/members/ge2
     Map<String, Set<String>> m_running_xpath_source_reference_by_target;
     Map<String, Set<String>> m_candidate_xpath_source_reference_by_target;
-    // Map<String, Set<String>> m_candidate_xpath_source_reference_by_target; // Double keyed for faster lookup?
     // TODO: Hide nlohman::json
     bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_config, SharedPtr<Node>& node_config, const String& schema_filename, SharedPtr<Config::Manager>& config_mngr);
 

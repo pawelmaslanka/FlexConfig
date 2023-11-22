@@ -1,5 +1,4 @@
 #include "xpath.hpp"
-// #include "associative_array.hpp"
 #include "node/composite.hpp"
 #include "utils.hpp"
 
@@ -202,14 +201,7 @@ String XPath::to_string2(SharedPtr<Node> node) {
     auto processing_node = node;
 
     while (processing_node) {
-
-        // if (processing_node->getName() == "@item") {
-        //     xpath_stack.push(XPath::SUBSCRIPT_LEFT_PARENTHESIS + std::string("@key") + XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
-        // }
-        // else {
-            xpath_stack.push(processing_node->getName());
-        // }
-
+        xpath_stack.push(processing_node->getName());
         processing_node = processing_node->getParent();
     }
 

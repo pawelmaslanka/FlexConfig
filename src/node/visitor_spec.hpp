@@ -16,7 +16,6 @@ public:
         if (node &&
             (node->getParent()->getName() == m_parent_name)) {
             // TODO: Extend it to check full xpath!
-            // spdlog::info("{} is child of {}", node->getName(), m_parent_name);
             m_child_subnode_names.emplace_front(node->getName());
         }
 
@@ -40,7 +39,6 @@ public:
         if (node &&
             (XPath::to_string2(node->getParent()) == m_parent_name)) {
             // TODO: Extend it to check full xpath!
-            // spdlog::info("{} is child of {}", node->getName(), m_parent_name);
             m_child_subnode_names.emplace_front(m_parent_name + "/" + node->getName());
         }
 

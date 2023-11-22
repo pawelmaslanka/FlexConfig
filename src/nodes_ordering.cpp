@@ -32,9 +32,6 @@ public:
             spdlog::error("Node is null");
             return false;
         }
-        else {
-            // spdlog::debug("Visiting node: {}", node->getName());
-        }
 
         if (m_pre_wildcard_tokens.empty()
             || (node->getName() != m_pre_wildcard_tokens.front())) {
@@ -94,9 +91,6 @@ public:
         if (!node) {
             spdlog::error("Node is null");
             return false;
-        }
-        else {
-            // spdlog::debug("Visiting node: {}", node->getName());
         }
 
         if (m_pre_wildcard_tokens.empty()
@@ -170,16 +164,9 @@ public:
         }
 
         for (auto& dep : update_depend_attrs) {
-            // (*m_dependencies)[XPath::convertToXPath(schema_node.getParent()].emplace(dep);
-            // (*m_dependencies)[schema_node->getName() == "@item" ? XPath::to_string2(schema_node->getParent()) : XPath::to_string(schema_node)].emplace(dep);
             auto xpath_schema_node = XPath::to_string2(schema_node);
             (*m_dependencies)[xpath_schema_node].emplace(dep);
-            // std::clog << "Node " << node->getName() << " with schema " << xpath_schema_node << " depends on " << dep << std::endl;
         }
-
-        // if (std::dynamic_pointer_cast<Leaf>(node)) {
-        //     return false; // Terminate visiting on Leaf object
-        // }
 
         return true;
     }
@@ -198,7 +185,6 @@ public:
     virtual bool visit(SharedPtr<Node> node) override {
         auto schema_node = std::dynamic_pointer_cast<SchemaNode>(node->getSchemaNode());
         if (!schema_node) {
-            // std::clog << "Node " << node->getName() << " has not schema\n";
             return true;
         }
 
@@ -212,10 +198,6 @@ public:
         else {
             m_unordered_nodes[schema_node_xpath].emplace_back(node);
         }
-
-        // if (std::dynamic_pointer_cast<Leaf>(node)) {
-        //     return false; // Terminate visiting on Leaf object
-        // }
 
         return true;
     }

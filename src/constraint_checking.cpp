@@ -161,23 +161,7 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
         }
 
         auto token = vs.token_to_string();
-        // if (token.find("'") != String::npos) {
-        //     spdlog::debug("String has extra ' character. Skip it");
-        //     return;
-        // }
-
-        // if (token.size() > 1) {
-        //     if ((token[0] == '/')
-        //         && (token[1] == '/')) {
-        //         // This is hack because peglib has problem with string like '/interface/' or '/interface/aggregate-ethernet[@key]/members'
-        //         token = token.substr(1, token.size() - 1);
-        //     }
-        // }
-
-        // spdlog::debug("Converted to {}", token);
-
         peg_arg.string_stack.push(token);
-        // return vs.sv();
     };
 
     parser["ConditionOperator"] = [](const SemanticValues& vs, std::any& dt) {
@@ -189,7 +173,6 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
         }
 
         peg_arg.operator_stack.push(vs.token_to_string());
-        // return vs.sv();
     };
 
     parser["COUNT_FUNC"] = [](const SemanticValues& vs, std::any& dt) {
@@ -243,9 +226,6 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
         // @ means reference
         if (!peg_arg.string_stack.empty() && peg_arg.string_stack.top() == "@") {
             peg_arg.string_stack.pop();
-            // TODO: Get "subnodes" directly from config by json_pointer
-            // auto xpath = XPath::to_string2(peg_arg.current_processing_node);
-            // peg_arg.config_mngr->getArray(xpath);
             auto node = peg_arg.current_processing_node;
             SubnodeChildsVisitor subnode_child_visitor(node->getName());
             node->accept(subnode_child_visitor);
@@ -305,23 +285,10 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
             is_any_node_exists = peg_arg.node_stack.top() != nullptr;
             peg_arg.node_stack.pop();
         }
-        // if (!peg_arg.node_stack.top()) {
-        //     spdlog::debug("{}:{}", __func__, __LINE__);
-        //     peg_arg.node_stack.pop();
-        //     spdlog::debug("Node is null");
-        //     peg_arg.bool_stack.push(false);
-        //     return;
-        // }
 
         spdlog::debug("{}:{}", __func__, __LINE__);
         peg_arg.bool_stack.push(is_any_node_exists);
         spdlog::debug("{}:{}", __func__, __LINE__);
-
-        // spdlog::debug("{}:{}", __func__, __LINE__);
-        // peg_arg.bool_stack.push(peg_arg.node_stack.top() != nullptr);
-        // spdlog::debug("{}:{}", __func__, __LINE__);
-        // peg_arg.node_stack.pop();
-        // spdlog::debug("{}:{}", __func__, __LINE__);
     };
 
     parser["XPATH_FUNC"] = [](const SemanticValues& vs, std::any& dt) {
@@ -346,15 +313,6 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
             peg_arg.node_stack.push(nullptr);
             return;
         }
-
-        // if (xpath.size() > 1) {
-        //     if ((xpath[0] == '/')
-        //         && (xpath[1] == '/')) {
-        //         // This is hack because peglib has problem with string like '/interface/' or '/interface/aggregate-ethernet[@key]/members'
-        //         xpath = xpath.substr(1, xpath.size() - 1);
-        //         spdlog::debug("Converted to string {}", xpath);
-        //     }
-        // }
 
         if (xpath.size() > 1) {
             // This is hack because peglib has problem with string like '/interface/' or '/interface/aggregate-ethernet[@key]/members'
@@ -416,15 +374,6 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
             peg_arg.node_stack.push(nullptr);
             return;
         }
-
-        // if (xpath.size() > 1) {
-        //     if ((xpath[0] == '/')
-        //         && (xpath[1] == '/')) {
-        //         // This is hack because peglib has problem with string like '/interface/' or '/interface/aggregate-ethernet[@key]/members'
-        //         xpath = xpath.substr(1, xpath.size() - 1);
-        //         spdlog::debug("Converted to string {}", xpath);
-        //     }
-        // }
 
         if (xpath.size() > 1) {
             // This is hack because peglib has problem with string like '/interface/' or '/interface/aggregate-ethernet[@key]/members'
@@ -489,15 +438,6 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
                 peg_arg.node_stack.push(nullptr);
                 return;
             }
-
-            // if (xpath.size() > 1) {
-            //     if ((xpath[0] == '/')
-            //         && (xpath[1] == '/')) {
-            //         // This is hack because peglib has problem with string like '/interface/' or '/interface/aggregate-ethernet[@key]/members'
-            //         xpath = xpath.substr(1, xpath.size() - 1);
-            //         spdlog::debug("Converted to string {}", xpath);
-            //     }
-            // }
 
             if (xpath.size() > 1) {
                 // This is hack because peglib has problem with string like '/interface/' or '/interface/aggregate-ethernet[@key]/members'
@@ -907,11 +847,6 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
 
     parser["IF_STATEMENT"] = [](const SemanticValues& vs, std::any& dt) {
         spdlog::debug("[{}:{}] Token: {}", vs.name(), __LINE__, vs.token_to_string());
-        // if (vs.size() != 3) {
-        //     spdlog::debug("There are not required 3 arguments");
-        //     return;
-        // }
-
         PEGArgument& peg_arg = std::any_cast<PEGArgument&>(dt);
         if (!peg_arg.continue_processing) {
             spdlog::debug("Stop to further processing on the rule");

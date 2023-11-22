@@ -31,9 +31,6 @@ class SchemaNode : virtual public Node, public inheritable_enable_shared_from_th
     void addAttr(const String& attr_name, const String& attr_val);
     ForwardList<String> findAttr(const String& attr_name);
     virtual void accept(Visitor& visitor) override;
-    // TODO: Implement them
-    // addReference
-    // removeReference
 
   private:
     static const Set<String> ATTR_NAME;
