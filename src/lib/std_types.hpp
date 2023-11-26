@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <deque>
 #include <forward_list>
 #include <list>
@@ -27,8 +28,19 @@
 #define WeakPtr std::weak_ptr
 #define Vector std::vector
 
+using Any = std::any;
+using BadAnyCast = std::bad_any_cast;
 using Regex = std::regex;
 using String = std::string;
 using StringView = std::string_view;
 
 using UInt16 = std::uint16_t;
+
+using Int64 = std::int64_t;
+
+// FIXME: Use alias
+#define AnyCast std::any_cast
+
+static constexpr inline auto StringEnd() {
+    return String::npos;
+}

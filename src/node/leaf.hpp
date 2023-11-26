@@ -5,7 +5,7 @@
 #include "visitor.hpp"
 
 #include <lib/multiinherit_shared.hpp>
-#include <lib/types.hpp>
+#include <lib/std_types.hpp>
 
 class Leaf : virtual public Node, public inheritable_enable_shared_from_this<Leaf> {
 public:

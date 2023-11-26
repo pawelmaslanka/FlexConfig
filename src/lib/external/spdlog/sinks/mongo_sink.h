@@ -16,7 +16,7 @@
 #include <spdlog/details/synchronous_factory.h>
 
 #include <bsoncxx/builder/stream/document.hpp>
-#include <bsoncxx/types.hpp>
+#include <bsoncxx/std_types.hpp>
 #include <bsoncxx/view_or_value.hpp>
 
 #include <mongocxx/client.hpp>

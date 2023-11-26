@@ -4,7 +4,7 @@
 #include "visitor.hpp"
 #include "xpath.hpp"
 
-#include "lib/types.hpp"
+#include "lib/std_types.hpp"
 
 class SubnodeChildsVisitor : public Visitor {
 public:

@@ -19,8 +19,8 @@
                                     "enum": ["none", "4x100G"],
                                     "default": "none",
                                     "update-constraints": [
-                                        "if (xpath('/platform/port[@key]/breakout-mode/value') ~ 'none') then (must(exists(xpath_key_based('/interface/ethernet[@key]', '/platform/port[@key]')) = false))",
-                                        "if (xpath('/platform/port[@key]/breakout-mode/value') = 'none') then (must(exists(xpath_match_regex('/interface/ethernet[@key]', '/interface/ethernet/*', '^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$')) = false))"
+                                        "if (xpath_value('/platform/port[@key]/breakout-mode') <> 'none') then must(exists(xpath_key_based('/interface/ethernet[@key]', '/platform/port[@key]')) == false)",
+                                        "if (xpath_value('/platform/port[@key]/breakout-mode') == 'none') then must(exists(xpath_match_regex('/interface/ethernet[@key]', '/interface/ethernet/*', '^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])?$')) == false)"
                                     ],
                                     "action": {
                                         "on-update-path": "/update",
@@ -80,7 +80,7 @@
                                 "/vlan"
                             ],
                             "update-constraints": [
-                                "must(xpath('/platform/port[@key]/breakout-mode/value') = 'none')"
+                                "must(xpath_value('/platform/port[@key]/breakout-mode') == 'none')"
                             ]
                         },
                         "^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4])$": {
@@ -99,7 +99,7 @@
                                 "/platform/port[@key]/breakout-mode"
                             ],
                             "update-constraints": [
-                                "must(xpath_key_regex_replace('/platform/port[@key]/breakout-mode/value', '^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])') ~ 'none')"
+                                "must(xpath_value_key_regex_replace('/platform/port[@key]/breakout-mode', '^eth-(6[5-6])|eth-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])') <> 'none')"
                             ]
                         }
                     },
@@ -133,7 +133,7 @@
                                                 "/interface/ethernet[@key]"
                                             ],
                                             "update-constraints": [
-                                                "must(exists(@))"
+                                                "must(exists(xpath(@)))"
                                             ]
                                         }
                                     },
@@ -152,7 +152,7 @@
                                 "server-address": "127.0.0.1:8000"
                             },
                             "delete-constraints": [
-                                "must(count(xpath('/interface/aggregate-ethernet[@key]/members')) = 0)"
+                                "must(count(xpath('/interface/aggregate-ethernet[@key]/members')) == 0)"
                             ]
                         }
                     },
@@ -190,7 +190,7 @@
                                                 "/interface/ethernet[@key]"
                                             ],
                                             "update-constraints": [
-                                                "must(exists(@))"
+                                                "must(exists(xpath(@)))"
                                             ],
                                             "action": {
                                                 "on-update-path": "/update",
@@ -208,7 +208,7 @@
                                                 "/interface/aggregate-ethernet[@key]/members"
                                             ],
                                             "update-constraints": [
-                                                "must(exists(@))"
+                                                "must(exists(xpath(@)))"
                                             ],
                                             "action": {
                                                 "on-update-path": "/update",
@@ -227,7 +227,7 @@
                                 "server-address": "127.0.0.1:8000"
                             },
                             "delete-constraints": [
-                                "must(count(xpath('/vlan/id[@key]/members')) = 0)"
+                                "must(count(xpath('/vlan/id[@key]/members')) == 0)"
                             ]
                         }
                     },

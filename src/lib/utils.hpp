@@ -13,7 +13,7 @@ static inline std::string rightTrim(const std::string &s) {
     return std::regex_replace(s, std::regex("\\s+$"), std::string(""));
 }
  
-static inline std::string trim(const std::string &s) {
+static inline std::string Trim(const std::string &s) {
     return leftTrim(rightTrim(s));
 }
 
