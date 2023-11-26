@@ -271,14 +271,14 @@ String ReferenceHandle(const SemanticValues& vs, Any& dt) {
         return {};
     }
 
-    auto ref_attrs = schema_node->findAttr("reference");
+    auto ref_attrs = schema_node->FindAttr("reference");
     if (ref_attrs.empty()) {
         spdlog::debug("Not found attribute 'reference' at schema node {}", XPath::to_string2(schema_node));
         return {};
     }
 
     for (String ref : ref_attrs) {
-        String node_name = pegArg.CurrentProcessingNode->getName();
+        String node_name = pegArg.CurrentProcessingNode->Name();
         Utils::find_and_replace_all(ref, "@", node_name);
         if (XPath::select2(pegArg.RootNodeConfig, ref)) {
             return ref;
@@ -351,7 +351,7 @@ Any XPathValueHandle(const SemanticValues& vs, Any& dt) {
 
     auto leaf_node = std::dynamic_pointer_cast<Leaf>(node);
     if (!leaf_node) {
-        spdlog::debug("Node '{}' at xpath '{}' is not a leaf", node->getName(), xpath);
+        spdlog::debug("Node '{}' at xpath '{}' is not a leaf", node->Name(), xpath);
         pegArg.ExpressionResult = false;
         STOP_PROCESSING(dt, vs);
     }
@@ -410,7 +410,7 @@ Vector<String> XPathMatchRegexHandle(const SemanticValues& vs, Any& dt) {
             }
             // TODO: Implement it based on WildcardDependencyResolverVisitior
             NodeChildsOnlyVisitor node_childs_only_visitor(node);
-            node->accept(node_childs_only_visitor);
+            node->Accept(node_childs_only_visitor);
             xpath_subnodes = node_childs_only_visitor.getAllSubnodes();
             continue;
         }
@@ -600,7 +600,7 @@ Any XPathValueKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
 
         auto leaf_node = std::dynamic_pointer_cast<Leaf>(node);
         if (!leaf_node) {
-            spdlog::debug("Node {} at xpath '{}' is not a leaf", node->getName(), xpath);
+            spdlog::debug("Node {} at xpath '{}' is not a leaf", node->Name(), xpath);
             return {};
         }
 

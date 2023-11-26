@@ -25,5 +25,5 @@ class Visitor
 class IVisitable {
   public:
     virtual ~IVisitable() = default;
-    virtual void accept(Visitor& visitor) = 0;
+    virtual void Accept(Visitor& visitor) = 0;
 };

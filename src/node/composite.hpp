@@ -11,14 +11,14 @@ class Composite
     virtual ~Composite();
     Composite(const String name, SharedPtr<Node> parent = nullptr, SharedPtr<Node> schema_node = nullptr);
 
-    virtual bool add(SharedPtr<Node> node);
-    virtual bool remove(const String node_name);
+    virtual bool Add(SharedPtr<Node> node);
+    virtual bool Remove(const String node_name);
 
-    virtual SharedPtr<Node> makeCopy(SharedPtr<Node> parent = nullptr) const override;
+    virtual SharedPtr<Node> MakeCopy(SharedPtr<Node> parent = nullptr) const override;
 
-    virtual void accept(Visitor& visitor) override;
-    virtual SharedPtr<Node> findNode(const String node_name);
-    virtual size_t count() const;
+    virtual void Accept(Visitor& visitor) override;
+    virtual SharedPtr<Node> FindNode(const String node_name);
+    virtual size_t Count() const;
 
   private:
     Map<String, SharedPtr<Node>> m_node_by_name;
@@ -30,5 +30,5 @@ class SchemaComposite
   public:
     virtual ~SchemaComposite();
     SchemaComposite(const String name, SharedPtr<Node> parent = nullptr, SharedPtr<Node> schema_node = nullptr);
-    virtual void accept(Visitor& visitor) override;
+    virtual void Accept(Visitor& visitor) override;
 };

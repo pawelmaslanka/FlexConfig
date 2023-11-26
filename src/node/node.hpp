@@ -9,14 +9,14 @@ class Node : public IVisitable, public inheritable_enable_shared_from_this<Node>
   public:
     virtual ~Node();
     Node(const String& name, SharedPtr<Node> parent = nullptr, SharedPtr<Node> schema_node = nullptr);
-    String getName() const;
-    void setParent(SharedPtr<Node> parent);
-    SharedPtr<Node> getParent() const;
-    void setSchemaNode(SharedPtr<Node> schema_node);
-    SharedPtr<Node> getSchemaNode() const;
-    virtual SharedPtr<Node> makeCopy(SharedPtr<Node> parent = nullptr) const;
+    String Name() const;
+    void SetParent(SharedPtr<Node> parent);
+    SharedPtr<Node> Parent() const;
+    void SetSchemaNode(SharedPtr<Node> schema_node);
+    SharedPtr<Node> SchemaNode() const;
+    virtual SharedPtr<Node> MakeCopy(SharedPtr<Node> parent = nullptr) const;
 
-    virtual void accept(Visitor& visitor) override;
+    virtual void Accept(Visitor& visitor) override;
 
   private:
     SharedPtr<Node> m_parent;
@@ -28,9 +28,9 @@ class SchemaNode : virtual public Node, public inheritable_enable_shared_from_th
   public:
     virtual ~SchemaNode();
     SchemaNode(const String& name, SharedPtr<Node> parent = nullptr, SharedPtr<Node> schema_node = nullptr);
-    void addAttr(const String& attr_name, const String& attr_val);
-    ForwardList<String> findAttr(const String& attr_name);
-    virtual void accept(Visitor& visitor) override;
+    void AddAttr(const String& attr_name, const String& attr_val);
+    ForwardList<String> FindAttr(const String& attr_name);
+    virtual void Accept(Visitor& visitor) override;
 
   private:
     static const Set<String> ATTR_NAME;

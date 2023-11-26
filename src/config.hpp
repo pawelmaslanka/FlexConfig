@@ -6,8 +6,6 @@
 #include <string>
 #include <string_view>
 
-#include "nlohmann/json.hpp"
-
 class RegistryClass {
     // Logger logger
 };
@@ -15,6 +13,7 @@ class RegistryClass {
 namespace Config {
 
 static auto constexpr ROOT_TREE_CONFIG_NAME { "/" };
+static auto constexpr XPATH_NODE_SEPARATOR { "/" };
 
 namespace PropertyName {
     static const auto ACTION = "action";
@@ -57,11 +56,9 @@ private:
     SharedPtr<Node> m_candidate_config;
     bool m_is_candidate_config_ready = { false };
 
-    // /interface/ethernet/eth-1 -> /vlan/id/2/members/ge2
+    // E.g. /interface/ethernet/eth-1 -> /vlan/id/2/members/ge2
     Map<String, Set<String>> m_running_xpath_source_reference_by_target;
     Map<String, Set<String>> m_candidate_xpath_source_reference_by_target;
-    // TODO: Hide nlohman::json
-    bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_config, SharedPtr<Node>& node_config, const String& schema_filename, SharedPtr<Config::Manager>& config_mngr);
 
 }; // class Manager
 

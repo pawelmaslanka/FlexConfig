@@ -34,16 +34,16 @@ public:
         }
 
         if (m_pre_wildcard_tokens.empty()
-            || (node->getName() != m_pre_wildcard_tokens.front())) {
+            || (node->Name() != m_pre_wildcard_tokens.front())) {
             spdlog::debug("Failed to find key selector");
             return true;
         }
 
         m_pre_wildcard_tokens.pop();
         if (m_pre_wildcard_tokens.empty()) {
-            spdlog::debug("We reached leaf token at node {}", node->getName());
-            SubnodeChildsVisitor subnode_visitor(node->getName());
-            node->accept(subnode_visitor);
+            spdlog::debug("We reached leaf token at node {}", node->Name());
+            SubnodeChildsVisitor subnode_visitor(node->Name());
+            node->Accept(subnode_visitor);
             for (const auto& subnode : subnode_visitor.getAllSubnodes()) {
                 String resolved_wildcard_xpath = m_pre_wildcard + "/" + subnode;
                 if (!m_post_wildcard.empty()) {
@@ -94,16 +94,16 @@ public:
         }
 
         if (m_pre_wildcard_tokens.empty()
-            || (node->getName() != m_pre_wildcard_tokens.front())) {
+            || (node->Name() != m_pre_wildcard_tokens.front())) {
             spdlog::debug("Failed to resolve wildcard");
             return true;
         }
 
         m_pre_wildcard_tokens.pop();
         if (m_pre_wildcard_tokens.empty()) {
-            spdlog::debug("We reached leaf token at node {}", node->getName());
-            SubnodeChildsVisitor subnode_visitor(node->getName());
-            node->accept(subnode_visitor);
+            spdlog::debug("We reached leaf token at node {}", node->Name());
+            SubnodeChildsVisitor subnode_visitor(node->Name());
+            node->Accept(subnode_visitor);
             for (const auto& subnode : subnode_visitor.getAllSubnodes()) {
                 String resolved_wildcard_xpath = m_pre_wildcard + "/" + subnode;
                 if (!m_post_wildcard.empty()) {
@@ -139,10 +139,10 @@ public:
             return false;
         }
         else {
-            // spdlog::debug("Visiting node: {}", node->getName());
+            // spdlog::debug("Visiting node: {}", node->Name());
         }
 
-        // TODO: XPath::to_string2(node->getSchemaNode())
+        // TODO: XPath::to_string2(node->SchemaNode())
         auto xpath = XPath::to_string2(node);
         spdlog::debug("Get xpath: {}", xpath);
         auto schema_node = m_config_mngr->getSchemaByXPath(xpath);
@@ -151,7 +151,7 @@ public:
             return true;
         }
 
-        auto update_depend_attrs = schema_node->findAttr("update-dependencies");
+        auto update_depend_attrs = schema_node->FindAttr("update-dependencies");
         if (update_depend_attrs.empty()) {
             spdlog::debug("{} does not have dependencies", xpath);
             auto xpath_schema_node = XPath::to_string2(schema_node);
@@ -183,7 +183,7 @@ public:
     virtual ~DependencyMapperVisitior() = default;
     DependencyMapperVisitior(Set<String> set_of_ordered_cmds) : m_set_of_ordered_cmds { set_of_ordered_cmds } {}
     virtual bool visit(SharedPtr<Node> node) override {
-        auto schema_node = std::dynamic_pointer_cast<SchemaNode>(node->getSchemaNode());
+        auto schema_node = std::dynamic_pointer_cast<SchemaNode>(node->SchemaNode());
         if (!schema_node) {
             return true;
         }
@@ -192,8 +192,8 @@ public:
         if (m_set_of_ordered_cmds.find(schema_node_xpath) != m_set_of_ordered_cmds.end()) {
             m_ordered_nodes[schema_node_xpath].emplace_front(node);
         }
-        else if (m_ordered_nodes.find(XPath::to_string2(schema_node->getParent())) != m_ordered_nodes.end()) {
-            m_ordered_nodes[XPath::to_string2(schema_node->getParent())].emplace_back(node);
+        else if (m_ordered_nodes.find(XPath::to_string2(schema_node->Parent())) != m_ordered_nodes.end()) {
+            m_ordered_nodes[XPath::to_string2(schema_node->Parent())].emplace_back(node);
         }
         else {
             m_unordered_nodes[schema_node_xpath].emplace_back(node);
@@ -219,7 +219,7 @@ bool NodeDependencyManager::resolve(const SharedPtr<Node>& config, List<String>&
     DependencyGetterVisitior2 depVisitor(m_config_mngr);
     spdlog::debug("Looking for dependencies");
     spdlog::debug("m_config_mngr: {}, running_config: {}", m_config_mngr != nullptr, config != nullptr);
-    config->accept(depVisitor);
+    config->Accept(depVisitor);
     spdlog::debug("Completed looking for dependencies");
 
     auto dependencies = std::make_shared<Map<String, Set<String>>>();
@@ -236,7 +236,7 @@ bool NodeDependencyManager::resolve(const SharedPtr<Node>& config, List<String>&
             if (dep.find("/*") != String::npos) {
                 spdlog::debug("Found wildcard in dependency {} for node {}", dep, schema_node.first);
                 auto wildcard_resolver = WildcardDependencyResolverVisitior(dep);
-                config->accept(wildcard_resolver);
+                config->Accept(wildcard_resolver);
                 auto resolved_xpath = wildcard_resolver.getResolvedXpath();
                 if (!resolved_xpath.empty()) {
                     for (auto resolved_wildcard : resolved_xpath) {
@@ -250,7 +250,7 @@ bool NodeDependencyManager::resolve(const SharedPtr<Node>& config, List<String>&
             else if (dep.find("[@key]") != String::npos) {
                 spdlog::debug("Found [@key] in dependency {} for node {}", dep, schema_node.first);
                 auto wildcard_resolver = KeySelectorResolverVisitior(dep);
-                config->accept(wildcard_resolver);
+                config->Accept(wildcard_resolver);
                 auto resolved_xpath = wildcard_resolver.getResolvedXpath();
                 if (!resolved_xpath.empty()) {
                     for (auto& resolved_wildcard : resolved_xpath) {
@@ -279,7 +279,7 @@ bool NodeDependencyManager::resolve(const SharedPtr<Node>& config, List<String>&
     }
 
     DependencyMapperVisitior depMapperVisitor(set_of_ordered_cmds);
-    config->accept(depMapperVisitor);
+    config->Accept(depMapperVisitor);
     std::list<SharedPtr<Node>> nodes_to_execute {};
     spdlog::debug("Sorting unordered nodes");
     for (auto& [schema_name, unordered_nodes] : depMapperVisitor.getUnorderedNodes()) {
@@ -288,7 +288,7 @@ bool NodeDependencyManager::resolve(const SharedPtr<Node>& config, List<String>&
         for (auto& n : unordered_nodes) {
             // TODO: If find prefix in depMapperVisitor.getOrderedNodes() then do not add
             nodes_to_execute.emplace_back(n);
-            spdlog::debug("{}", n->getName());
+            spdlog::debug("{}", n->Name());
         }
     }
 
@@ -299,7 +299,7 @@ bool NodeDependencyManager::resolve(const SharedPtr<Node>& config, List<String>&
         auto ordered_nodes = depMapperVisitor.getOrderedNodes();
         for (auto& n : ordered_nodes[ordered_cmd]) {
             nodes_to_execute.emplace_back(n);
-            spdlog::debug("{}", n->getName());
+            spdlog::debug("{}", n->Name());
         }
     }
 

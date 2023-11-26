@@ -7,7 +7,7 @@ Leaf::Leaf(const String& name, const Value value, SharedPtr<Node> parent, Shared
 
 }
 
-void Leaf::setValue(const Value value) {
+void Leaf::SetValue(const Value value) {
     m_value = value;
 }
 
@@ -15,14 +15,14 @@ Value Leaf::getValue() const {
     return m_value;
 }
 
-SharedPtr<Node> Leaf::makeCopy(SharedPtr<Node> parent) const {
-    auto copy_node = std::make_shared<Leaf>(getName(), m_value);
-    copy_node->setParent(parent ? parent : getParent());
-    copy_node->setSchemaNode(getSchemaNode());
+SharedPtr<Node> Leaf::MakeCopy(SharedPtr<Node> parent) const {
+    auto copy_node = std::make_shared<Leaf>(Name(), m_value);
+    copy_node->SetParent(parent ? parent : Parent());
+    copy_node->SetSchemaNode(SchemaNode());
 
     return copy_node;
 }
 
-void Leaf::accept(Visitor& visitor) {
+void Leaf::Accept(Visitor& visitor) {
 
 }

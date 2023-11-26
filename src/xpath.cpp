@@ -11,7 +11,7 @@ bool XPath::NodeFinder::init(const String wanted_node_name) {
 }
 
 bool XPath::NodeFinder::visit(SharedPtr<Node> node) {
-    if (node->getName() == _wanted_node_name) {
+    if (node->Name() == _wanted_node_name) {
         _wanted_node = node;
         return false; // Stop visitng another nodes
     }
@@ -82,7 +82,7 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
             xpath_items->pop();
             for (auto new_item : { item.substr(0, left_pos), item.substr(left_pos + 1, (right_pos - left_pos - 1)) }) {
                 node_finder->init(new_item);
-                visiting_node->accept(*node_finder);
+                visiting_node->Accept(*node_finder);
                 visiting_node = node_finder->get_result();
                 if (!visiting_node) {
                     return nullptr;
@@ -93,7 +93,7 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
         }
 
         node_finder->init(xpath_items->front());
-        visiting_node->accept(*node_finder);
+        visiting_node->Accept(*node_finder);
         visiting_node = node_finder->get_result();
         if (!visiting_node) {
             return nullptr;
@@ -126,7 +126,7 @@ SharedPtr<Node> XPath::select2(SharedPtr<Node> root_node, const String xpath) {
             xpath_items->pop();
             for (auto new_item : { item.substr(0, left_pos), item.substr(left_pos + 1, (right_pos - left_pos - 1)) }) {
                 node_finder->init(new_item);
-                visiting_node->accept(*node_finder);
+                visiting_node->Accept(*node_finder);
                 visiting_node = node_finder->get_result();
                 if (!visiting_node) {
                     return nullptr;
@@ -137,7 +137,7 @@ SharedPtr<Node> XPath::select2(SharedPtr<Node> root_node, const String xpath) {
         }
 
         node_finder->init(xpath_items->front());
-        visiting_node->accept(*node_finder);
+        visiting_node->Accept(*node_finder);
         visiting_node = node_finder->get_result();
         if (!visiting_node) {
             return nullptr;
@@ -168,16 +168,16 @@ String XPath::to_string(SharedPtr<Node> node) {
     auto processing_node = node;
 
     while (processing_node) {
-        if (processing_node->getParent()) {
-            if (auto dict = std::dynamic_pointer_cast<Composite>(processing_node->getParent())) {
-                xpath_stack.push(XPath::SUBSCRIPT_LEFT_PARENTHESIS + processing_node->getName() + XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
-                processing_node = processing_node->getParent();
+        if (processing_node->Parent()) {
+            if (auto dict = std::dynamic_pointer_cast<Composite>(processing_node->Parent())) {
+                xpath_stack.push(XPath::SUBSCRIPT_LEFT_PARENTHESIS + processing_node->Name() + XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
+                processing_node = processing_node->Parent();
                 continue;
             }
         }
 
-        xpath_stack.push(processing_node->getName());
-        processing_node = processing_node->getParent();
+        xpath_stack.push(processing_node->Name());
+        processing_node = processing_node->Parent();
     }
 
     while (!xpath_stack.empty()) {
@@ -201,8 +201,8 @@ String XPath::to_string2(SharedPtr<Node> node) {
     auto processing_node = node;
 
     while (processing_node) {
-        xpath_stack.push(processing_node->getName());
-        processing_node = processing_node->getParent();
+        xpath_stack.push(processing_node->Name());
+        processing_node = processing_node->Parent();
     }
 
     while (!xpath_stack.empty()) {
@@ -237,7 +237,7 @@ size_t XPath::count_members(SharedPtr<Node> root_node, const String xpath) {
     }
 
     auto node_counter = std::make_shared<NodeCounter>();
-    wanted_node->accept(*node_counter);
+    wanted_node->Accept(*node_counter);
     return node_counter->node_cnt;
 }
 
@@ -246,8 +246,8 @@ SharedPtr<Node> XPath::get_root(SharedPtr<Node> start_node) {
         return nullptr;
     }
 
-    while (start_node->getParent()) {
-        start_node = start_node->getParent();
+    while (start_node->Parent()) {
+        start_node = start_node->Parent();
     }
 
     return start_node;
@@ -313,25 +313,25 @@ String XPath::evaluate_xpath2(SharedPtr<Node> start_node, String xpath) {
         }
 
         auto curr_node = start_node;
-        while ((curr_node->getName() != wanted_child)
-                && (curr_node->getParent() != nullptr)) {
-            curr_node = curr_node->getParent();
+        while ((curr_node->Name() != wanted_child)
+                && (curr_node->Parent() != nullptr)) {
+            curr_node = curr_node->Parent();
         }
 
         String resolved_key_name;
-        if (curr_node->getName() != wanted_child) {
+        if (curr_node->Name() != wanted_child) {
             curr_node = start_node;
             do {
-                if (auto list = std::dynamic_pointer_cast<Composite>(curr_node->getParent())) {
-                    resolved_key_name = curr_node->getName();
+                if (auto list = std::dynamic_pointer_cast<Composite>(curr_node->Parent())) {
+                    resolved_key_name = curr_node->Name();
                     break;
                 }
 
-                curr_node = curr_node->getParent();
+                curr_node = curr_node->Parent();
             } while (curr_node);
         }
         else {
-            resolved_key_name = curr_node->getParent()->getName(); // We want to resolve name of parent node based on its child node
+            resolved_key_name = curr_node->Parent()->Name(); // We want to resolve name of parent node based on its child node
         }
 
         // Resolve all occurences of XPath::KEY_NAME_SUBSCRIPT
@@ -388,9 +388,9 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
         }
 
         auto curr_node = start_node;
-        while ((curr_node->getName() != wanted_child)
-                && (curr_node->getParent() != nullptr)) {
-            curr_node = curr_node->getParent();
+        while ((curr_node->Name() != wanted_child)
+                && (curr_node->Parent() != nullptr)) {
+            curr_node = curr_node->Parent();
         }
 
         Queue<String> xpath_stack {};
@@ -409,15 +409,15 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
             virtual ~KeyFindVisitor() = default;
             KeyFindVisitor(Queue<String> xpath_stack) : m_xpath_stack { xpath_stack } {}
             virtual bool visit(SharedPtr<Node> node) {
-                if (m_xpath_stack.front() != node->getName()) {
-                    std::clog << "XPath stack node is invalid: " << node->getName() << ", expected: " << m_xpath_stack.front() << std::endl;
+                if (m_xpath_stack.front() != node->Name()) {
+                    std::clog << "XPath stack node is invalid: " << node->Name() << ", expected: " << m_xpath_stack.front() << std::endl;
                     return true;
                 }
 
                 m_xpath_stack.pop();
-                auto schema_node = std::dynamic_pointer_cast<SchemaNode>(node->getSchemaNode());
-                if (schema_node && schema_node->getName() == "@item") {
-                    m_key = node->getName();
+                auto schema_node = std::dynamic_pointer_cast<SchemaNode>(node->SchemaNode());
+                if (schema_node && schema_node->Name() == "@item") {
+                    m_key = node->Name();
                     return false;
                 }
 
@@ -432,7 +432,7 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
         };
 
         KeyFindVisitor keyFindVisitor(xpath_stack);
-        root_node->accept(keyFindVisitor);
+        root_node->Accept(keyFindVisitor);
         resolved_key_name = keyFindVisitor.getKey();
         // Resolve all occurences of XPath::KEY_NAME_SUBSCRIPT
         for (auto it = range.first; it != range.second; ++it) {

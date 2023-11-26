@@ -14,9 +14,9 @@ public:
 
     virtual bool visit(SharedPtr<Node> node) override {
         if (node &&
-            (node->getParent()->getName() == m_parent_name)) {
+            (node->Parent()->Name() == m_parent_name)) {
             // TODO: Extend it to check full xpath!
-            m_child_subnode_names.emplace_front(node->getName());
+            m_child_subnode_names.emplace_front(node->Name());
         }
 
         return true;
@@ -37,9 +37,9 @@ public:
 
     virtual bool visit(SharedPtr<Node> node) override {
         if (node &&
-            (XPath::to_string2(node->getParent()) == m_parent_name)) {
+            (XPath::to_string2(node->Parent()) == m_parent_name)) {
             // TODO: Extend it to check full xpath!
-            m_child_subnode_names.emplace_front(m_parent_name + "/" + node->getName());
+            m_child_subnode_names.emplace_front(m_parent_name + "/" + node->Name());
         }
 
         return true;

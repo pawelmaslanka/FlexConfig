@@ -38,34 +38,34 @@ Node::~Node() {
     
 }
 
-String Node::getName() const {
+String Node::Name() const {
     return m_name;
 }
 
-void Node::setParent(SharedPtr<Node> parent) {
+void Node::SetParent(SharedPtr<Node> parent) {
     m_parent = parent;
 }
 
-SharedPtr<Node> Node::getParent() const {
+SharedPtr<Node> Node::Parent() const {
     return m_parent;
 }
 
-void Node::setSchemaNode(SharedPtr<Node> schema_node) {
+void Node::SetSchemaNode(SharedPtr<Node> schema_node) {
     m_schema_node = schema_node;
 }
 
-SharedPtr<Node> Node::getSchemaNode() const {
+SharedPtr<Node> Node::SchemaNode() const {
     return m_schema_node;
 }
 
-SharedPtr<Node> Node::makeCopy(SharedPtr<Node> parent) const {
+SharedPtr<Node> Node::MakeCopy(SharedPtr<Node> parent) const {
     auto copy_node = std::make_shared<Node>(m_name);
     copy_node->m_parent = parent ? parent : m_parent;
     copy_node->m_schema_node = m_schema_node;
     return copy_node;
 }
 
-void Node::accept(Visitor& visitor) {
+void Node::Accept(Visitor& visitor) {
     visitor.visit(shared_from_this());
 }
 
@@ -78,11 +78,11 @@ SchemaNode::~SchemaNode() {
 
 }
 
-void SchemaNode::addAttr(const String& attr_name, const String& attr_val) {
+void SchemaNode::AddAttr(const String& attr_name, const String& attr_val) {
     m_attr_by_name[attr_name].emplace_front(attr_val);
 }
 
-ForwardList<String> SchemaNode::findAttr(const String& attr_name) {
+ForwardList<String> SchemaNode::FindAttr(const String& attr_name) {
     auto attr_it = m_attr_by_name.find(attr_name);
     if (attr_it != m_attr_by_name.end()) {
         return attr_it->second;
@@ -91,12 +91,12 @@ ForwardList<String> SchemaNode::findAttr(const String& attr_name) {
     return {};
 }
 
-void SchemaNode::accept(Visitor& visitor) {
+void SchemaNode::Accept(Visitor& visitor) {
     for (auto& [attr, value] : m_attr_by_name) {
         for (auto& val : value) {
             std::clog << attr << " -> " << val << std::endl;
         }
     }
 
-    Node::accept(visitor);
+    Node::Accept(visitor);
 }
