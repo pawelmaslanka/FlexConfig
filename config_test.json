@@ -1,13 +1,17 @@
 {
     "interface": {
-        "aggregate-ethernet": {},
+        "aggregate-ethernet": {
+            "ae-1": {
+                "members": {
+                    "eth-2_1": null
+                }
+            }
+        },
         "ethernet": {
             "eth-1": {
                 "speed": "100G"
             },
-            "eth-2": {
-                "speed": "100G"
-            }
+            "eth-2_1": {}
         }
     },
     "platform": {
@@ -16,7 +20,7 @@
                 "breakout-mode": "none"
             },
             "eth-2": {
-                "breakout-mode": "none"
+                "breakout-mode": "4x100G"
             }
         }
     },
@@ -25,8 +29,8 @@
         "id": {
             "2": {
                 "members": {
-                    "eth-1": null,
-                    "eth-2": null
+                    "ae-1": null,
+                    "eth-1": null
                 }
             }
         }

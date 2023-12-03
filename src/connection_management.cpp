@@ -7,6 +7,13 @@
 using namespace ConnectionManagement;
 namespace Http = httplib;
 
+namespace HTTP {
+    enum StatusCode {
+        OK = 200,
+        INTERNAL_SERVER_ERROR = 500
+    };
+}
+
 bool Server::addConnectionHandler(Map<String, RequestCallback>& callbacks, const String& id, RequestCallback handler) {
     callbacks[id] = handler;
     return true;
@@ -49,53 +56,67 @@ bool Server::removeOnPutConnectionHandler(const String& id) {
     return removeConnectionHandler(m_on_put_callback_by_id, id);
 }
 
-bool Server::run(const String& host, const UInt16 port) {
+bool Server::Run(const String& host, const UInt16 port) {
+    static constexpr auto TEXT_PLAIN_RESP_CONTENT = "text/plain";
     Http::Server srv;
-    srv.Post("/config/update", [this](const Http::Request & req, Http::Response &res) {
-        String return_data;
-        spdlog::debug("Got POST request:\n {}", req.body);
-        auto return_message = processRequest(Method::POST, "/config/update", req.body, return_data) ? return_data : "Failed";
-        res.set_content(return_message, "text/plain");
-    });
-
-    srv.Get("/config/running", [this](const Http::Request & req, Http::Response &res) {
+    srv.Get(ConnectionManagement::URIRequestPath::Config::RUNNING, [this](const Http::Request & req, Http::Response &res) {
         String return_data;
         spdlog::debug("Got running GET request:\n {}", req.body);
-        auto return_message = processRequest(Method::GET, "/config/running", req.body, return_data) ? return_data : "Failed";
-        res.set_content(return_message, "text/plain");
+        auto status = processRequest(Method::GET, ConnectionManagement::URIRequestPath::Config::RUNNING, req.body, return_data);
+        auto return_message = status ? return_data : "Failed";
+        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = status ? HTTP::StatusCode::OK : HTTP::StatusCode::INTERNAL_SERVER_ERROR;
     });
 
-    srv.Post("/config/running/diff", [this](const Http::Request & req, Http::Response &res) {
+    srv.Post(ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE, [this](const Http::Request & req, Http::Response &res) {
+        String return_data;
+        spdlog::debug("Got POST request:\n {}", req.body);
+        auto status = processRequest(Method::POST, ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE, req.body, return_data);
+        auto return_message = status ? return_data : "Failed";
+        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = status ? HTTP::StatusCode::OK : HTTP::StatusCode::INTERNAL_SERVER_ERROR;
+    });
+
+    srv.Post(ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF, [this](const Http::Request & req, Http::Response &res) {
         String return_data;
         spdlog::debug("Got POST diff request:\n {}", req.body);
-        auto return_message = processRequest(Method::POST, "/config/running/diff", req.body, return_data) ? return_data : "Failed";
-        res.set_content(return_message, "text/plain");
+        auto status = processRequest(Method::POST, ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF, req.body, return_data);
+        auto return_message = status ? return_data : "Failed";
+        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = status ? HTTP::StatusCode::OK : HTTP::StatusCode::INTERNAL_SERVER_ERROR;
     });
 
-    srv.Get("/config/candidate", [this](const Http::Request & req, Http::Response &res) {
+    srv.Get(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this](const Http::Request & req, Http::Response &res) {
         String return_data;
         spdlog::debug("Got candidate GET request:\n {}", req.body);
-        auto return_message = processRequest(Method::GET, "/config/candidate", req.body, return_data) ? return_data : "Failed";
-        res.set_content(return_message, "text/plain");
+        auto status = processRequest(Method::GET, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
+        auto return_message = status ? return_data : "Failed";
+        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = status ? HTTP::StatusCode::OK : HTTP::StatusCode::INTERNAL_SERVER_ERROR;
     });
 
-    srv.Put("/config/candidate", [this](const Http::Request & req, Http::Response &res) {
+    srv.Put(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this](const Http::Request & req, Http::Response &res) {
         String return_data;
         spdlog::debug("Got PUT request:\n {}", req.body);
-        auto return_message = processRequest(Method::PUT, "/config/candidate", req.body, return_data) ? return_data : "Failed";
-        res.set_content(return_message, "text/plain");
+        auto status = processRequest(Method::PUT, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
+        auto return_message = status ? return_data : "Failed";
+        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = status ? HTTP::StatusCode::OK : HTTP::StatusCode::INTERNAL_SERVER_ERROR;
     });
 
-    srv.Delete("/config/candidate", [this](const Http::Request & req, Http::Response &res) {
+    srv.Delete(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this](const Http::Request & req, Http::Response &res) {
         String return_data;
         spdlog::debug("Got DELETE request:\n {}", req.body);
-        auto return_message = processRequest(Method::DELETE, "/config/candidate", req.body, return_data) ? return_data : "Failed";
-        res.set_content(return_message, "text/plain");
+        auto status = processRequest(Method::DELETE, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
+        auto return_message = status ? return_data : "Failed";
+        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = status ? HTTP::StatusCode::OK : HTTP::StatusCode::INTERNAL_SERVER_ERROR;
     });
 
     return srv.listen(host, port);;
 }
 
+// FIXME: Extend about Error Message
 bool Server::processRequest(const Method method, const String& path, const String& request_data, String& return_data) {
     switch (method) {
     case Method::GET: {

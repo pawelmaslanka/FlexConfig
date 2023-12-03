@@ -55,17 +55,19 @@ int main(int argc, char* argv[]) {
 
     ConnectionManagement::Server cm;
     cm.addOnPostConnectionHandler("config_running_update", [&config_mngr](const String& path, String data_request, String& return_data) {
-        if (path != "/config/update") {
+        if (path != ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE) {
+            spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE);
             return true;
         }
 
         spdlog::debug("Get request on {} with POST method: {}", path, data_request);
-        config_mngr->makeCandidateConfig(data_request);
-        return true;
+        return config_mngr->makeCandidateConfig(data_request);
     });
 
     cm.addOnGetConnectionHandler("config_running_get", [&config_mngr](const String& path, String data_request, String& return_data) {
-        if (path != "/config/running") {
+        static constexpr auto URI_REQUEST_PATH = "/config/running";
+        if (path != ConnectionManagement::URIRequestPath::Config::RUNNING) {
+            spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::RUNNING);
             return true;
         }
 
@@ -75,7 +77,8 @@ int main(int argc, char* argv[]) {
     });
 
     cm.addOnPostConnectionHandler("config_running_diff", [&config_mngr](const String& path, String data_request, String& return_data) {
-        if (path != "/config/running/diff") {
+        if (path != ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF) {
+            spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF);
             return true;
         }
 
@@ -85,7 +88,8 @@ int main(int argc, char* argv[]) {
     });
 
     cm.addOnGetConnectionHandler("config_candidate_get", [&config_mngr](const String& path, String data_request, String& return_data) {
-        if (path != "/config/candidate") {
+        if (path != ConnectionManagement::URIRequestPath::Config::CANDIDATE) {
+            spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::CANDIDATE);
             return true;
         }
 
@@ -95,7 +99,8 @@ int main(int argc, char* argv[]) {
     });
 
     cm.addOnPutConnectionHandler("config_candidate_apply", [&config_mngr](const String& path, String data_request, String& return_data) {
-        if (path != "/config/candidate") {
+        if (path != ConnectionManagement::URIRequestPath::Config::CANDIDATE) {
+            spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::CANDIDATE);
             return true;
         }
 
@@ -105,7 +110,8 @@ int main(int argc, char* argv[]) {
     });
 
     cm.addOnDeleteConnectionHandler("config_candidate_delete", [&config_mngr](const String& path, String data_request, String& return_data) {
-        if (path != "/config/candidate") {
+        if (path != ConnectionManagement::URIRequestPath::Config::CANDIDATE) {
+            spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::CANDIDATE);
             return true;
         }
 
@@ -114,7 +120,7 @@ int main(int argc, char* argv[]) {
         return true;
     });
 
-    if (!cm.run("localhost", 8001)) {
+    if (!cm.Run("localhost", 8001)) {
         spdlog::error("Failed to run connection management server");
         ::exit(EXIT_FAILURE);
     }

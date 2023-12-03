@@ -5,6 +5,15 @@
 #include <map>
 
 namespace ConnectionManagement {
+namespace URIRequestPath {
+namespace Config {
+    static constexpr auto CANDIDATE = "/config/candidate";
+    static constexpr auto RUNNING = "/config/running";
+    static constexpr auto RUNNING_UPDATE = "/config/running/update";
+    static constexpr auto RUNNING_DIFF = "/config/running/diff";
+}
+}
+
 enum class Method {
     GET,
     PUT,
@@ -30,7 +39,7 @@ public:
     bool removeOnPostConnectionHandler(const String& id);
     bool addOnPutConnectionHandler(const String& id, RequestCallback handler);
     bool removeOnPutConnectionHandler(const String& id);
-    bool run(const String& host, const UInt16 port);
+    bool Run(const String& host, const UInt16 port);
 
 private:
     bool processRequest(const Method method, const String& path, const String& request_data, String& return_data);
