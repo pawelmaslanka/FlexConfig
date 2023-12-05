@@ -11,7 +11,11 @@ namespace Config {
     static constexpr auto RUNNING = "/config/running";
     static constexpr auto RUNNING_UPDATE = "/config/running/update";
     static constexpr auto RUNNING_DIFF = "/config/running/diff";
-}
+} // namespace Config
+
+namespace Session {
+    static constexpr auto TOKEN = "/session/token";
+} // namespace Session
 }
 
 enum class Method {
@@ -21,13 +25,31 @@ enum class Method {
     DELETE
 };
 
+namespace HTTP {
+    enum StatusCode {
+        // Successful responses
+        START_SUCCESS = 200,
+        OK = START_SUCCESS,
+        CREATED = 201,
+        END_SUCCESS = 299,
+        // Redirection messages
+        SEE_OTHER = 303,
+        // Client error responses
+        CONFLICT = 409,
+        // Server error responses
+        INTERNAL_SERVER_ERROR = 500
+    };
+
+    bool IsSuccess(const StatusCode status_code);
+}
+
 class Client {
 public:
 
 private:
 };
 
-using RequestCallback = std::function<bool(const String& path, String data_request, String& return_data)>;
+using RequestCallback = std::function<HTTP::StatusCode(const String& path, String data_request, String& return_data)>;
 
 class Server {
 public:
@@ -42,7 +64,7 @@ public:
     bool Run(const String& host, const UInt16 port);
 
 private:
-    bool processRequest(const Method method, const String& path, const String& request_data, String& return_data);
+    HTTP::StatusCode processRequest(const Method method, const String& path, const String& request_data, String& return_data);
     bool addConnectionHandler(Map<String, RequestCallback>& callbacks, const String& id, RequestCallback handler);
     bool removeConnectionHandler(Map<String, RequestCallback>& callbacks, const String& id);
     Map<String, RequestCallback> m_on_delete_callback_by_id;

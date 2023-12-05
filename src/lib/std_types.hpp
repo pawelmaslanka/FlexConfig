@@ -35,6 +35,7 @@ using String = std::string;
 using StringView = std::string_view;
 
 using UInt16 = std::uint16_t;
+using UInt64 = std::uint64_t;
 
 using Int64 = std::int64_t;
 

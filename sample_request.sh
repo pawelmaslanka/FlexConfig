@@ -2,6 +2,19 @@ echo "Startup config"
 curl -s -X GET http://localhost:8001/config/running \
    -H 'Content-Type: application/json' | jq
 
+echo "Create new session token"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/session/token \
+   -H 'Content-Type: application/text' \
+   -d 'hello_world'`
+
+if [ ${HTTP_STATUS} -eq 200 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
 echo "Post update good config [1]"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
@@ -32,7 +45,7 @@ if [ ${HTTP_STATUS} -eq 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
@@ -45,7 +58,7 @@ if [ ${HTTP_STATUS} -eq 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
@@ -88,7 +101,7 @@ if [ ${HTTP_STATUS} -ne 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
@@ -130,7 +143,7 @@ if [ ${HTTP_STATUS} -ne 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
@@ -172,7 +185,7 @@ if [ ${HTTP_STATUS} -ne 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
@@ -215,7 +228,7 @@ if [ ${HTTP_STATUS} -ne 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
@@ -253,7 +266,7 @@ if [ ${HTTP_STATUS} -ne 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
@@ -300,7 +313,7 @@ if [ ${HTTP_STATUS} -eq 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
@@ -313,7 +326,7 @@ if [ ${HTTP_STATUS} -eq 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
@@ -360,7 +373,7 @@ if [ ${HTTP_STATUS} -eq 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
@@ -373,7 +386,7 @@ if [ ${HTTP_STATUS} -eq 200 ]
 then 
     echo "Successfully processed the request" 
 else 
-    echo "Failed to process the request"
+    echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
 
