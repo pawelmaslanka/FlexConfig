@@ -2,10 +2,11 @@ echo "Startup config"
 curl -s -X GET http://localhost:8001/config/running \
    -H 'Content-Type: application/json' | jq
 
+SESSION_TOKEN="HelloWorld!"
 echo "Create new session token"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/session/token \
    -H 'Content-Type: application/text' \
-   -d 'hello_world'`
+   -d ${SESSION_TOKEN}`
 
 if [ ${HTTP_STATUS} -eq 200 ] 
 then 
@@ -16,9 +17,9 @@ else
 fi
 
 echo "Post update good config [1]"
-
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
@@ -52,7 +53,9 @@ fi
 echo "Apply candidate config"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \
-   -H 'Content-Type: application/json' -d ''`
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d ''`
 
 if [ ${HTTP_STATUS} -eq 200 ] 
 then 
@@ -66,6 +69,7 @@ echo "Post update bad config (no removed /interface/ethernet/eth-2)"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
@@ -109,6 +113,7 @@ echo "Post update bad config (no added /interface/ethernet/eth-2_1)"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
@@ -151,6 +156,7 @@ echo "Post update bad config (no updated /platform/port/eth-2/breakout-mode)"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
@@ -193,6 +199,7 @@ echo "Post update bad config (no removed /vlan/id/2/members/eth-2)"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
@@ -236,6 +243,7 @@ echo "Post update bad config (no created /interface/aggregate-ethernet/ae-1)"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "remove",
@@ -274,6 +282,7 @@ echo "Post update good config [2]"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
@@ -320,7 +329,9 @@ fi
 echo "Rollback the changes"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:8001/config/candidate \
-   -H 'Content-Type: application/json' -d ''`
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d ''`
 
 if [ ${HTTP_STATUS} -eq 200 ] 
 then 
@@ -334,6 +345,7 @@ echo "Post update good config [3]"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
@@ -380,7 +392,9 @@ fi
 echo "Apply the changes"
 
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \
-   -H 'Content-Type: application/json' -d ''`
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d ''`
 
 if [ ${HTTP_STATUS} -eq 200 ] 
 then 

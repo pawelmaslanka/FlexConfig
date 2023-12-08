@@ -27,6 +27,10 @@ enum class Method {
 
 namespace HTTP {
     enum StatusCode {
+        // For internal use
+        INTERNAL_SUCCESS = 0,
+        // Informational responses
+        CONTINUE = 100,
         // Successful responses
         START_SUCCESS = 200,
         OK = START_SUCCESS,
@@ -36,8 +40,10 @@ namespace HTTP {
         SEE_OTHER = 303,
         // Client error responses
         CONFLICT = 409,
+        INVALID_TOKEN = 498,
+        TOKEN_REQUIRED = 499,
         // Server error responses
-        INTERNAL_SERVER_ERROR = 500
+        INTERNAL_SERVER_ERROR = 500,
     };
 
     bool IsSuccess(const StatusCode status_code);
@@ -71,5 +77,10 @@ private:
     Map<String, RequestCallback> m_on_get_callback_by_id;
     Map<String, RequestCallback> m_on_post_callback_by_id;
     Map<String, RequestCallback> m_on_put_callback_by_id;
+    struct SessionDetails {
+        std::chrono::time_point<std::chrono::system_clock> LastRequestAt;
+        std::chrono::time_point<std::chrono::system_clock> StartAt;
+    };
+    Map<String, SessionDetails> m_leased_session_token;
 };
 } // ConnectionManagement

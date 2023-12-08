@@ -54,33 +54,10 @@ int main(int argc, char* argv[]) {
     }
 
     ConnectionManagement::Server cm;
-    // FIXME: Run thread which remove token if session expire due to inactive user
-    struct SessionDetails {
-        std::chrono::time_point<std::chrono::system_clock> LastRequestAt;
-        std::chrono::time_point<std::chrono::system_clock> StartAt;
-    };
-
-    Map<String, SessionDetails> leased_session_token;
-    cm.addOnPostConnectionHandler("session_token_post", [&leased_session_token](const String& path, String data_request, String& return_data) {
-        if (path != ConnectionManagement::URIRequestPath::Session::TOKEN) {
-            spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Session::TOKEN);
-            return ConnectionManagement::HTTP::StatusCode::OK;
-        }
-
-        spdlog::debug("Get request for new session {} with POST method: {}", path, data_request);
-        if (leased_session_token.find(data_request) != leased_session_token.end()) {
-            return ConnectionManagement::HTTP::StatusCode::CONFLICT; // Resource already exists
-        }
-
-        auto now = std::chrono::system_clock::now();
-        leased_session_token[data_request] = SessionDetails { now, now };
-        return ConnectionManagement::HTTP::StatusCode::CREATED; // FIXME: Return 201 if created session token
-    });
-
     cm.addOnPostConnectionHandler("config_running_update", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE);
-            return ConnectionManagement::HTTP::StatusCode::OK;
+            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request on {} with POST method: {}", path, data_request);
@@ -90,7 +67,7 @@ int main(int argc, char* argv[]) {
     cm.addOnGetConnectionHandler("config_running_get", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::RUNNING) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::RUNNING);
-            return ConnectionManagement::HTTP::StatusCode::OK;
+            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request running on {} with GET method: {}", path, data_request);
@@ -101,7 +78,7 @@ int main(int argc, char* argv[]) {
     cm.addOnPostConnectionHandler("config_running_diff", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF);
-            return ConnectionManagement::HTTP::StatusCode::OK;
+            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request on {} with POST diff method: {}", path, data_request);
@@ -112,7 +89,7 @@ int main(int argc, char* argv[]) {
     cm.addOnGetConnectionHandler("config_candidate_get", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::CANDIDATE) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::CANDIDATE);
-            return ConnectionManagement::HTTP::StatusCode::OK;
+            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request candidate on {} with GET method: {}", path, data_request);
@@ -123,7 +100,7 @@ int main(int argc, char* argv[]) {
     cm.addOnPutConnectionHandler("config_candidate_apply", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::CANDIDATE) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::CANDIDATE);
-            return ConnectionManagement::HTTP::StatusCode::OK;
+            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request candidate on {} with PUT method: {}", path, data_request);
@@ -134,7 +111,7 @@ int main(int argc, char* argv[]) {
     cm.addOnDeleteConnectionHandler("config_candidate_delete", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::CANDIDATE) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::CANDIDATE);
-            return ConnectionManagement::HTTP::StatusCode::OK;
+            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request candidate on {} with DELETE method: {}", path, data_request);
