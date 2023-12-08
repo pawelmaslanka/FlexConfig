@@ -57,13 +57,14 @@ bool Server::removeOnPutConnectionHandler(const String& id) {
 bool Server::Run(const String& host, const UInt16 port) {
     static constexpr auto TEXT_PLAIN_RESP_CONTENT = "text/plain";
     auto check_session_token = [this](const Http::Request &req, Http::Response &res) {
-        if (req.headers.find("Authorization") == req.headers.end()) {
+        static constexpr auto AUTHORIZATION = "Authorization";
+        if (req.headers.find(AUTHORIZATION) == req.headers.end()) {
             spdlog::info("Not found authorization token");
             res.status = ConnectionManagement::HTTP::StatusCode::TOKEN_REQUIRED;
             return false;
         }
 
-        String auth = req.get_header_value("Authorization");
+        String auth = req.get_header_value(AUTHORIZATION);
         Utils::Trim(auth);
         // Authorization: Bearer TOKEN
         String session_token = auth.substr(sizeof ("Bearer"));
