@@ -472,14 +472,14 @@ Vector<String> XPathKeyBasedHandle(const SemanticValues& vs, Any& dt) {
             continue;
         }
 
-        Utils::find_and_replace_all(xpath_key_reference, "[@key]", "/[@key]");
+        Utils::find_and_replace_all(xpath_key_reference, "[@item]", "/[@item]");
         auto resolved_reference_xpath_key = XPath::evaluate_xpath_key(pegArg.CurrentProcessingNode, xpath_key_reference);
         if (resolved_reference_xpath_key.empty()) {
             spdlog::debug("Failed to resolve reference key at xpath '{}'", xpath_key_reference);
             return {};
         }
 
-        Utils::find_and_replace_all(xpath, "[@key]", "/" + resolved_reference_xpath_key);
+        Utils::find_and_replace_all(xpath, "[@item]", "/" + resolved_reference_xpath_key);
         auto xpath_tokens = XPath::parse3(xpath);
         if (!XPath::select2(pegArg.RootNodeConfig, xpath)) {
             spdlog::debug("Not found node at xpath '{}'", xpath);
@@ -517,7 +517,7 @@ Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
             continue;
         }
 
-        Utils::find_and_replace_all(xpath, "[@key]", "/[@key]");
+        Utils::find_and_replace_all(xpath, "[@item]", "/[@item]");
         auto xpath_tokens = XPath::parse3(xpath);
         auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
         auto resolved_xpath_tokens = XPath::parse3(resolved_xpath);
@@ -525,7 +525,7 @@ Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
         while (!xpath_tokens.empty()) {
             auto token = xpath_tokens.front();
             xpath_tokens.pop();
-            if (token == "[@key]") {
+            if (token == "[@item]") {
                 std::smatch matched;
                 if (std::regex_search(resolved_xpath_tokens.front(), matched, Regex { regex_expression })) {
                     token = matched[0];
@@ -573,7 +573,7 @@ Any XPathValueKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
             continue;
         }
 
-        Utils::find_and_replace_all(xpath, "[@key]", "/[@key]");
+        Utils::find_and_replace_all(xpath, "[@item]", "/[@item]");
         auto xpath_tokens = XPath::parse3(xpath);
         auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
         auto resolved_xpath_tokens = XPath::parse3(resolved_xpath);
@@ -581,7 +581,7 @@ Any XPathValueKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
         while (!xpath_tokens.empty()) {
             auto token = xpath_tokens.front();
             xpath_tokens.pop();
-            if (token == "[@key]") {
+            if (token == "[@item]") {
                 std::smatch matched;
                 if (std::regex_search(resolved_xpath_tokens.front(), matched, Regex { regex_expression })) {
                     token = matched[0];

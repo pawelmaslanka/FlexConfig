@@ -24,6 +24,7 @@ public:
     bool CheckActiveSessionToken(const Http::Request &req, Http::Response &res);
     bool RemoveSessionToken(const Http::Request &req, Http::Response &res);
     bool RemoveSessionToken(const String &session_token);
+    bool RemoveActiveSessionToken(const String &session_token);
 
     Optional<String> GetSessionToken(const Http::Request &req);
     Optional<String> GetActiveSessionToken();

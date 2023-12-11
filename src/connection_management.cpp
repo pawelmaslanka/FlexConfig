@@ -94,6 +94,7 @@ bool Server::Run(const String& host, const UInt16 port) {
                 String req_data_stub;
                 String res_data_stub;
                 processRequest(HTTP::Method::DELETE, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req_data_stub, res_data_stub);
+                m_session_mngr.RemoveActiveSessionToken(session_token);
             },
             180s)) {
             // FIXME: Handle error

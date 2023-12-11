@@ -193,6 +193,20 @@ bool SessionManager::RemoveSessionToken(const String &session_token) {
     return RemoveSessionToken(req, res);
 }
 
+bool SessionManager::RemoveActiveSessionToken(const String &session_token) {
+    if (!m_active_session_token.has_value()) {
+        return true;
+    }
+
+    if (m_active_session_token.value() == session_token) {
+        m_active_session_token = NullOpt;
+        return true;
+    }
+
+    spdlog::error("There is not active session token '{}'", session_token);
+    return false;
+}
+
 Optional<String> SessionManager::GetSessionToken(const Http::Request &req) {
     LockGuard<Mutex> _(m_session_token_mutex);
     if (req.headers.find(HTTP::Header::Tokens::AUTHORIZATION) == req.headers.end()) {

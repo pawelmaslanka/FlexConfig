@@ -5,8 +5,8 @@
 #include "node.hpp"
 
 namespace XPath {
-    static auto constexpr KEY_NAME = "@key";
-    static auto constexpr KEY_NAME_SUBSCRIPT = "[@key]";
+    static auto constexpr ITEM_NAME = "@item";
+    static auto constexpr ITEM_NAME_SUBSCRIPT = "[@item]";
     static auto constexpr SUBSCRIPT_LEFT_PARENTHESIS = "[";
     static auto constexpr SUBSCRIPT_RIGHT_PARENTHESIS = "]";
     static auto constexpr SEPARATOR = "/";

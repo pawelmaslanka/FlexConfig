@@ -258,14 +258,14 @@ String XPath::evaluate_xpath_key(SharedPtr<Node> start_node, String xpath) {
         return {};
     }
 
-    Utils::find_and_replace_all(xpath, XPath::KEY_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::KEY_NAME_SUBSCRIPT);
+    Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT);
     auto node_xpath = to_string2(start_node);
     auto xpath_tokens = parse3(xpath);
     auto node_xpath_tokens = parse3(node_xpath);
     while (!xpath_tokens.empty()) {
         auto token = xpath_tokens.front();
         xpath_tokens.pop();
-        if (token == XPath::KEY_NAME_SUBSCRIPT) {
+        if (token == XPath::ITEM_NAME_SUBSCRIPT) {
             return node_xpath_tokens.front();
         }
 
@@ -280,7 +280,7 @@ String XPath::evaluate_xpath2(SharedPtr<Node> start_node, String xpath) {
         return {};
     }
 
-    Utils::find_and_replace_all(xpath, XPath::KEY_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::KEY_NAME_SUBSCRIPT);
+    Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT);
     MultiMap<String, std::size_t> idx_by_xpath_item;
     Vector<String> xpath_items;
     // Returns first token
@@ -295,12 +295,12 @@ String XPath::evaluate_xpath2(SharedPtr<Node> start_node, String xpath) {
         ++idx;
     }
 
-    // Resolve @key key
-    auto key_name_pos = idx_by_xpath_item.find(XPath::KEY_NAME_SUBSCRIPT);
+    // Resolve @item key
+    auto key_name_pos = idx_by_xpath_item.find(XPath::ITEM_NAME_SUBSCRIPT);
     if (key_name_pos != std::end(idx_by_xpath_item)) {
         // Find last idx
         idx = 0; 
-        auto range = idx_by_xpath_item.equal_range(XPath::KEY_NAME_SUBSCRIPT);
+        auto range = idx_by_xpath_item.equal_range(XPath::ITEM_NAME_SUBSCRIPT);
         for (auto it = range.first; it != range.second; ++it) {
             if (it->second > idx) {
                 idx = it->second;
@@ -334,7 +334,7 @@ String XPath::evaluate_xpath2(SharedPtr<Node> start_node, String xpath) {
             resolved_key_name = curr_node->Parent()->Name(); // We want to resolve name of parent node based on its child node
         }
 
-        // Resolve all occurences of XPath::KEY_NAME_SUBSCRIPT
+        // Resolve all occurences of XPath::ITEM_NAME_SUBSCRIPT
         for (auto it = range.first; it != range.second; ++it) {
             xpath_items.at(it->second) = resolved_key_name;
         }
@@ -354,7 +354,7 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
         return {};
     }
 
-    Utils::find_and_replace_all(xpath, XPath::KEY_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::KEY_NAME_SUBSCRIPT);
+    Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT);
     MultiMap<String, std::size_t> idx_by_xpath_item;
     Vector<String> xpath_items;
     // Returns first token
@@ -369,13 +369,13 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
         ++idx;
     }
 
-    // Resolve @key key
-    auto key_name_pos = idx_by_xpath_item.find(XPath::KEY_NAME_SUBSCRIPT);
+    // Resolve @item key
+    auto key_name_pos = idx_by_xpath_item.find(XPath::ITEM_NAME_SUBSCRIPT);
     if (key_name_pos != std::end(idx_by_xpath_item)) {
         auto start_node_xpath = to_string2(start_node);
         // Find last idx
         idx = 0; 
-        auto range = idx_by_xpath_item.equal_range(XPath::KEY_NAME_SUBSCRIPT);
+        auto range = idx_by_xpath_item.equal_range(XPath::ITEM_NAME_SUBSCRIPT);
         for (auto it = range.first; it != range.second; ++it) {
             if (it->second > idx) {
                 idx = it->second;
@@ -434,7 +434,7 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
         KeyFindVisitor keyFindVisitor(xpath_stack);
         root_node->Accept(keyFindVisitor);
         resolved_key_name = keyFindVisitor.getKey();
-        // Resolve all occurences of XPath::KEY_NAME_SUBSCRIPT
+        // Resolve all occurences of XPath::ITEM_NAME_SUBSCRIPT
         for (auto it = range.first; it != range.second; ++it) {
             xpath_items.at(it->second) = resolved_key_name;
         }

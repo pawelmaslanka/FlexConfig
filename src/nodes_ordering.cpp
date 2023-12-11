@@ -15,9 +15,9 @@ class KeySelectorResolverVisitior : public Visitor {
 public:
     virtual ~KeySelectorResolverVisitior() = default;
     KeySelectorResolverVisitior(const String& xpath_to_resolve) {
-        m_pre_wildcard = xpath_to_resolve.substr(0, xpath_to_resolve.find("[@key]"));
-        if ((xpath_to_resolve.find("[@key]") + 6) < xpath_to_resolve.size()) {
-            m_post_wildcard = xpath_to_resolve.substr(xpath_to_resolve.find("[@key]") + 7);
+        m_pre_wildcard = xpath_to_resolve.substr(0, xpath_to_resolve.find("[@item]"));
+        if ((xpath_to_resolve.find("[@item]") + 6) < xpath_to_resolve.size()) {
+            m_post_wildcard = xpath_to_resolve.substr(xpath_to_resolve.find("[@item]") + 7);
         }
 
         spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
@@ -247,14 +247,14 @@ bool NodeDependencyManager::resolve(const SharedPtr<Node>& config, List<String>&
                     continue;
                 }
             }
-            else if (dep.find("[@key]") != String::npos) {
-                spdlog::debug("Found [@key] in dependency {} for node {}", dep, schema_node.first);
+            else if (dep.find("[@item]") != String::npos) {
+                spdlog::debug("Found [@item] in dependency {} for node {}", dep, schema_node.first);
                 auto wildcard_resolver = KeySelectorResolverVisitior(dep);
                 config->Accept(wildcard_resolver);
                 auto resolved_xpath = wildcard_resolver.getResolvedXpath();
                 if (!resolved_xpath.empty()) {
                     for (auto& resolved_wildcard : resolved_xpath) {
-                        spdlog::debug("Put resolved [@key] {}", resolved_wildcard);
+                        spdlog::debug("Put resolved [@item] {}", resolved_wildcard);
                         (*dependencies)[schema_node.first].insert(resolved_wildcard);
                     }
 

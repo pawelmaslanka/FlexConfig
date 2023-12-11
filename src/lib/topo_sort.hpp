@@ -34,10 +34,10 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
 
 // int main(int argc, char* argv[]) {
 //         auto depends = make_map<String, Set<String>>();
-//         (*depends)["/interface/ethernet[@key]"].emplace("/platform/port[@key]/num_breakout");
-//         (*depends)["/interface/aggregate[@key]/members"].emplace("/interface/ethernet[@key]");
-//         (*depends)["/interface/ethernet[@key]/speed"].emplace("/platform/port[@key]/breakout_speed");
-//         (*depends)["/platform/port[@key]/breakout_speed"].emplace("/platform/port[@key]/num_breakout");
+//         (*depends)["/interface/ethernet[@item]"].emplace("/platform/port[@item]/num_breakout");
+//         (*depends)["/interface/aggregate[@item]/members"].emplace("/interface/ethernet[@item]");
+//         (*depends)["/interface/ethernet[@item]/speed"].emplace("/platform/port[@item]/breakout_speed");
+//         (*depends)["/platform/port[@item]/breakout_speed"].emplace("/platform/port[@item]/num_breakout");
 //         run_update_op(depends);
 //         return 0;
 // }
