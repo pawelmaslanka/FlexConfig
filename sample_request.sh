@@ -8,7 +8,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
    -H 'Content-Type: application/text' \
    -d ${SESSION_TOKEN}`
 
-if [ ${HTTP_STATUS} -eq 200 ] 
+if [ ${HTTP_STATUS} -eq 201 ] 
 then 
     echo "Successfully processed the request" 
 else 
@@ -118,7 +118,6 @@ else
 fi
 
 echo "Apply candidate config"
-
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
@@ -133,7 +132,6 @@ else
 fi
 
 echo "Post update bad config (no removed /interface/ethernet/eth-2)"
-
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
@@ -177,7 +175,6 @@ else
 fi
 
 echo "Post update bad config (no added /interface/ethernet/eth-2_1)"
-
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
@@ -220,7 +217,6 @@ else
 fi
 
 echo "Post update bad config (no updated /platform/port/eth-2/breakout-mode)"
-
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
@@ -263,7 +259,6 @@ else
 fi
 
 echo "Post update bad config (no removed /vlan/id/2/members/eth-2)"
-
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
@@ -307,7 +302,6 @@ else
 fi
 
 echo "Post update bad config (no created /interface/aggregate-ethernet/ae-1)"
-
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
@@ -346,7 +340,6 @@ else
 fi
 
 echo "Post update good config [2]"
-
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
@@ -394,7 +387,6 @@ else
 fi
 
 echo "Rollback the changes"
-
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:8001/config/candidate \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
@@ -409,7 +401,6 @@ else
 fi
 
 echo "Post update good config [3]"
-
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
@@ -456,9 +447,50 @@ else
     exit 1
 fi
 
-echo "Apply the changes"
-
+echo "Do not allow the changes to apply if the session token is different from the active one (the user who made the changes)"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer NotActiveToken" \
+   -d ''`
+
+if [ ${HTTP_STATUS} -eq 498 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Apply the changes"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d ''`
+
+if [ ${HTTP_STATUS} -eq 200 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Try to delete invalid session token"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:8001/config/candidate \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer InvalidToken" \
+   -d ''`
+
+if [ ${HTTP_STATUS} -eq 498 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Delete session token"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:8001/session/token \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d ''`

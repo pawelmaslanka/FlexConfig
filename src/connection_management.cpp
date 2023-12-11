@@ -8,8 +8,13 @@
 using namespace ConnectionManagement;
 namespace Http = httplib;
 
-bool ConnectionManagement::HTTP::IsSuccess(const StatusCode status_code) {
-    return (status_code >= ConnectionManagement::HTTP::StatusCode::START_SUCCESS) && (status_code <= ConnectionManagement::HTTP::StatusCode::END_SUCCESS);
+using namespace std::chrono_literals;
+
+Server::Server()
+: m_session_mngr(360s /* session timeout */) {
+    m_session_mngr.RegisterSessionTimeoutCallback(m_callback_register_id, [this](const String session_token) {
+        m_session_mngr.RemoveSessionToken(session_token);
+    });
 }
 
 bool Server::addConnectionHandler(Map<String, RequestCallback>& callbacks, const String& id, RequestCallback handler) {
@@ -55,121 +60,105 @@ bool Server::removeOnPutConnectionHandler(const String& id) {
 }
 
 bool Server::Run(const String& host, const UInt16 port) {
-    static constexpr auto TEXT_PLAIN_RESP_CONTENT = "text/plain";
-    auto check_session_token = [this](const Http::Request &req, Http::Response &res) {
-        static constexpr auto AUTHORIZATION = "Authorization";
-        if (req.headers.find(AUTHORIZATION) == req.headers.end()) {
-            spdlog::info("Not found authorization token");
-            res.status = ConnectionManagement::HTTP::StatusCode::TOKEN_REQUIRED;
-            return false;
-        }
-
-        String auth = req.get_header_value(AUTHORIZATION);
-        Utils::Trim(auth);
-        // Authorization: Bearer TOKEN
-        String session_token = auth.substr(sizeof ("Bearer"));
-        spdlog::info("Session token: '{}'", session_token);
-        if (m_leased_session_token.find(session_token) == m_leased_session_token.end()) {
-            spdlog::info("Not found session '{}'", session_token);
-            res.status = ConnectionManagement::HTTP::StatusCode::INVALID_TOKEN;
-            return false;
-        }
-
-        m_leased_session_token[session_token].LastRequestAt = std::chrono::system_clock::now();
-        return true;
-    };
-
     Http::Server srv;
     srv.Post(ConnectionManagement::URIRequestPath::Session::TOKEN, [this](const Http::Request &req, Http::Response &res) {
-        if (m_leased_session_token.find(req.body) != m_leased_session_token.end()) {
-            return ConnectionManagement::HTTP::StatusCode::CONFLICT; // Resource already exists
-        }
+        m_session_mngr.RegisterSessionToken(req, res);
+        return res.status;
+    });
 
-        auto now = std::chrono::system_clock::now();
-        m_leased_session_token[req.body] = SessionDetails { now, now };
-        spdlog::info("Registered new session token '{}'", req.body);
-        // FIXME: Run thread to handle expired session
-        return ConnectionManagement::HTTP::StatusCode::CREATED;
+    srv.Delete(ConnectionManagement::URIRequestPath::Session::TOKEN, [this](const Http::Request &req, Http::Response &res) {
+        m_session_mngr.RemoveSessionToken(req, res);
     });
 
     srv.Get(ConnectionManagement::URIRequestPath::Config::RUNNING, [this](const Http::Request &req, Http::Response &res) {
         String return_data;
         spdlog::debug("Got running GET request:\n {}", req.body);
-        auto status = processRequest(Method::GET, ConnectionManagement::URIRequestPath::Config::RUNNING, req.body, return_data);
+        auto status = processRequest(HTTP::Method::GET, ConnectionManagement::URIRequestPath::Config::RUNNING, req.body, return_data);
         auto return_message = status ? return_data : "Failed";
-        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
         res.status = status ? HTTP::StatusCode::OK : HTTP::StatusCode::INTERNAL_SERVER_ERROR;
     });
 
-    srv.Post(ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE, [this, &check_session_token](const Http::Request &req, Http::Response &res) {
-        if (!check_session_token(req, res)) {
+    srv.Post(ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE, [this](const Http::Request &req, Http::Response &res) {
+        if (!m_session_mngr.SetActiveSessionToken(req, res)) {
             return;
         }
 
+        m_session_mngr.CancelSessionTokenTimerOnce(req);
         String return_data;
         spdlog::debug("Got POST request:\n {}", req.body);
-        res.status = processRequest(Method::POST, ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE, req.body, return_data);
-        auto return_message = ConnectionManagement::HTTP::IsSuccess((ConnectionManagement::HTTP::StatusCode) res.status) ? return_data : "Failed";
-        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = processRequest(HTTP::Method::POST, ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE, req.body, return_data);
+        auto return_message = HTTP::IsSuccess(static_cast<HTTP::StatusCode>(res.status)) ? return_data : "Failed";
+        res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
+        if (!m_session_mngr.SetSessionTokenTimerOnce(req, [this]([[maybe_unused]] const String session_token) {
+                String req_data_stub;
+                String res_data_stub;
+                processRequest(HTTP::Method::DELETE, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req_data_stub, res_data_stub);
+            },
+            180s)) {
+            // FIXME: Handle error
+        }
     });
 
     srv.Post(ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF, [this](const Http::Request &req, Http::Response &res) {
         String return_data;
         spdlog::debug("Got POST diff request:\n {}", req.body);
-        res.status = processRequest(Method::POST, ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF, req.body, return_data);
-        auto return_message = ConnectionManagement::HTTP::IsSuccess((ConnectionManagement::HTTP::StatusCode) res.status) ? return_data : "Failed";
-        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = processRequest(HTTP::Method::POST, ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF, req.body, return_data);
+        auto return_message = HTTP::IsSuccess((HTTP::StatusCode) res.status) ? return_data : "Failed";
+        res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
     });
 
-    srv.Get(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this, &check_session_token](const Http::Request &req, Http::Response &res) {
-        if (!check_session_token(req, res)) {
+    srv.Get(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this](const Http::Request &req, Http::Response &res) {
+        if (!m_session_mngr.CheckActiveSessionToken(req, res)) {
             return;
         }
 
         String return_data;
         spdlog::debug("Got candidate GET request:\n {}", req.body);
-        res.status = processRequest(Method::GET, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
-        auto return_message = ConnectionManagement::HTTP::IsSuccess((ConnectionManagement::HTTP::StatusCode) res.status) ? return_data : "Failed";
-        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = processRequest(HTTP::Method::GET, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
+        auto return_message = HTTP::IsSuccess((HTTP::StatusCode) res.status) ? return_data : "Failed";
+        res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
     });
 
-    srv.Put(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this, &check_session_token](const Http::Request &req, Http::Response &res) {
-        if (!check_session_token(req, res)) {
+    srv.Put(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this](const Http::Request &req, Http::Response &res) {
+        if (!m_session_mngr.CheckActiveSessionToken(req, res)) {
             return;
         }
 
+        m_session_mngr.CancelSessionTokenTimerOnce(req);
         String return_data;
         spdlog::debug("Got PUT request:\n {}", req.body);
-        res.status = processRequest(Method::PUT, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
-        auto return_message = ConnectionManagement::HTTP::IsSuccess((ConnectionManagement::HTTP::StatusCode) res.status) ? return_data : "Failed";
-        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = processRequest(HTTP::Method::PUT, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
+        auto return_message = HTTP::IsSuccess((HTTP::StatusCode) res.status) ? return_data : "Failed";
+        res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
     });
 
-    srv.Delete(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this, &check_session_token](const Http::Request &req, Http::Response &res) {
-        if (!check_session_token(req, res)) {
+    srv.Delete(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this](const Http::Request &req, Http::Response &res) {
+        if (!m_session_mngr.CheckActiveSessionToken(req, res)) {
             return;
         }
 
+        m_session_mngr.CancelSessionTokenTimerOnce(req);
         String return_data;
         spdlog::debug("Got DELETE request:\n {}", req.body);
-        res.status = processRequest(Method::DELETE, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
-        auto return_message = ConnectionManagement::HTTP::IsSuccess((ConnectionManagement::HTTP::StatusCode) res.status) ? return_data : "Failed";
-        res.set_content(return_message, TEXT_PLAIN_RESP_CONTENT);
+        res.status = processRequest(HTTP::Method::DELETE, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
+        auto return_message = HTTP::IsSuccess((HTTP::StatusCode) res.status) ? return_data : "Failed";
+        res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
     });
 
     return srv.listen(host, port);;
 }
 
 // FIXME: Extend about Error Message
-ConnectionManagement::HTTP::StatusCode Server::processRequest(const Method method, const String& path, const String& request_data, String& return_data) {
-    auto check_internal_success = [](const ConnectionManagement::HTTP::StatusCode status_code) {
-        return status_code == ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
+HTTP::StatusCode Server::processRequest(const HTTP::Method method, const String& path, const String& request_data, String& return_data) {
+    auto check_internal_success = [](const HTTP::StatusCode status_code) {
+        return status_code == HTTP::StatusCode::INTERNAL_SUCCESS;
     };
 
-    ConnectionManagement::HTTP::StatusCode status_code = ConnectionManagement::HTTP::StatusCode::INTERNAL_SERVER_ERROR;
+    HTTP::StatusCode status_code = HTTP::StatusCode::INTERNAL_SERVER_ERROR;
 
     switch (method) {
-    case Method::GET: {
+    case HTTP::Method::GET: {
         for (auto& [_, cb] : m_on_get_callback_by_id) {
             status_code = cb(path, request_data, return_data);
             if (check_internal_success(status_code)) {
@@ -181,7 +170,7 @@ ConnectionManagement::HTTP::StatusCode Server::processRequest(const Method metho
 
         break;
     }
-    case Method::POST: {
+    case HTTP::Method::POST: {
         for (auto& [_, cb] : m_on_post_callback_by_id) {
             status_code = cb(path, request_data, return_data);
             if (check_internal_success(status_code)) {
@@ -193,7 +182,7 @@ ConnectionManagement::HTTP::StatusCode Server::processRequest(const Method metho
 
         break;
     }
-    case Method::PUT: {
+    case HTTP::Method::PUT: {
         for (auto& [_, cb] : m_on_put_callback_by_id) {
             status_code = cb(path, request_data, return_data);
             if (check_internal_success(status_code)) {
@@ -205,7 +194,7 @@ ConnectionManagement::HTTP::StatusCode Server::processRequest(const Method metho
 
         break;
     }
-    case Method::DELETE: {
+    case HTTP::Method::DELETE: {
         for (auto& [_, cb] : m_on_delete_callback_by_id) {
             status_code = cb(path, request_data, return_data);
             if (check_internal_success(status_code)) {

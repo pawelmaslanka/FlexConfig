@@ -1,8 +1,9 @@
 #pragma once
 
+#include "lib/http_common.hpp"
 #include "lib/std_types.hpp"
 
-#include <map>
+#include "session_management.hpp"
 
 namespace ConnectionManagement {
 namespace URIRequestPath {
@@ -18,37 +19,6 @@ namespace Session {
 } // namespace Session
 }
 
-enum class Method {
-    GET,
-    PUT,
-    POST,
-    DELETE
-};
-
-namespace HTTP {
-    enum StatusCode {
-        // For internal use
-        INTERNAL_SUCCESS = 0,
-        // Informational responses
-        CONTINUE = 100,
-        // Successful responses
-        START_SUCCESS = 200,
-        OK = START_SUCCESS,
-        CREATED = 201,
-        END_SUCCESS = 299,
-        // Redirection messages
-        SEE_OTHER = 303,
-        // Client error responses
-        CONFLICT = 409,
-        INVALID_TOKEN = 498,
-        TOKEN_REQUIRED = 499,
-        // Server error responses
-        INTERNAL_SERVER_ERROR = 500,
-    };
-
-    bool IsSuccess(const StatusCode status_code);
-}
-
 class Client {
 public:
 
@@ -59,6 +29,8 @@ using RequestCallback = std::function<HTTP::StatusCode(const String& path, Strin
 
 class Server {
 public:
+    Server();
+
     bool addOnDeleteConnectionHandler(const String& id, RequestCallback handler);
     bool removeOnDeleteConnectionHandler(const String& id);
     bool addOnGetConnectionHandler(const String& id, RequestCallback handler);
@@ -70,17 +42,14 @@ public:
     bool Run(const String& host, const UInt16 port);
 
 private:
-    HTTP::StatusCode processRequest(const Method method, const String& path, const String& request_data, String& return_data);
+    HTTP::StatusCode processRequest(const HTTP::Method method, const String& path, const String& request_data, String& return_data);
     bool addConnectionHandler(Map<String, RequestCallback>& callbacks, const String& id, RequestCallback handler);
     bool removeConnectionHandler(Map<String, RequestCallback>& callbacks, const String& id);
     Map<String, RequestCallback> m_on_delete_callback_by_id;
     Map<String, RequestCallback> m_on_get_callback_by_id;
     Map<String, RequestCallback> m_on_post_callback_by_id;
     Map<String, RequestCallback> m_on_put_callback_by_id;
-    struct SessionDetails {
-        std::chrono::time_point<std::chrono::system_clock> LastRequestAt;
-        std::chrono::time_point<std::chrono::system_clock> StartAt;
-    };
-    Map<String, SessionDetails> m_leased_session_token;
+    SessionManager m_session_mngr;
+    String m_callback_register_id = "HttpServer";
 };
 } // ConnectionManagement

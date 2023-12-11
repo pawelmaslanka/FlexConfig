@@ -14,6 +14,7 @@
 #include "node/node.hpp"
 #include "node/leaf.hpp"
 #include "node/composite.hpp"
+#include "lib/http_common.hpp"
 #include "lib/utils.hpp"
 #include "config.hpp"
 #include "lib/topo_sort.hpp"
@@ -57,66 +58,66 @@ int main(int argc, char* argv[]) {
     cm.addOnPostConnectionHandler("config_running_update", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE);
-            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
+            return HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request on {} with POST method: {}", path, data_request);
-        return config_mngr->makeCandidateConfig(data_request) ? ConnectionManagement::HTTP::StatusCode::OK : ConnectionManagement::HTTP::StatusCode::INTERNAL_SERVER_ERROR;
+        return config_mngr->makeCandidateConfig(data_request) ? HTTP::StatusCode::OK : HTTP::StatusCode::INTERNAL_SERVER_ERROR;
     });
 
     cm.addOnGetConnectionHandler("config_running_get", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::RUNNING) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::RUNNING);
-            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
+            return HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request running on {} with GET method: {}", path, data_request);
         return_data = config_mngr->dumpRunningConfig();
-        return ConnectionManagement::HTTP::StatusCode::OK;
+        return HTTP::StatusCode::OK;
     });
 
     cm.addOnPostConnectionHandler("config_running_diff", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF);
-            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
+            return HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request on {} with POST diff method: {}", path, data_request);
         return_data = config_mngr->getConfigDiff(data_request);
-        return ConnectionManagement::HTTP::StatusCode::OK;
+        return HTTP::StatusCode::OK;
     });
 
     cm.addOnGetConnectionHandler("config_candidate_get", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::CANDIDATE) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::CANDIDATE);
-            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
+            return HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request candidate on {} with GET method: {}", path, data_request);
         return_data = config_mngr->dumpCandidateConfig();
-        return ConnectionManagement::HTTP::StatusCode::OK;
+        return HTTP::StatusCode::OK;
     });
 
     cm.addOnPutConnectionHandler("config_candidate_apply", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::CANDIDATE) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::CANDIDATE);
-            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
+            return HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request candidate on {} with PUT method: {}", path, data_request);
         return_data = config_mngr->applyCandidateConfig();
-        return ConnectionManagement::HTTP::StatusCode::OK;
+        return HTTP::StatusCode::OK;
     });
 
     cm.addOnDeleteConnectionHandler("config_candidate_delete", [&config_mngr](const String& path, String data_request, String& return_data) {
         if (path != ConnectionManagement::URIRequestPath::Config::CANDIDATE) {
             spdlog::debug("Unexpected URI requested '{}' - expected '{}'", path, ConnectionManagement::URIRequestPath::Config::CANDIDATE);
-            return ConnectionManagement::HTTP::StatusCode::INTERNAL_SUCCESS;
+            return HTTP::StatusCode::INTERNAL_SUCCESS;
         }
 
         spdlog::debug("Get request candidate on {} with DELETE method: {}", path, data_request);
         return_data = config_mngr->cancelCandidateConfig();
-        return ConnectionManagement::HTTP::StatusCode::OK;
+        return HTTP::StatusCode::OK;
     });
 
     if (!cm.Run("localhost", 8001)) {
