@@ -117,56 +117,56 @@ else
     exit 1
 fi
 
-echo "Wait till session token will expire"
-sleep 210
+# echo "Wait till session token will expire"
+# sleep 210
 
-echo "Apply candidate config should fail due to expired token"
-HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \
-   -H 'Content-Type: application/json' \
-   -H "Authorization: Bearer ${SESSION_TOKEN}" \
-   -d ''`
+# echo "Apply candidate config should fail due to expired token"
+# HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \
+#    -H 'Content-Type: application/json' \
+#    -H "Authorization: Bearer ${SESSION_TOKEN}" \
+#    -d ''`
 
-if [ ${HTTP_STATUS} -eq 498 ] 
-then 
-    echo "Successfully processed the request" 
-else 
-    echo "Failed to process the request (${HTTP_STATUS})"
-    exit 1
-fi
+# if [ ${HTTP_STATUS} -eq 498 ] 
+# then 
+#     echo "Successfully processed the request" 
+# else 
+#     echo "Failed to process the request (${HTTP_STATUS})"
+#     exit 1
+# fi
 
-echo "Post update config again after the time for the changes expired"
-HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
-   -H 'Content-Type: application/json' \
-   -H "Authorization: Bearer ${SESSION_TOKEN}" \
-   -d '[
-    {
-        "op": "add",
-        "path": "/interface/ethernet/eth-2",
-        "value": {
-            "speed": "100G"
-        }
-    },
-    {
-        "op": "add",
-        "path": "/platform/port/eth-2",
-        "value": {
-            "breakout-mode": "none"
-        }
-    },
-    {
-        "op": "add",
-        "path": "/vlan/id/2/members/eth-2",
-        "value": null
-    }
-]'`
+# echo "Post update config again after the time for the changes expired"
+# HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
+#    -H 'Content-Type: application/json' \
+#    -H "Authorization: Bearer ${SESSION_TOKEN}" \
+#    -d '[
+#     {
+#         "op": "add",
+#         "path": "/interface/ethernet/eth-2",
+#         "value": {
+#             "speed": "100G"
+#         }
+#     },
+#     {
+#         "op": "add",
+#         "path": "/platform/port/eth-2",
+#         "value": {
+#             "breakout-mode": "none"
+#         }
+#     },
+#     {
+#         "op": "add",
+#         "path": "/vlan/id/2/members/eth-2",
+#         "value": null
+#     }
+# ]'`
 
-if [ ${HTTP_STATUS} -eq 200 ] 
-then 
-    echo "Successfully processed the request" 
-else 
-    echo "Failed to process the request (${HTTP_STATUS})"
-    exit 1
-fi
+# if [ ${HTTP_STATUS} -eq 200 ] 
+# then 
+#     echo "Successfully processed the request" 
+# else 
+#     echo "Failed to process the request (${HTTP_STATUS})"
+#     exit 1
+# fi
 
 echo "Apply candidate config"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \

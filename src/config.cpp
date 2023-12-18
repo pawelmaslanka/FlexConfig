@@ -194,7 +194,7 @@ Config::Manager::Manager(StringView config_filename, StringView schema_filename,
 
 }
 
-bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node_config) {
+bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node_config, const String& schema_filename) {
     auto dependency_mngr = std::make_shared<NodeDependencyManager>(config_mngr);
     List<String> ordered_nodes_by_xpath = {};
     if (!dependency_mngr->resolve(node_config, ordered_nodes_by_xpath)) {
@@ -243,6 +243,7 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             auto json_node2 = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
             spdlog::debug("Patch:");
             auto diff = json_node2.diff({}, json_node2);
+            spdlog::debug("{}", diff.dump(2));
             diff[0]["op"] = "add";
             diff[0]["path"] = xpath;
             if (diff[0]["value"].is_object()) {
@@ -252,6 +253,20 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
                 // "value": "2"
                 for (auto it : diff[0]["value"].items()) {
                     it.value() = nlohmann::json::object();
+                }
+            }
+
+            // Replace:
+            // { "op": "replace", "path": "/interface/ethernet/eth-2", "value": null }
+            // with:
+            // { "op": "replace", "path": "/interface/ethernet", "value": "eth-2" }
+            auto xpath_jschema = getSchemaByXPath2(xpath, schema_filename);
+            if (xpath_jschema.find("type") != xpath_jschema.end()) {
+                if (xpath_jschema.at("type") == "null") {
+                    auto fixed_xpath = xpath.substr(0, xpath.find_last_of(Config::XPATH_NODE_SEPARATOR));
+                    auto fixed_value = xpath.substr(xpath.find_last_of(Config::XPATH_NODE_SEPARATOR) + 1, xpath.size());
+                    diff[0]["path"] = fixed_xpath;
+                    diff[0]["value"] = fixed_value;
                 }
             }
 
@@ -425,9 +440,14 @@ bool Config::Manager::load() {
             return false;
         }
 
+        spdlog::debug("Ordered xpath-actions:");
+        for (const auto& xpath : ordered_nodes_by_xpath) {
+            spdlog::debug("{}", xpath);
+        }
+
         saveXPathReference(ordered_nodes_by_xpath, std::dynamic_pointer_cast<Node>(root_config));
 
-        if (!gPerformAction(shared_from_this(), root_config)) {
+        if (!gPerformAction(shared_from_this(), root_config, m_schema_filename)) {
             spdlog::error("Failed to perform action on the config");
             return false;
         }
@@ -450,9 +470,14 @@ bool Config::Manager::load() {
             return false;
         }
 
+        spdlog::debug("Ordered xpath-actions:");
+        for (const auto& xpath : ordered_nodes_by_xpath) {
+            spdlog::debug("{}", xpath);
+        }
+
         saveXPathReference(ordered_nodes_by_xpath, std::dynamic_pointer_cast<Node>(root_config));
 
-        if (!gPerformAction(shared_from_this(), root_config)) {
+        if (!gPerformAction(shared_from_this(), root_config, m_schema_filename)) {
             spdlog::error("Failed to perform action on the config");
             return false;
         }
@@ -1303,8 +1328,8 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         auto xpath_jschema = getSchemaByXPath2(xpath, schema_filename);
         if (xpath_jschema.find("type") != xpath_jschema.end()) {
             if (xpath_jschema.at("type") == "null") {
-                auto fixed_xpath = xpath.substr(0, xpath.find_last_of("/"));
-                auto fixed_value = xpath.substr(xpath.find_last_of("/") + 1, xpath.size());
+                auto fixed_xpath = xpath.substr(0, xpath.find_last_of(Config::XPATH_NODE_SEPARATOR));
+                auto fixed_value = xpath.substr(xpath.find_last_of(Config::XPATH_NODE_SEPARATOR) + 1, xpath.size());
                 diff[0]["path"] = fixed_xpath;
                 diff[0]["value"] = fixed_value;
             }

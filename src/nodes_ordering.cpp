@@ -47,7 +47,14 @@ public:
             for (const auto& subnode : subnode_visitor.getAllSubnodes()) {
                 String resolved_wildcard_xpath = m_pre_wildcard + "/" + subnode;
                 if (!m_post_wildcard.empty()) {
-                    resolved_wildcard_xpath += "/" + m_post_wildcard;
+                    if ((resolved_wildcard_xpath.size() > 1)
+                        && (resolved_wildcard_xpath.at(resolved_wildcard_xpath.size() - 1) != Config::XPATH_NODE_SEPARATOR[0])) {
+                        if (m_post_wildcard.at(0) != Config::XPATH_NODE_SEPARATOR[0]) {
+                            resolved_wildcard_xpath += Config::XPATH_NODE_SEPARATOR;
+                        }
+                    }
+
+                    resolved_wildcard_xpath += m_post_wildcard;
                 }
 
                 spdlog::debug("Resolved key selector {}", resolved_wildcard_xpath);
