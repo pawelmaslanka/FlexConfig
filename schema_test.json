@@ -130,7 +130,8 @@
                                                 "server-address": "127.0.0.1:8000"
                                             },
                                             "update-dependencies": [
-                                                "/interface/ethernet[@item]"
+                                                "/interface/ethernet[@item]",
+                                                "/interface/ethernet[@item]/speed"
                                             ],
                                             "update-constraints": [
                                                 "must(exists(xpath(@)))"

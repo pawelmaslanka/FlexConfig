@@ -5,10 +5,18 @@
                 "members": {
                     "eth-2_1": null
                 }
+            },
+            "ae-10": {
+                "members": {
+                    "eth-10": null
+                }
             }
         },
         "ethernet": {
             "eth-1": {
+                "speed": "100G"
+            },
+            "eth-10": {
                 "speed": "100G"
             },
             "eth-2_1": {}
@@ -17,6 +25,9 @@
     "platform": {
         "port": {
             "eth-1": {
+                "breakout-mode": "none"
+            },
+            "eth-10": {
                 "breakout-mode": "none"
             },
             "eth-2": {

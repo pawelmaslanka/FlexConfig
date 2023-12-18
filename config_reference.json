@@ -3,9 +3,18 @@
         "ethernet": {
             "eth-1": {
                 "speed": "100G"
+            },
+            "eth-10": {
+                "speed": "100G"
             }
         },
-        "aggregate-ethernet": {}
+        "aggregate-ethernet": {
+            "ae-10": {
+                "members": {
+                    "eth-10": null
+                }
+            }
+        }
     },
     "vlan": {
         "id": {
@@ -22,6 +31,9 @@
     "platform": {
         "port": {
             "eth-1": {
+                "breakout-mode": "none"
+            },
+            "eth-10": {
                 "breakout-mode": "none"
             }
         }
