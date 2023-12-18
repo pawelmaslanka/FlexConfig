@@ -247,13 +247,11 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             diff[0]["op"] = "add";
             diff[0]["path"] = xpath;
             if (diff[0]["value"].is_object()) {
-                // TODO: We should consider if we could put "string" with single value insead of empty object
-                // "value":{"2":{}}
+                // Replace:
+                // "value":{"foo":{}}
                 // vs
-                // "value": "2"
-                for (auto it : diff[0]["value"].items()) {
-                    it.value() = nlohmann::json::object();
-                }
+                // "value": null
+                diff[0]["value"] = nullptr;
             }
 
             // Replace:
