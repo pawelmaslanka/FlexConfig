@@ -1296,6 +1296,20 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
             diff[0]["value"] = nullptr;
         }
 
+        // Replace:
+        // { "op": "replace", "path": "/interface/ethernet/eth-2", "value": null }
+        // with:
+        // { "op": "replace", "path": "/interface/ethernet", "value": "eth-2" }
+        auto xpath_jschema = getSchemaByXPath2(xpath, schema_filename);
+        if (xpath_jschema.find("type") != xpath_jschema.end()) {
+            if (xpath_jschema.at("type") == "null") {
+                auto fixed_xpath = xpath.substr(0, xpath.find_last_of("/"));
+                auto fixed_value = xpath.substr(xpath.find_last_of("/") + 1, xpath.size());
+                diff[0]["path"] = fixed_xpath;
+                diff[0]["value"] = fixed_value;
+            }
+        }
+
         auto server_addr = server_addr_attr.front();
         httplib::Client cli(server_addr);
         auto path = action_attr.front();
