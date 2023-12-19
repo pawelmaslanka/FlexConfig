@@ -261,10 +261,10 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             auto xpath_jschema = getSchemaByXPath2(xpath, schema_filename);
             if (xpath_jschema.find("type") != xpath_jschema.end()) {
                 if (xpath_jschema.at("type") == "null") {
-                    auto fixed_xpath = xpath.substr(0, xpath.find_last_of(Config::XPATH_NODE_SEPARATOR));
-                    auto fixed_value = xpath.substr(xpath.find_last_of(Config::XPATH_NODE_SEPARATOR) + 1, xpath.size());
-                    diff[0]["path"] = fixed_xpath;
-                    diff[0]["value"] = fixed_value;
+                    auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
+                    diff[0]["value"] = xpath_jpointer.back();
+                    xpath_jpointer.pop_back();
+                    diff[0]["path"] = xpath_jpointer.to_string();
                 }
             }
 
@@ -780,7 +780,8 @@ private:
     SharedPtr<Node> m_root_config;
 };
 
-bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_config, SharedPtr<Node>& node_config, const String& schema_filename, SharedPtr<Config::Manager>& config_mngr, Map<String, Set<String>>& node_references) {
+bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, SharedPtr<Node>& node_config, const String& schema_filename, SharedPtr<Config::Manager>& config_mngr, Map<String, Set<String>>& node_references) {
+    nlohmann::json json_config = jconfig;
     auto diff_patch = json_config.patch(nlohmann::json::parse(patch));
     json_config = diff_patch;
     std::ifstream schema_ifs(schema_filename);
@@ -798,8 +799,9 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         auto op = diff_item["op"];
         auto path = diff_item["path"];
         if (diff_item.find("value") == diff_item.end()) {
-            if (json_config.find(nlohmann::json::json_pointer(path).to_string()) != json_config.end()) {
-                diff_item["value"] = json_config[nlohmann::json::json_pointer(path)];
+            auto path_jpointer = nlohmann::json::json_pointer(path);
+            if (json_config.contains(path_jpointer.to_string())) {
+                diff_item["value"] = json_config[path_jpointer];
             }
             else {
                 diff_item["value"] = nullptr;
@@ -1068,8 +1070,9 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         auto op = diff_item["op"];
         auto path = diff_item["path"];
         if (diff_item.find("value") == diff_item.end()) {
-            if (json_config.find(nlohmann::json::json_pointer(path).to_string()) != json_config.end()) {
-                diff_item["value"] = json_config[nlohmann::json::json_pointer(path)];
+            auto path_jpointer = nlohmann::json::json_pointer(path);
+            if (json_config.contains(path_jpointer.to_string())) {
+                diff_item["value"] = json_config[path_jpointer];
             }
             else {
                 diff_item["value"] = nullptr;
@@ -1275,8 +1278,9 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
             action["value"] = nullptr;
             if (auto leaf_ptr = std::dynamic_pointer_cast<Leaf>(node)) {
                 if (leaf_ptr->getValue().is_string_array()) {
-                    if (json_config.find(nlohmann::json::json_pointer(xpath).to_string()) != json_config.end()) {
-                        action["value"] = json_config[nlohmann::json::json_pointer(xpath)];
+                    auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
+                    if (json_config.contains(xpath_jpointer.to_string())) {
+                        action["value"] = json_config[xpath_jpointer];
                     }
                     else {
                         action["value"] = nlohmann::json::array();
@@ -1313,12 +1317,14 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         auto json_node2 = nlohmann::json().parse(copy_json_config[nlohmann::json::json_pointer(xpath)].dump());
         auto diff = json_node2.diff({}, json_node2);
         // FIXME: Check if node exists in jconfig, not in already exists node!
-        diff[0]["op"] = XPath::select2(node_config, xpath) ? "replace" : "add";
+        auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
+        diff[0]["op"] = jconfig.contains(xpath_jpointer) ? "replace" : "add";
         diff[0]["path"] = xpath;
         if (diff[0]["value"].is_object()) {
             diff[0]["value"] = nullptr;
         }
 
+        // Item has to be fixed if the type is 'null', like for member containers with reference
         // Replace:
         // { "op": "replace", "path": "/interface/ethernet/eth-2", "value": null }
         // with:
@@ -1326,10 +1332,9 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
         auto xpath_jschema = getSchemaByXPath2(xpath, schema_filename);
         if (xpath_jschema.find("type") != xpath_jschema.end()) {
             if (xpath_jschema.at("type") == "null") {
-                auto fixed_xpath = xpath.substr(0, xpath.find_last_of(Config::XPATH_NODE_SEPARATOR));
-                auto fixed_value = xpath.substr(xpath.find_last_of(Config::XPATH_NODE_SEPARATOR) + 1, xpath.size());
-                diff[0]["path"] = fixed_xpath;
-                diff[0]["value"] = fixed_value;
+                diff[0]["value"] = xpath_jpointer.back();
+                xpath_jpointer.pop_back();
+                diff[0]["path"] = xpath_jpointer.to_string();
             }
         }
 
@@ -1364,6 +1369,8 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& json_conf
     rollback_removed_nodes();
     return false;
 #endif
+
+    jconfig = json_config;
 
     return true;
 }
