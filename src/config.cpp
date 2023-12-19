@@ -255,12 +255,12 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             }
 
             // Replace:
-            // { "op": "replace", "path": "/interface/ethernet/eth-2", "value": null }
+            // { "op": "add", "path": "/interface/ethernet/eth-2", "value": null }
             // with:
-            // { "op": "replace", "path": "/interface/ethernet", "value": "eth-2" }
+            // { "op": "add", "path": "/interface/ethernet", "value": "eth-2" }
             auto xpath_jschema = getSchemaByXPath2(xpath, schema_filename);
             if (xpath_jschema.find("type") != xpath_jschema.end()) {
-                if (xpath_jschema.at("type") == "null") {
+                if ((xpath_jschema.at("type") == "null") || (xpath_jschema.at("type") == "object")) {
                     auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
                     diff[0]["value"] = xpath_jpointer.back();
                     xpath_jpointer.pop_back();
