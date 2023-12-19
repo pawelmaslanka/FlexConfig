@@ -951,7 +951,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     }
 
     Stack<String> removed_nodes_by_xpath;
-    auto rollback_removed_nodes = [&removed_nodes_by_xpath, &config_mngr]() {
+    auto rollback_removed_nodes = [&removed_nodes_by_xpath, &config_mngr, &schema_filename]() {
         while (!removed_nodes_by_xpath.empty()) {
             auto xpath = removed_nodes_by_xpath.top();
             auto jnode = g_running_jconfig[nlohmann::json::json_pointer(xpath)];
@@ -974,12 +974,25 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             nlohmann::json action = nlohmann::json::object();
             action["op"] = "add";
             action["path"] = xpath;
-            action["value"] = nullptr; // nlohmann::json::object();
-            if (jnode.is_array()) {
+            action["value"] = nullptr;
+            // NOTE: This is note a case since the array type is not longer handle
+            // if (jnode.is_array()) {
+            //     action["value"] = jnode;
+            // }
+            // else
+            if (std::dynamic_pointer_cast<Leaf>(node)) {
                 action["value"] = jnode;
             }
-            else if (std::dynamic_pointer_cast<Leaf>(node)) {
-                action["value"] = jnode;
+            else {
+                auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
+                auto xpath_jschema = getSchemaByXPath2(xpath_jpointer.to_string(), schema_filename);
+                // Item has to be fixed if the type is 'null', like for member containers with reference
+                if (((xpath_jschema.find("type") != xpath_jschema.end())
+                        && ((xpath_jschema.at("type") == "object") || (xpath_jschema.at("type") == "null")))) {
+                    action["value"] = xpath_jpointer.back();
+                    xpath_jpointer.pop_back();
+                    action["path"] = xpath_jpointer.to_string();
+                }
             }
 
             auto server_addr = server_addr_attr.front();
@@ -1011,8 +1024,14 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto diff = json_node2.diff({}, json_node2);
         diff[0]["op"] = "remove";
         diff[0]["path"] = xpath;
-        if (diff[0]["value"].is_object()) {
-            diff[0]["value"] = nullptr;
+        auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
+        auto xpath_jschema = getSchemaByXPath2(xpath_jpointer.parent_pointer().to_string(), schema_filename);
+        if (((xpath_jschema.find("type") != xpath_jschema.end())
+                && ((xpath_jschema.at("type") == "object") || (xpath_jschema.at("type") == "null")))) {
+            auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
+            diff[0]["value"] = xpath_jpointer.back();
+            xpath_jpointer.pop_back();
+            diff[0]["path"] = xpath_jpointer.to_string();
         }
 
         auto server_addr = server_addr_attr.front();
@@ -1254,7 +1273,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     }
 
     Stack<String> added_nodes_by_xpath;
-    auto rollback_added_nodes = [&added_nodes_by_xpath, &config_mngr, &node_config, &json_config]() {
+    auto rollback_added_nodes = [&added_nodes_by_xpath, &config_mngr, &node_config, &json_config, &schema_filename]() {
         while (!added_nodes_by_xpath.empty()) {
             auto xpath = added_nodes_by_xpath.top();
             added_nodes_by_xpath.pop();
@@ -1276,17 +1295,28 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             action["op"] = "remove";
             action["path"] = xpath;
             action["value"] = nullptr;
-            if (auto leaf_ptr = std::dynamic_pointer_cast<Leaf>(node)) {
-                if (leaf_ptr->getValue().is_string_array()) {
-                    auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
-                    if (json_config.contains(xpath_jpointer.to_string())) {
-                        action["value"] = json_config[xpath_jpointer];
-                    }
-                    else {
-                        action["value"] = nlohmann::json::array();
-                    }
-                }
+            auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
+            auto xpath_jschema = getSchemaByXPath2(xpath_jpointer.parent_pointer().to_string(), schema_filename);
+            auto is_object = (xpath_jschema.find("type") != xpath_jschema.end()) && (xpath_jschema.at("object") == "null");
+            // Item has to be fixed if the type is 'null', like for member containers with reference
+            auto is_leaf_object = (xpath_jschema.find("type") != xpath_jschema.end()) && (xpath_jschema.at("type") == "null");
+            if (is_object || is_leaf_object) {
+                action["value"] = xpath_jpointer.back();
+                xpath_jpointer.pop_back();
+                action["path"] = xpath_jpointer.to_string();
             }
+            // NOTE: Since there is not permit array type so the below code is not longer necessary
+            // if (auto leaf_ptr = std::dynamic_pointer_cast<Leaf>(node)) {
+            //     if (leaf_ptr->getValue().is_string_array()) {
+            //         auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
+            //         if (json_config.contains(xpath_jpointer.to_string())) {
+            //             action["value"] = json_config[xpath_jpointer];
+            //         }
+            //         else {
+            //             action["value"] = nlohmann::json::array();
+            //         }
+            //     }
+            // }
 
             auto server_addr = server_addr_attr.front();
             httplib::Client cli(server_addr);
@@ -1316,25 +1346,25 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto copy_json_config = json_config;
         auto json_node2 = nlohmann::json().parse(copy_json_config[nlohmann::json::json_pointer(xpath)].dump());
         auto diff = json_node2.diff({}, json_node2);
-        // FIXME: Check if node exists in jconfig, not in already exists node!
         auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
         diff[0]["op"] = jconfig.contains(xpath_jpointer) ? "replace" : "add";
         diff[0]["path"] = xpath;
-        if (diff[0]["value"].is_object()) {
-            diff[0]["value"] = nullptr;
-        }
-
+        /*
+        * Replace:
+        * { "op": "replace", "path": "/interface/ethernet/eth-2", "value": null }
+        * with:
+        * { "op": "replace", "path": "/interface/ethernet", "value": "eth-2" }
+        */
+        auto xpath_jschema = getSchemaByXPath2(xpath_jpointer.to_string(), schema_filename);
         // Item has to be fixed if the type is 'null', like for member containers with reference
-        // Replace:
-        // { "op": "replace", "path": "/interface/ethernet/eth-2", "value": null }
-        // with:
-        // { "op": "replace", "path": "/interface/ethernet", "value": "eth-2" }
-        auto xpath_jschema = getSchemaByXPath2(xpath, schema_filename);
-        if (xpath_jschema.find("type") != xpath_jschema.end()) {
-            if (xpath_jschema.at("type") == "null") {
-                diff[0]["value"] = xpath_jpointer.back();
-                xpath_jpointer.pop_back();
-                diff[0]["path"] = xpath_jpointer.to_string();
+        if (((xpath_jschema.find("type") != xpath_jschema.end())
+                && ((xpath_jschema.at("type") == "object") || (xpath_jschema.at("type") == "null")))) {
+            auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
+            diff[0]["value"] = xpath_jpointer.back();
+            xpath_jpointer.pop_back();
+            diff[0]["path"] = xpath_jpointer.to_string();
+            if (diff[0]["op"] == "replace") {
+                diff[0]["op"] = "add";
             }
         }
 
