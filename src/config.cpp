@@ -246,14 +246,6 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             spdlog::debug("{}", diff.dump(2));
             diff[0]["op"] = "add";
             diff[0]["path"] = xpath;
-            if (diff[0]["value"].is_object()) {
-                // Replace:
-                // "value":{"foo":{}}
-                // vs
-                // "value": null
-                diff[0]["value"] = nullptr;
-            }
-
             // Replace:
             // { "op": "add", "path": "/interface/ethernet/eth-2", "value": null }
             // with:
