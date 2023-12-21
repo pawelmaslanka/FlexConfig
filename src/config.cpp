@@ -230,6 +230,7 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             }
         }
 
+        Stack<nlohmann::json> action_to_rollback;
         // Perform action to remote server
         for (auto& xpath : ordered_nodes_by_xpath) {
             spdlog::debug("Select xpath {} from JSON config", xpath);
@@ -270,10 +271,24 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             auto result = cli.Post(path, body, content_type);
             if (!result) {
                 spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
-                // TODO: Rollback all changes
+                while (!action_to_rollback.empty()) {
+                    httplib::Client cli(server_addr);
+                    auto path = action_attr.front();
+                    auto action = action_to_rollback.top();
+                    action_to_rollback.pop();
+                    // It can be simply converted to "remove" operation since it is startup steps and there is
+                    // not required to consider a "replace" operation
+                    action["op"] = "remove";
+                    auto body = action.dump();
+                    auto content_type = "application/json";
+                    spdlog::debug("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
+                    cli.Post(path, body, content_type);
+                }
+
                 return false;
             }
 
+            action_to_rollback.push(diff[0]);
             spdlog::debug("POST result, status: {}, body: {}", result->status, result->body);
         }
     }
