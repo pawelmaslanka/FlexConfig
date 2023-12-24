@@ -36,6 +36,15 @@
                             "additionalProperties": false
                         }
                     },
+                    "anyOf": [
+                        { "required": [ "eth-1" ]  }, { "required": [ "eth-2" ]  }, { "required": [ "eth-3" ]  }, { "required": [ "eth-4" ]  }, { "required": [ "eth-5" ]  }, { "required": [ "eth-6" ]  }, { "required": [ "eth-7" ]  }, { "required": [ "eth-8" ]  }, { "required": [ "eth-9" ]  }, { "required": [ "eth-10" ] },
+                        { "required": [ "eth-11" ] }, { "required": [ "eth-12" ] }, { "required": [ "eth-13" ] }, { "required": [ "eth-14" ] }, { "required": [ "eth-15" ] }, { "required": [ "eth-16" ] }, { "required": [ "eth-17" ] }, { "required": [ "eth-18" ] }, { "required": [ "eth-19" ] }, { "required": [ "eth-20" ] },
+                        { "required": [ "eth-21" ] }, { "required": [ "eth-22" ] }, { "required": [ "eth-23" ] }, { "required": [ "eth-24" ] }, { "required": [ "eth-25" ] }, { "required": [ "eth-26" ] }, { "required": [ "eth-27" ] }, { "required": [ "eth-28" ] }, { "required": [ "eth-29" ] }, { "required": [ "eth-30" ] },
+                        { "required": [ "eth-31" ] }, { "required": [ "eth-32" ] }, { "required": [ "eth-33" ] }, { "required": [ "eth-34" ] }, { "required": [ "eth-35" ] }, { "required": [ "eth-36" ] }, { "required": [ "eth-37" ] }, { "required": [ "eth-38" ] }, { "required": [ "eth-39" ] }, { "required": [ "eth-40" ] },
+                        { "required": [ "eth-41" ] }, { "required": [ "eth-42" ] }, { "required": [ "eth-43" ] }, { "required": [ "eth-44" ] }, { "required": [ "eth-45" ] }, { "required": [ "eth-46" ] }, { "required": [ "eth-47" ] }, { "required": [ "eth-48" ] }, { "required": [ "eth-49" ] }, { "required": [ "eth-50" ] },
+                        { "required": [ "eth-51" ] }, { "required": [ "eth-52" ] }, { "required": [ "eth-53" ] }, { "required": [ "eth-54" ] }, { "required": [ "eth-55" ] }, { "required": [ "eth-56" ] }, { "required": [ "eth-57" ] }, { "required": [ "eth-58" ] }, { "required": [ "eth-59" ] }, { "required": [ "eth-60" ] },
+                        { "required": [ "eth-61" ] }, { "required": [ "eth-62" ] }, { "required": [ "eth-63" ] }, { "required": [ "eth-64" ] }
+                    ],
                     "additionalProperties": false
                 },
                 "additionalProperties": false
