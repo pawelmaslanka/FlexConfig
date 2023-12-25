@@ -151,44 +151,6 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
     return true;
 }
 
-std::shared_ptr<Composite> loadConfig(std::string_view config_filename, std::string_view schema_filename) {
-    std::ifstream schema_ifs(schema_filename);
-    nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
-    std::ifstream config_ifs(config_filename);
-    nlohmann::json jconfig = nlohmann::json::parse(config_ifs);
-
-    if (!validateJsonConfig(jconfig, jschema)) {
-        spdlog::error("Failed to validate config");
-        return {};
-    }
-
-    static auto constexpr ROOT_TREE_CONFIG_NAME { "/" };
-    // auto root_config = Composite::Factory(ROOT_TREE_CONFIG_NAME).get_object<Composite>();
-    auto root_config = std::make_shared<Composite>(ROOT_TREE_CONFIG_NAME);
-    auto properties_it = jschema.find("properties");
-    if (properties_it != jschema.end()) {
-        if (!parseAndLoadConfig(jconfig, *properties_it, root_config)) {
-            spdlog::error("Failed to load config based on 'properties' node");
-            return {};
-        }
-
-        return root_config;
-    }
-
-    properties_it = jschema.find("patternProperties");
-    if (properties_it != jschema.end()) {
-        if (!loadPatternProperties(jconfig, *properties_it, root_config)) {
-            spdlog::error("Failed to load config based on 'patternProperties' node");
-            return {};
-        }
-
-        return root_config;
-    }
-
-    spdlog::error("Not found node 'properties' nor 'patternProperties' in root schema");
-    return {};
-}
-
 Config::Manager::Manager(StringView config_filename, StringView schema_filename, SharedPtr<RegistryClass>& registry)
  : m_config_filename { config_filename }, m_schema_filename { schema_filename } {
 
@@ -418,9 +380,52 @@ bool Config::Manager::removeXPathReference(const List<String>& ordered_nodes_by_
     return true;
 }
 
+bool CheckIfThereIsDuplicatedKey(const String& json_filename) {
+    std::ifstream jfile(json_filename);
+    bool is_duplicated_key = false;
+    Stack<Set<nlohmann::json>> parse_stack;
+    nlohmann::json::parser_callback_t check_duplicate_keys =
+        [&](int /* depth */, nlohmann::json::parse_event_t event, nlohmann::json& parsed) {
+            if (is_duplicated_key) {
+                return false;
+            }
+
+            switch (event) {
+                case nlohmann::json::parse_event_t::object_start: {
+                    parse_stack.push(Set<nlohmann::json>());
+                    break;
+                }
+                case nlohmann::json::parse_event_t::object_end: {
+                    parse_stack.pop();
+                    break;
+                }
+                case nlohmann::json::parse_event_t::key: {
+                    const auto result = parse_stack.top().insert(parsed);
+                    if (!result.second) {
+                      std::cerr << "key " << parsed << " was already seen in this object!" << std::endl;
+                      is_duplicated_key = true;
+                      return false;
+                    }
+                    break;
+                }
+                default: break;
+            }
+            // yes, store parsed value
+            return true;
+        };
+    
+    std::ignore = nlohmann::json::parse(jfile, check_duplicate_keys);
+    return is_duplicated_key;
+}
+
 bool Config::Manager::load() {
     std::ifstream schema_ifs(m_schema_filename);
     nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
+    if (CheckIfThereIsDuplicatedKey(m_config_filename)) {
+        spdlog::error("There is duplicated key");
+        return false;
+    }
+
     std::ifstream config_ifs(m_config_filename);
     nlohmann::json jconfig = nlohmann::json::parse(config_ifs);
 
