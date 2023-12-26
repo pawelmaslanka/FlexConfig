@@ -1,0 +1,4 @@
+Name: fmt
+Version: 10.1.1
+Source: https://github.com/fmtlib/fmt
+About: A modern formatting library

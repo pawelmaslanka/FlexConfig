@@ -1,0 +1,4 @@
+Name: cpp-peglib
+Version: v1.8.5
+Source: https://github.com/yhirose/cpp-peglib
+About: A single file C++ header-only PEG (Parsing Expression Grammars) library
