@@ -792,6 +792,20 @@ private:
     SharedPtr<Node> m_root_config;
 };
 
+bool ValidatePatch(const String& patch, const nlohmann::json& jconfig) {
+    auto diff_patch = jconfig.patch(nlohmann::json::parse(patch));
+    auto origin_diff = nlohmann::json::diff(jconfig, diff_patch);
+    if (nlohmann::json::parse(patch) != origin_diff) {
+        spdlog::error("Failed to validate JSON diff:\n {}",
+            nlohmann::json::diff(
+                nlohmann::json::parse(patch),
+                origin_diff).dump(2));
+        return true;
+    }
+
+    return false;
+}
+
 bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, SharedPtr<Node>& node_config, const String& schema_filename, SharedPtr<Config::Manager>& config_mngr, Map<String, Set<String>>& node_references) {
     nlohmann::json json_config = jconfig;
     auto diff_patch = json_config.patch(nlohmann::json::parse(patch));
@@ -1425,6 +1439,11 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
     PrintVisitor print_visitor;
 
     auto candidate_jconfig = g_running_jconfig;
+    if (ValidatePatch(patch, candidate_jconfig)) {
+        spdlog::error("Patch is invalid... probably does not come from this instance running");
+        return false;
+    }
+
     auto config_mngr = shared_from_this();
     spdlog::debug("Run make candidate config");
     if (!gMakeCandidateConfigInternal(patch, candidate_jconfig, candidate_config, m_schema_filename, config_mngr, m_candidate_xpath_source_reference_by_target)) {
@@ -1502,7 +1521,6 @@ bool Config::Manager::cancelCandidateConfig() {
         return false;
     }
 
-    // TODO: Restore config
     PrintVisitor print_visitor;
     auto patch = nlohmann::json::diff(g_candidate_jconfig, g_running_jconfig);
     spdlog::debug("Changes to restore:\n{}", patch.dump(4));

@@ -83,6 +83,47 @@ else
     exit 1
 fi
 
+echo "Post update bad config due to duplicated key at xpath '/interface/ethernet/eth-1'"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d '[
+    {
+        "op": "add",
+        "path": "/interface/ethernet/eth-1",
+        "value": {
+            "speed": "400G"
+        }
+    },
+    {
+        "op": "add",
+        "path": "/interface/ethernet/eth-2",
+        "value": {
+            "speed": "100G"
+        }
+    },
+    {
+        "op": "add",
+        "path": "/platform/port/eth-2",
+        "value": {
+            "breakout-mode": "none"
+        }
+    },
+    {
+        "op": "add",
+        "path": "/vlan/id/2/members/eth-2",
+        "value": null
+    }
+]'`
+
+if [ ${HTTP_STATUS} -eq 500 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
 echo "Post update good config [1]"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
