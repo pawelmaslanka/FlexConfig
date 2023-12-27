@@ -8,6 +8,7 @@
 
 #include <spdlog/spdlog.h>
 #include "httplib.h"
+#include "args.hxx"
 
 #include "connection_management.hpp"
 #include "constraint_checking.hpp"
@@ -39,18 +40,41 @@ using namespace peg::udl;
 #include <iomanip>
 
 int main(int argc, char* argv[]) {
-    if (argc < 3) {
-        spdlog::error("Too few arguments passed to {} to run program", argv[0]);
-        spdlog::debug("Usage:\n{} <JSON_CONFIG_FILENAME> <JSON_SCHEMA_FILENAME>\n", argv[0]);
+    args::ArgumentParser arg_parser("Configuration Management System");
+    args::HelpFlag help(arg_parser, "HELP", "Show this help menu", {'h', "help"});
+    args::ValueFlag<String> config_file(arg_parser, "CONFIG", "The configuration file", { 'c', "config" });
+    args::ValueFlag<String> schema_file(arg_parser, "SCHEMA", "The schema file", { 's', "schema" });
+    args::ValueFlag<String> host_address(arg_parser, "ADDRESS", "The host binding address (hostname or IP address)", { 'a', "address" });
+    args::ValueFlag<UInt16> host_port(arg_parser, "PORT", "The host binding port", { 'p', "port" });
+    try {
+        arg_parser.ParseCLI(argc, argv);
+    }
+    catch (args::Help) {
+        std::cout << arg_parser;
+        ::exit(EXIT_SUCCESS);
+    }
+    catch (args::ParseError e) {
+        std::cerr << e.what() << std::endl;
+        std::cerr << arg_parser;
+        ::exit(EXIT_FAILURE);
+    }
+    catch (args::ValidationError e) {
+        std::cerr << e.what() << std::endl;
+        std::cerr << arg_parser;
         ::exit(EXIT_FAILURE);
     }
 
-    auto json_config_filename = argv[1];
-    auto json_schema_filename = argv[2];
+    if (!config_file || !schema_file || !host_address || !host_port) {
+        std::cout << arg_parser;
+        ::exit(EXIT_SUCCESS);
+    }
+
+    auto json_config_filename = args::get(config_file);
+    auto json_schema_filename = args::get(schema_file);
     auto registry = std::make_shared<RegistryClass>();
     auto config_mngr = std::make_shared<Config::Manager>(json_config_filename, json_schema_filename, registry);
     if (!config_mngr->load()) {
-        spdlog::error("Failed to load config file");
+        spdlog::error("Failed to load config_file file");
         ::exit(EXIT_FAILURE);
     }
 
@@ -120,7 +144,7 @@ int main(int argc, char* argv[]) {
         return HTTP::StatusCode::OK;
     });
 
-    if (!cm.Run("localhost", 8001)) {
+    if (!cm.Run(args::get(host_address), args::get(host_port))) {
         spdlog::error("Failed to run connection management server");
         ::exit(EXIT_FAILURE);
     }

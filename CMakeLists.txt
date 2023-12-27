@@ -17,6 +17,7 @@ include_directories(
     ${SRC_DIR}
     ${SRC_DIR}/node
     ${SRC_DIR}/lib
+    ${SRC_DIR}/lib/external/args
     ${SRC_DIR}/lib/external/peglib
     ${SRC_DIR}/lib/external/httplib
 )
