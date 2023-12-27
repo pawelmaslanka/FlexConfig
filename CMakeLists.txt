@@ -18,8 +18,9 @@ include_directories(
     ${SRC_DIR}/node
     ${SRC_DIR}/lib
     ${SRC_DIR}/lib/external/args
-    ${SRC_DIR}/lib/external/peglib
     ${SRC_DIR}/lib/external/httplib
+    ${SRC_DIR}/lib/external/nlohmann
+    ${SRC_DIR}/lib/external/peglib
 )
 
 set(CPP_HEADER_EXT hpp)

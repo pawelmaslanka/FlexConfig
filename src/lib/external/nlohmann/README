@@ -1,0 +1,4 @@
+Name: json
+Version: v3.11.3
+Source: https://github.com/nlohmann/json
+About: JSON for Modern C++

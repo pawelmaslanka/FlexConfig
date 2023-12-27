@@ -1,0 +1,4 @@
+Name: json-schema-validator
+Version: 2.3.0
+Source: https://github.com/pboettch/json-schema-validator.git
+About: JSON schema validator for JSON for Modern C++
