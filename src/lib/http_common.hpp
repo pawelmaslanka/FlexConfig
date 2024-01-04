@@ -10,7 +10,7 @@ enum class Method {
     GET,
     PUT,
     POST,
-    DELETE
+    DEL
 };
 
 enum StatusCode {
