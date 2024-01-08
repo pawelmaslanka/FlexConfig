@@ -222,7 +222,7 @@ bool InfixExpressionHandle(const SemanticValues& vs, Any& dt) {
         }
     }
     else {
-        spdlog::error("Not recognized type of arguments");
+        spdlog::error("Not recognized type of argument '{}'", vs.sv());
         pegArg.ExpressionResult = false;
         STOP_PROCESSING(dt, vs);
     }
@@ -326,7 +326,6 @@ Vector<String> XPathHandle(const SemanticValues& vs, Any& dt) {
         return {};
     }
 
-    auto xpath_tokens = XPath::parse3(xpath);
     auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
     if (!XPath::select2(pegArg.RootNodeConfig, resolved_xpath)) {
         spdlog::debug("Not found node at xpath '{}'", xpath);
@@ -346,9 +345,30 @@ Any XPathValueHandle(const SemanticValues& vs, Any& dt) {
         return {};
     }
 
+    Utils::find_and_replace_all(xpath, "[@item]", "/[@item]");
     auto xpath_tokens = XPath::parse3(xpath);
-    auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
-    auto node = XPath::select2(pegArg.RootNodeConfig, resolved_xpath);
+    auto resolved_xpath = XPath::to_string2(pegArg.CurrentProcessingNode);
+    // FIXME: XPath::evaluate_xpath2() does not do the same what this code
+    // auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
+    auto resolved_xpath_tokens = XPath::parse3(resolved_xpath);
+    String rebuild_resolved_xpath;
+    while (!xpath_tokens.empty()) {
+        auto token = xpath_tokens.front();
+        xpath_tokens.pop();
+        if ((token == "[@item]")
+            && (!resolved_xpath_tokens.empty())) {
+            spdlog::debug("Found '{}' token and it is going to be replaced with '{}'", token, resolved_xpath_tokens.front());
+            token = resolved_xpath_tokens.front();
+        }
+
+        rebuild_resolved_xpath += "/" + token;
+        if (!resolved_xpath_tokens.empty()) {
+            resolved_xpath_tokens.pop();
+        }
+    }
+
+    spdlog::debug("Resolved xpath '{}' for current node '{}'", rebuild_resolved_xpath, pegArg.CurrentProcessingNode->Name());
+    auto node = XPath::select2(pegArg.RootNodeConfig, rebuild_resolved_xpath);
     if (!node) {
         spdlog::debug("Not found node at xpath '{}'", xpath);
         return {};
@@ -362,7 +382,6 @@ Any XPathValueHandle(const SemanticValues& vs, Any& dt) {
     }
 
     auto value = leaf_node->getValue();
-    spdlog::debug("Got value '{}' from xpath '{}'", value.to_string(), xpath);
     if (value.is_bool()) {
         return Any { value.get_bool() };
     }
@@ -406,7 +425,6 @@ Vector<String> XPathMatchRegexHandle(const SemanticValues& vs, Any& dt) {
         auto wildcard_pos = xpath.find("/*");
         if ((i == 1) && (wildcard_pos != String::npos)) {
             xpath = xpath.substr(0, wildcard_pos);
-            auto xpath_tokens = XPath::parse3(xpath);
             auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
             auto node = XPath::select2(pegArg.RootNodeConfig, resolved_xpath);
             if (!node) {
@@ -424,7 +442,6 @@ Vector<String> XPathMatchRegexHandle(const SemanticValues& vs, Any& dt) {
             continue;
         }
 
-        auto xpath_tokens = XPath::parse3(xpath);
         auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
         auto node = XPath::select2(pegArg.RootNodeConfig, resolved_xpath);
         if (!node) {
@@ -485,7 +502,6 @@ Vector<String> XPathKeyBasedHandle(const SemanticValues& vs, Any& dt) {
         }
 
         Utils::find_and_replace_all(xpath, "[@item]", "/" + resolved_reference_xpath_key);
-        auto xpath_tokens = XPath::parse3(xpath);
         if (!XPath::select2(pegArg.RootNodeConfig, xpath)) {
             spdlog::debug("Not found node at xpath '{}'", xpath);
             return {};
@@ -547,7 +563,6 @@ Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
             return {};
         }
 
-        xpath_tokens = XPath::parse3(xpath);
         result.emplace_back(rebuild_resolved_xpath);
     }
 

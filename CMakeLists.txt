@@ -54,5 +54,8 @@ set(SRC_LIST
     "${SRC_DIR}/xpath.${CPP_SRC_EXT}"
 )
 
+add_compile_options(-g -fsanitize=address -fsanitize-recover=address)
+add_link_options(-g -fsanitize=address -fsanitize-recover=address)
+
 add_executable(${PROJECT_NAME} ${INC_LIST} ${SRC_LIST} main.${CPP_SRC_EXT})
 target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json spdlog::spdlog_header_only nlohmann_json_schema_validator::validator)
