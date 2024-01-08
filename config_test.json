@@ -35,7 +35,11 @@
             }
         }
     },
-    "protocol": {},
+    "protocol": {
+        "lacp": {
+            "ae-10": {}
+        }
+    },
     "vlan": {
         "id": {
             "2": {

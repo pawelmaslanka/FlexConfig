@@ -373,7 +373,7 @@ bool Config::Manager::removeXPathReference(const List<String>& ordered_nodes_by_
     }
 
     if (!success) {
-        spdlog::error("There are still references which has not beed removed");
+        spdlog::error("There are still references which has not been removed");
         return false;
     }
 
