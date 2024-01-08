@@ -4,7 +4,7 @@ Design
 │                  │                  │                  │                │                        │
 │                  │  JSON over HTTP  │                  │      RPC       │                        │
 │    FlexConfig    ├──────────────────┤    Middleware    ├────────────────┤   SDK/SAI/ASIC/DPDK    │
-│                  │                  │                  │                │                        │
+│                  │                  │                  │                │ (Dataplane management) │
 │                  │                  │                  │                │                        │
 └────────┬─────────┘                  └──────────────────┘                └────────────────────────┘
          │
@@ -27,3 +27,7 @@ Design
                                        (need FEC, enable AN,
                           ┼            set preemphasis settings
                                        in PHY, etc.)
+
+                                       Speaks with userspace
+                                       daemons, like LACP,
+                                       BGP
