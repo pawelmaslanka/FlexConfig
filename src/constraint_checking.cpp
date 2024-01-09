@@ -546,7 +546,8 @@ Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
         while (!xpath_tokens.empty()) {
             auto token = xpath_tokens.front();
             xpath_tokens.pop();
-            if (token == "[@item]") {
+            if ((token == "[@item]")
+                && (!resolved_xpath_tokens.empty())) {
                 std::smatch matched;
                 if (std::regex_search(resolved_xpath_tokens.front(), matched, Regex { regex_expression })) {
                     token = matched[0];
@@ -554,7 +555,9 @@ Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
             }
 
             rebuild_resolved_xpath += "/" + token;
-            resolved_xpath_tokens.pop();
+            if (!resolved_xpath_tokens.empty()) {
+                resolved_xpath_tokens.pop();
+            }
         }
 
         spdlog::debug("Composed xpath {}", rebuild_resolved_xpath);
@@ -601,7 +604,8 @@ Any XPathValueKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
         while (!xpath_tokens.empty()) {
             auto token = xpath_tokens.front();
             xpath_tokens.pop();
-            if (token == "[@item]") {
+            if ((token == "[@item]")
+                && (!resolved_xpath_tokens.empty())) {
                 std::smatch matched;
                 if (std::regex_search(resolved_xpath_tokens.front(), matched, Regex { regex_expression })) {
                     token = matched[0];
@@ -609,7 +613,9 @@ Any XPathValueKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
             }
 
             rebuild_resolved_xpath += "/" + token;
-            resolved_xpath_tokens.pop();
+            if (!resolved_xpath_tokens.empty()) {
+                resolved_xpath_tokens.pop();
+            }
         }
 
         auto node = XPath::select2(pegArg.RootNodeConfig, rebuild_resolved_xpath);
