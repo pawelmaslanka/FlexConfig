@@ -502,10 +502,6 @@ else
     exit 1
 fi
 
-echo "Startup config"
-curl -s -X GET http://localhost:8001/config/running \
-   -H 'Content-Type: application/json' | jq
-
 echo "Post update good config [3]"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
@@ -590,6 +586,101 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:8
    -d ''`
 
 if [ ${HTTP_STATUS} -eq 498 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Delete session token"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:8001/session/token \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d ''`
+
+if [ ${HTTP_STATUS} -eq 200 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+SESSION_TOKEN="HelloWorld2!"
+echo "Create new session token"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/session/token \
+   -H 'Content-Type: application/text' \
+   -d ${SESSION_TOKEN}`
+
+if [ ${HTTP_STATUS} -eq 201 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Apply with success more complex diff config with two attributes embedded into xpath '/interface/ethernet/eth-11'"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d '[
+    {
+        "op": "add",
+        "path": "/interface/aggregate-ethernet/ae-11",
+        "value": {
+            "members": {
+                "eth-11": null
+            }
+        }
+    },
+    {
+        "op": "add",
+        "path": "/interface/ethernet/eth-11",
+        "value": {
+            "auto-negotiation": "enabled",
+            "speed": "400G"
+        }
+    },
+    {
+        "op": "add",
+        "path": "/platform/port/eth-11",
+        "value": {
+            "breakout-mode": "none"
+        }
+    },
+    {
+        "op": "add",
+        "path": "/protocol/lacp/ae-11",
+        "value": {}
+    },
+    {
+        "op": "add",
+        "path": "/vlan/id/11",
+        "value": {
+            "members": {
+                "ae-11": null
+            }
+        }
+    }
+]'`
+
+if [ ${HTTP_STATUS} -eq 200 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Rollback the changes"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:8001/config/candidate \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d ''`
+
+if [ ${HTTP_STATUS} -eq 200 ] 
 then 
     echo "Successfully processed the request" 
 else 

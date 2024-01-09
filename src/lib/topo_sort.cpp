@@ -137,9 +137,9 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
     }
 
     // std::cout << "Dependency resolved:\n";
-    // for (const auto& res : resolved) {
+    for (const auto& res : resolved) {
         // std::cout << res->name() << std::endl;
-    // }
+    }
 
     // Merge result from all "trees".
     // Remove duplicated nodes.
@@ -166,9 +166,9 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
     }
 
     // std::cout << "Dependency resolved2:\n";
-    // for (const auto& res : ordered_cmds) {
+    for (const auto& res : ordered_cmds) {
         // std::cout << res << std::endl;
-    // }
+    }
 
     // TODO: Check if this step won't mess dependencies
     // NOTE: Unfortunately, the following algorithm causes incorrect ordering (e.g. /interface/ethernet/eth-2_1):
@@ -224,7 +224,7 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
 
     // std::cout << "Resolved " << ordered_cmds.size() << " items:\n";
     // for (auto& r : ordered_cmds) {
-    //     std::cout << r << " ";
+    //     // std::cout << r << " ";
     // }
 
     // std::cout << std::endl;

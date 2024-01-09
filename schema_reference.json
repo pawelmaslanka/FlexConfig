@@ -69,6 +69,20 @@
                             "description": "Interface configuration",
                             "type": "object",
                             "properties": {
+                                "auto-negotiation": {
+                                    "description": "Interface autonegotiation",
+                                    "enum": ["enabled", "disabled"],
+                                    "default": "disabled",
+                                    "update-dependencies": [
+                                        "/interface/ethernet[@item]/speed"
+                                    ],
+                                    "action": {
+                                        "on-update-path": "/update",
+                                        "on-delete-path": "/delete",
+                                        "server-address": "127.0.0.1:8000"
+                                    },
+                                    "additionalProperties": false
+                                },
                                 "speed": {
                                     "description": "Interface speed",
                                     "enum": ["fixed", "100G", "400G"],
@@ -80,7 +94,8 @@
                                     "action": {
                                         "on-update-path": "/update",
                                         "server-address": "127.0.0.1:8000"
-                                    }
+                                    },
+                                    "additionalProperties": false
                                 }
                             },
                             "required": [
@@ -135,6 +150,7 @@
                                             "update-dependencies": [
                                                 "/interface/ethernet[@item]",
                                                 "/interface/ethernet[@item]/speed",
+                                                "/interface/ethernet[@item]/auto-negotiation",
                                                 "/protocol/lacp[@item]"
                                             ],
                                             "update-constraints": [
@@ -207,7 +223,7 @@
                                                 "/interface/aggregate-ethernet/@"
                                             ],
                                             "update-dependencies": [
-                                                "/interface/aggregate-ethernet[@item]/members"
+                                                "/interface/aggregate-ethernet[@item]/members/@"
                                             ],
                                             "update-constraints": [
                                                 "must(exists(xpath(@)))"

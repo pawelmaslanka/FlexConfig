@@ -16,6 +16,69 @@
 
 #include <iostream>
 
+class NodeReferenceResolverVisitior : public Visitor {
+public:
+    virtual ~NodeReferenceResolverVisitior() = default;
+    NodeReferenceResolverVisitior(const String& xpath_to_resolve) {
+        m_pre_wildcard = xpath_to_resolve.substr(0, xpath_to_resolve.find("/@"));
+        if ((xpath_to_resolve.find("/@") + 1) < xpath_to_resolve.size()) {
+            m_post_wildcard = xpath_to_resolve.substr(xpath_to_resolve.find("/@") + 2);
+        }
+
+        spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
+        spdlog::debug("Left xpath {}", m_post_wildcard);
+        m_pre_wildcard_tokens = XPath::parse3(m_pre_wildcard);
+    }
+
+    ForwardList<String> getResolvedXpath() { return m_result; }
+
+    virtual bool visit(SharedPtr<Node> node) override {
+        if (!node) {
+            spdlog::error("Node is null");
+            return false;
+        }
+
+        if (m_pre_wildcard_tokens.empty()
+            || (node->Name() != m_pre_wildcard_tokens.front())) {
+            spdlog::debug("Failed to find key selector");
+            return true;
+        }
+
+        m_pre_wildcard_tokens.pop();
+        if (m_pre_wildcard_tokens.empty()) {
+            spdlog::debug("We reached leaf token at node {}", node->Name());
+            SubnodeChildsVisitor subnode_visitor(node->Name());
+            node->Accept(subnode_visitor);
+            for (const auto& subnode : subnode_visitor.getAllSubnodes()) {
+                String resolved_wildcard_xpath = m_pre_wildcard + "/" + subnode;
+                if (!m_post_wildcard.empty()) {
+                    if ((resolved_wildcard_xpath.size() > 1)
+                        && (resolved_wildcard_xpath.at(resolved_wildcard_xpath.size() - 1) != Config::XPATH_NODE_SEPARATOR[0])) {
+                        if (m_post_wildcard.at(0) != Config::XPATH_NODE_SEPARATOR[0]) {
+                            resolved_wildcard_xpath += Config::XPATH_NODE_SEPARATOR;
+                        }
+                    }
+
+                    resolved_wildcard_xpath += m_post_wildcard;
+                }
+
+                spdlog::debug("Resolved key selector {}", resolved_wildcard_xpath);
+                m_result.emplace_front(resolved_wildcard_xpath);
+            }
+            // Let's break processing
+            return false;
+        }
+
+        return true;
+    }
+
+private:
+    Queue<String> m_pre_wildcard_tokens {};
+    String m_pre_wildcard {};
+    String m_post_wildcard {};
+    ForwardList<String> m_result {};
+};
+
 class KeySelectorResolverVisitior : public Visitor {
 public:
     virtual ~KeySelectorResolverVisitior() = default;
@@ -252,8 +315,23 @@ bool NodeDependencyManager::resolve(const SharedPtr<Node>& config, List<String>&
                 auto resolved_xpath = wildcard_resolver.getResolvedXpath();
                 if (!resolved_xpath.empty()) {
                     for (auto resolved_wildcard : resolved_xpath) {
-                        spdlog::debug("Put resolved wildcard {}", resolved_wildcard);
-                        (*dependencies)[schema_node.first].insert(resolved_wildcard);
+                        if (resolved_wildcard.find("/@") != StringEnd()) {
+                            spdlog::debug("Found node reference @ in dependency {} for node {}", resolved_wildcard, schema_node.first);
+                            spdlog::debug("Start at node '{}''", config->Name());
+                            auto wildcard_resolver = NodeReferenceResolverVisitior(resolved_wildcard);
+                            config->Accept(wildcard_resolver);
+                            auto resolved_xpath = wildcard_resolver.getResolvedXpath();
+                            if (!resolved_xpath.empty()) {
+                                for (auto& resolved_ref : resolved_xpath) {
+                                    spdlog::debug("Put resolved node reference @ '{}'", resolved_ref);
+                                    (*dependencies)[schema_node.first].insert(resolved_ref);
+                                }
+                            }
+                        }
+                        else {
+                            spdlog::debug("Put resolved wildcard {}", resolved_wildcard);
+                            (*dependencies)[schema_node.first].insert(resolved_wildcard);
+                        }
                     }
 
                     continue;
@@ -266,7 +344,37 @@ bool NodeDependencyManager::resolve(const SharedPtr<Node>& config, List<String>&
                 auto resolved_xpath = wildcard_resolver.getResolvedXpath();
                 if (!resolved_xpath.empty()) {
                     for (auto& resolved_wildcard : resolved_xpath) {
-                        spdlog::debug("Put resolved [@item] {}", resolved_wildcard);
+                        if (resolved_wildcard.find("/@") != StringEnd()) {
+                            spdlog::debug("Found node reference @ in dependency {} for node {}", resolved_wildcard, schema_node.first);
+                            spdlog::debug("Start at node '{}''", config->Name());
+                            auto wildcard_resolver = NodeReferenceResolverVisitior(resolved_wildcard);
+                            config->Accept(wildcard_resolver);
+                            auto resolved_xpath = wildcard_resolver.getResolvedXpath();
+                            if (!resolved_xpath.empty()) {
+                                for (auto& resolved_ref : resolved_xpath) {
+                                    spdlog::debug("Put resolved node reference @ '{}'", resolved_ref);
+                                    (*dependencies)[schema_node.first].insert(resolved_ref);
+                                }
+                            }
+                        }
+                        else {
+                            spdlog::debug("Put resolved [@item] {}", resolved_wildcard);
+                            (*dependencies)[schema_node.first].insert(resolved_wildcard);
+                        }
+                    }
+
+                    continue;
+                }
+            }
+            else if (dep.find("/@") != StringEnd()) {
+                spdlog::debug("Found node reference @ in dependency {} for node {}", dep, schema_node.first);
+                spdlog::debug("Start at node '{}'", config->Name());
+                auto wildcard_resolver = NodeReferenceResolverVisitior(dep);
+                config->Accept(wildcard_resolver);
+                auto resolved_xpath = wildcard_resolver.getResolvedXpath();
+                if (!resolved_xpath.empty()) {
+                    for (auto& resolved_wildcard : resolved_xpath) {
+                        spdlog::debug("Put resolved node reference @ {}", resolved_wildcard);
                         (*dependencies)[schema_node.first].insert(resolved_wildcard);
                     }
 
