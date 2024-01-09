@@ -240,7 +240,9 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     {
         "op": "add",
         "path": "/interface/ethernet/eth-2_1",
-        "value": {}
+        "value": {
+        "speed": "fixed"
+        }
     },
     {
         "op": "replace",
@@ -329,7 +331,9 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     {
         "op": "add",
         "path": "/interface/ethernet/eth-2_1",
-        "value": {}
+        "value": {
+        "speed": "fixed"
+        }
     },
     {
         "op": "remove",
@@ -371,7 +375,9 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     {
         "op": "add",
         "path": "/interface/ethernet/eth-2_1",
-        "value": {}
+        "value": {
+        "speed": "fixed"
+        }
     },
     {
         "op": "replace",
@@ -405,7 +411,9 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     {
         "op": "add",
         "path": "/interface/ethernet/eth-2_1",
-        "value": {}
+        "value": {
+        "speed": "fixed"
+        }
     },
     {
         "op": "replace",
@@ -440,9 +448,9 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/interface/aggregate-ethernet/ae-1",
         "value": {
-            "members": {
-                "eth-2_1": null
-            }
+        "members": {
+            "eth-2_1": null
+        }
         }
     },
     {
@@ -452,7 +460,9 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     {
         "op": "add",
         "path": "/interface/ethernet/eth-2_1",
-        "value": {}
+        "value": {
+        "speed": "fixed"
+        }
     },
     {
         "op": "replace",
@@ -492,6 +502,10 @@ else
     exit 1
 fi
 
+echo "Startup config"
+curl -s -X GET http://localhost:8001/config/running \
+   -H 'Content-Type: application/json' | jq
+
 echo "Post update good config [3]"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
@@ -501,9 +515,9 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/interface/aggregate-ethernet/ae-1",
         "value": {
-            "members": {
-                "eth-2_1": null
-            }
+        "members": {
+            "eth-2_1": null
+        }
         }
     },
     {
@@ -513,7 +527,9 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     {
         "op": "add",
         "path": "/interface/ethernet/eth-2_1",
-        "value": {}
+        "value": {
+        "speed": "fixed"
+        }
     },
     {
         "op": "replace",

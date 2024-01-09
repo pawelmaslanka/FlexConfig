@@ -19,7 +19,9 @@
             "eth-10": {
                 "speed": "100G"
             },
-            "eth-2_1": {}
+            "eth-2_1": {
+                "speed": "fixed"
+            }
         }
     },
     "platform": {
