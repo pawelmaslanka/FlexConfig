@@ -36,8 +36,10 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/eth-2",
-        "value": null
+        "path": "/vlan/2/members/untagged",
+        "value": {
+            "eth-2": null
+        }
     }
 ]'`
 
@@ -70,8 +72,10 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/eth-2",
-        "value": null
+        "path": "/vlan/2/members/untagged",
+        "value": {
+            "eth-2": null
+        }
     }
 ]'`
 
@@ -111,8 +115,10 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/eth-2",
-        "value": null
+        "path": "/vlan/2/members/untagged",
+        "value": {
+            "eth-2": null
+        }
     }
 ]'`
 
@@ -145,8 +151,10 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/eth-2",
-        "value": null
+        "path": "/vlan/2/members/untagged",
+        "value": {
+            "eth-2": null
+        }
     }
 ]'`
 
@@ -196,8 +204,10 @@ fi
 #     },
 #     {
 #         "op": "add",
-#         "path": "/vlan/id/2/members/eth-2",
-#         "value": null
+#         "path": "/vlan/2/members/untagged",
+#         "value": {
+#             "eth-2": null
+#         }
 #     }
 # ]'`
 
@@ -251,12 +261,14 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "remove",
-        "path": "/vlan/id/2/members/eth-2"
+        "path": "/vlan/2/members/untagged/eth-2"
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/ae-1",
-        "value": null
+        "path": "/vlan/2/members/untagged",
+        "value": {
+            "ae-1": null
+        }
     }
 ]'`
 
@@ -293,12 +305,14 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "remove",
-        "path": "/vlan/id/2/members/eth-2"
+        "path": "/vlan/2/members/untagged/eth-2"
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/ae-1",
-        "value": null
+        "path": "/vlan/2/members/untagged",
+        "value": {
+            "ae-1": null
+        }
     }
 ]'`
 
@@ -337,12 +351,14 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "remove",
-        "path": "/vlan/id/2/members/eth-2"
+        "path": "/vlan/2/members/untagged/eth-2"
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/ae-1",
-        "value": null
+        "path": "/vlan/2/members/untagged",
+        "value": {
+            "ae-1": null
+        }
     }
 ]'`
 
@@ -386,8 +402,10 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/ae-1",
-        "value": null
+        "path": "/vlan/2/members/untagged",
+        "value": {
+            "ae-1": null
+        }
     }
 ]'`
 
@@ -422,12 +440,14 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "remove",
-        "path": "/vlan/id/2/members/eth-2"
+        "path": "/vlan/2/members/untagged/eth-2"
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/ae-1",
-        "value": null
+        "path": "/vlan/2/members/untagged",
+        "value": {
+            "ae-1": null
+        }
     }
 ]'`
 
@@ -448,9 +468,9 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/interface/aggregate-ethernet/ae-1",
         "value": {
-        "members": {
-            "eth-2_1": null
-        }
+            "members": {
+                "eth-2_1": null
+            }
         }
     },
     {
@@ -461,7 +481,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/interface/ethernet/eth-2_1",
         "value": {
-        "speed": "fixed"
+            "speed": "fixed"
         }
     },
     {
@@ -471,11 +491,11 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "remove",
-        "path": "/vlan/id/2/members/eth-2"
+        "path": "/vlan/2/members/untagged/eth-2"
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/ae-1",
+        "path": "/vlan/2/members/untagged/ae-1",
         "value": null
     }
 ]'`
@@ -511,9 +531,9 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/interface/aggregate-ethernet/ae-1",
         "value": {
-        "members": {
-            "eth-2_1": null
-        }
+            "members": {
+                "eth-2_1": null
+            }
         }
     },
     {
@@ -524,7 +544,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/interface/ethernet/eth-2_1",
         "value": {
-        "speed": "fixed"
+            "speed": "fixed"
         }
     },
     {
@@ -534,11 +554,11 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "remove",
-        "path": "/vlan/id/2/members/eth-2"
+        "path": "/vlan/2/members/untagged/eth-2"
     },
     {
         "op": "add",
-        "path": "/vlan/id/2/members/ae-1",
+        "path": "/vlan/2/members/untagged/ae-1",
         "value": null
     }
 ]'`
@@ -657,10 +677,12 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "add",
-        "path": "/vlan/id/11",
+        "path": "/vlan/11",
         "value": {
             "members": {
-                "ae-11": null
+                "native": {
+                    "ae-11": null
+                }
             }
         }
     }

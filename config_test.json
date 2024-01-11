@@ -43,11 +43,13 @@
         }
     },
     "vlan": {
-        "id": {
-            "2": {
-                "members": {
-                    "ae-1": null,
+        "2": {
+            "members": {
+                "tagged": {
                     "eth-1": null
+                },
+                "untagged": {
+                    "ae-1": null
                 }
             }
         }

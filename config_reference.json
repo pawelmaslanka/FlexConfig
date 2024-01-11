@@ -17,9 +17,9 @@
         }
     },
     "vlan": {
-        "id": {
-            "2": {
-                "members": {
+        "2": {
+            "members": {
+                "tagged": {
                     "eth-1": null
                 }
             }
