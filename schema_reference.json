@@ -224,7 +224,7 @@
                                                 "/interface/aggregate-ethernet/@"
                                             ],
                                             "update-dependencies": [
-                                                "/interface/aggregate-ethernet[@item]/members/@"
+                                                "/interface/aggregate-ethernet/*/members/@"
                                             ],
                                             "update-constraints": [
                                                 "must(exists(xpath(@)))"
