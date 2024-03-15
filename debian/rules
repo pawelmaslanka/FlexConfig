@@ -1,0 +1,68 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+DPKG_EXPORT_BUILDFLAGS = 1
+
+# export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# $@ means that debian helper execute all rules: dh_auto_build, dh_auto_clean, dh_auto_binary, dh_auto_intall etc.
+%:
+	dh $@
+
+# clean:
+# 	echo "Going from clean"
+#	make clean
+#	(cd build && make clean && rm -Rf * && cd ..) || true
+
+build:
+	echo "Going from build"
+	cmake .
+	$(MAKE) all
+
+# install:
+# 	echo "Going from install"
+# 	cmake .
+# 	$(MAKE) all
+# 	$(MAKE) install
+
+# binary:
+# 	echo "Going from binary"
+# 	cmake .
+# 	$(MAKE) all
+
+# mkdir -p build && cd build && cmake .. && cd ..
+# cd build && $(MAKE) all && cd ..
+
+# build:
+#       echo "Hello World!"
+#       echo $(shell pwd)
+#       PWD=$(shell pwd)
+#       $(MAKE) -f Makefile
+#       g++ -Wall -std=c++20 -I$(PWD)/src/ -I$(PWD)/src/node -I$(PWD)/src/lib -I$(PWD)/src/external -I$(PWD)/src/external/httplib -c -o flexconfig main.cpp
+
+# override_dh_auto_clean:
+#	ls /
+#	ls /usr
+# ls /usr/local
+#	ls /usr/lib
+#	ls /usr/include
+# ls /usr/local/lib
+
+# override_dh_auto_test:
+# override_dh_auto_build:
+
+# 	make all
+# 	echo "Jestem tu"
+# 	pwd
+# override_dh_auto_install:
+# 	cd build && make install
+
+# override_dh_gencontrol:
+#       dh_gencontrol -- -v$(PACKAGEVERSION)
+
+override_dh_usrlocal:
+#%:
+#       dh $@
+
+#override_dh_auto_configure:
+#       -DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)

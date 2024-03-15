@@ -1,0 +1,14 @@
+Source: flexconfig
+Section: devel
+Priority: optional
+Maintainer: Renuka Manavalan <remanava@microsoft.com>
+Build-Depends: debhelper (>= 12.0.0), json-schema-validator (>= 0.1), libevent-dev, libboost-thread-dev, libboost-system-dev, liblua5.1-0, libspdlog-dev
+Standards-Version: 3.9.3
+Homepage: https://github.com/pawelmaslanka/FlexConfig
+XS-Go-Import-Path: https://github.com/pawelmaslanka/FlexConfig
+
+Package: flexconfig
+Architecture: amd64
+Built-Using: ${misc:Built-Using}
+Depends: ${shlibs:Depends}
+Description: Central Configuration Manager

@@ -8,6 +8,7 @@
 #include "utils.hpp"
 
 #include <iostream>
+#include <cstring>
 
 bool XPath::NodeFinder::init(const String wanted_node_name) {
     _wanted_node_name = wanted_node_name;
@@ -31,12 +32,12 @@ SharedPtr<Node> XPath::NodeFinder::get_result() {
 SharedPtr<Queue<String>> XPath::parse(const String xpath) {
     auto xpath_items = std::make_shared<Queue<String>>();
     // Returns first token
-    char* token = ::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
+    char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
     // Keep printing tokens while one of the
     // delimiters present in str[].
     while (token != nullptr) {
         xpath_items->push(token);
-        token = ::strtok(nullptr, XPath::SEPARATOR);
+        token = std::strtok(nullptr, XPath::SEPARATOR);
     }
 
     return xpath_items;
@@ -45,12 +46,12 @@ SharedPtr<Queue<String>> XPath::parse(const String xpath) {
 Queue<String> XPath::parse3(const String xpath) {
     Queue<String> xpath_items;
     // Returns first token
-    char* token = ::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
+    char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
     // Keep printing tokens while one of the
     // delimiters present in str[].
     while (token != nullptr) {
         xpath_items.push(token);
-        token = ::strtok(nullptr, XPath::SEPARATOR);
+        token = std::strtok(nullptr, XPath::SEPARATOR);
     }
 
     return xpath_items;
@@ -59,12 +60,12 @@ Queue<String> XPath::parse3(const String xpath) {
 Deque<String> XPath::parse4(const String xpath) {
     Deque<String> xpath_items;
     // Returns first token
-    char* token = ::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
+    char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
     // Keep printing tokens while one of the
     // delimiters present in str[].
     while (token != nullptr) {
         xpath_items.push_back(token);
-        token = ::strtok(nullptr, XPath::SEPARATOR);
+        token = std::strtok(nullptr, XPath::SEPARATOR);
     }
 
     return xpath_items;
@@ -293,7 +294,7 @@ String XPath::evaluate_xpath2(SharedPtr<Node> start_node, String xpath) {
     MultiMap<String, std::size_t> idx_by_xpath_item;
     Vector<String> xpath_items;
     // Returns first token
-    char* token = ::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
+    char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
     // Keep printing tokens while one of the
     // delimiters present in str[].
     size_t idx = 0;
@@ -367,7 +368,7 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
     MultiMap<String, std::size_t> idx_by_xpath_item;
     Vector<String> xpath_items;
     // Returns first token
-    char* token = ::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
+    char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
     // Keep printing tokens while one of the
     // delimiters present in str[].
     size_t idx = 0;
@@ -403,7 +404,7 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
         }
 
         Queue<String> xpath_stack {};
-        token = ::strtok(const_cast<char*>(start_node_xpath.c_str()), XPath::SEPARATOR);
+        token = std::strtok(const_cast<char*>(start_node_xpath.c_str()), XPath::SEPARATOR);
         // Keep printing tokens while one of the
         // delimiters present in str[].
         while (token != nullptr) {
@@ -461,12 +462,12 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
 List<String> XPath::parse2(const String xpath) {
     std::list<String> xpath_items = {};
     // Returns first token
-    char* token = ::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
+    char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
     // Keep printing tokens while one of the
     // delimiters present in str[].
     while (token != nullptr) {
         xpath_items.emplace_back(token);
-        token = ::strtok(nullptr, XPath::SEPARATOR);
+        token = std::strtok(nullptr, XPath::SEPARATOR);
     }
 
     return xpath_items;

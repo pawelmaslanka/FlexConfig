@@ -10,7 +10,7 @@
 #include "xpath.hpp"
 #include "lib/utils.hpp"
 
-#include <peglib.h>
+#include "peglib.h"
 #include <spdlog/spdlog.h>
 
 #include <fstream>
