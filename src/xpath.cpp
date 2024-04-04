@@ -283,7 +283,7 @@ String XPath::evaluate_xpath_key(SharedPtr<Node> start_node, String xpath) {
 
 // Resolves the xpath based on the node from the same xpath,
 // i.e. xpath = '/platform/port/[@item]/breakout-mode' then node
-// must be "breakout-mode" to successfully evalutae the node - it
+// must be "breakout-mode" to successfully evaluate the node - it
 // cannot be i.e. '/interface/ethernet[@item]/auto-negotiation'
 String XPath::evaluate_xpath2(SharedPtr<Node> start_node, String xpath) {
     if (xpath.at(0) != XPath::SEPARATOR[0]) {
