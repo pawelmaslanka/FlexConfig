@@ -710,6 +710,172 @@ else
     exit 1
 fi
 
+echo "Get diff from invalid config due to membership of interface in LAG members when adding it to VLAN"
+curl -s -X POST http://localhost:8001/config/running/diff \
+   -H 'Content-Type: application/json' \
+   -d '
+{
+  "interface": {
+    "aggregate-ethernet": {
+      "ae-1": {
+        "members": {
+          "eth-2_1": null
+        }
+      },
+      "ae-10": {
+        "members": {
+          "eth-10": null
+        }
+      }
+    },
+    "ethernet": {
+      "eth-1": {
+        "speed": "100G"
+      },
+      "eth-10": {
+        "speed": "100G"
+      },
+      "eth-2_1": {
+        "speed": "fixed"
+      }
+    }
+  },
+  "platform": {
+    "port": {
+      "eth-1": {
+        "breakout-mode": "none"
+      },
+      "eth-10": {
+        "breakout-mode": "none"
+      },
+      "eth-2": {
+        "breakout-mode": "4x100G"
+      }
+    }
+  },
+  "protocol": {
+    "lacp": {
+      "ae-10": {}
+    }
+  },
+  "vlan": {
+    "2": {
+      "members": {
+        "tagged": {
+          "eth-1": null,
+          "eth-10": null
+        },
+        "untagged": {
+          "ae-1": null
+        }
+      }
+    }
+  }
+}' | jq
+
+echo "Apply invalid VLAN membership when interface is part of LAG members"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d '[
+  {
+    "op": "add",
+    "path": "/vlan/2/members/tagged/eth-10",
+    "value": null
+  }
+]'`
+
+if [ ${HTTP_STATUS} -eq 500 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Get diff from invalid config due to membership of interface in VLAN members when adding it to LAG"
+curl -s -X POST http://localhost:8001/config/running/diff \
+   -H 'Content-Type: application/json' \
+   -d '
+{
+  "interface": {
+    "aggregate-ethernet": {
+      "ae-1": {
+        "members": {
+          "eth-2_1": null
+        }
+      },
+      "ae-10": {
+        "members": {
+          "eth-1": null,
+          "eth-10": null
+        }
+      }
+    },
+    "ethernet": {
+      "eth-1": {
+        "speed": "100G"
+      },
+      "eth-10": {
+        "speed": "100G"
+      },
+      "eth-2_1": {
+        "speed": "fixed"
+      }
+    }
+  },
+  "platform": {
+    "port": {
+      "eth-1": {
+        "breakout-mode": "none"
+      },
+      "eth-10": {
+        "breakout-mode": "none"
+      },
+      "eth-2": {
+        "breakout-mode": "4x100G"
+      }
+    }
+  },
+  "protocol": {
+    "lacp": {
+      "ae-10": {}
+    }
+  },
+  "vlan": {
+    "2": {
+      "members": {
+        "tagged": {
+          "eth-1": null
+        },
+        "untagged": {
+          "ae-1": null
+        }
+      }
+    }
+  }
+}' | jq
+
+echo "Apply invalid LAG membership when interface is part of VLAN members"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d '[
+  {
+    "op": "add",
+    "path": "/interface/aggregate-ethernet/ae-10/members/eth-1",
+    "value": null
+  }
+]'`
+
+if [ ${HTTP_STATUS} -eq 500 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
 echo "Delete session token"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:8001/session/token \
    -H 'Content-Type: application/json' \

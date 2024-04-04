@@ -154,7 +154,8 @@
                                                 "/protocol/lacp[@item]"
                                             ],
                                             "update-constraints": [
-                                                "must(exists(xpath(@)))"
+                                                "must(exists(xpath(@)))",
+                                                "must(exists(xpath_any('/vlan/*/members/@')) == false)"
                                             ],
                                             "additionalProperties": false
                                         }
@@ -209,7 +210,8 @@
                                                 "/interface/ethernet[@item]"
                                             ],
                                             "update-constraints": [
-                                                "must(exists(xpath(@)))"
+                                                "must(exists(xpath(@)))",
+                                                "must(exists(xpath_any('/interface/aggregate-ethernet/*/members/@')) == false)"
                                             ],
                                             "action": {
                                                 "on-update-path": "/update",

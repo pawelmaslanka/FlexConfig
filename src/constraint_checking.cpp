@@ -471,6 +471,55 @@ Vector<String> XPathMatchRegexHandle(const SemanticValues& vs, Any& dt) {
     ACTION_EPILOG(dt, vs);
 }
 
+// FIXME: This functionality should be moved to xpath() (XPathHandle) function
+Vector<String> XPathAnyHandle(const SemanticValues& vs, Any& dt) {
+    Argument& pegArg = ACTION_PROLOG(dt, vs);
+    String xpath = AnyCast<String>(vs[0]);
+    if (xpath.empty()) {
+        spdlog::debug("There is not any xpath to convert to node");
+        return {};
+    }
+
+    if (xpath[xpath.length() - 1] == '@') {
+        xpath = xpath.substr(0, xpath.length() - 1) + pegArg.CurrentProcessingNode->Name();
+        spdlog::debug("Replaced reference mark as {} in xpath {}", pegArg.CurrentProcessingNode->Name(), xpath);
+    }
+
+    ForwardList<String> xpath_subnodes;
+    auto wildcard_pos = xpath.find("/*");
+    if (wildcard_pos != StringEnd()) {
+        spdlog::debug("Found wildcard mark at xpath {}", xpath);
+        auto parent_xpath = xpath.substr(0, wildcard_pos);
+        auto node = XPath::select2(pegArg.RootNodeConfig, parent_xpath);
+        if (!node) {
+            spdlog::debug("Node at xpath '{}' does not exists", parent_xpath);
+            return {};
+        }
+        spdlog::debug("Converted node '{}' to xpath '{}'", node->Name(), XPath::to_string2(node));
+        // TODO: Implement it based on WildcardDependencyResolverVisitior
+        NodeChildsOnlyVisitor node_childs_only_visitor(node);
+        node->Accept(node_childs_only_visitor);
+        xpath_subnodes = node_childs_only_visitor.getAllSubnodes();
+    }
+
+    Vector<String> result;
+    ForwardList<String> matched_xpaths;
+    for (auto& xpath_node_child : xpath_subnodes) {
+        auto resolved_wildcard_xpath = xpath_node_child + ((wildcard_pos != StringEnd()) ? (XPath::SEPARATOR + xpath.substr(wildcard_pos + 3)) : "" );
+        spdlog::debug("Checking resolved xpath '{}'", resolved_wildcard_xpath);
+        auto node = XPath::select2(pegArg.RootNodeConfig, resolved_wildcard_xpath);
+        if (node) {
+            spdlog::debug("Found node at xpath '{}'", resolved_wildcard_xpath);
+            result.emplace_back(resolved_wildcard_xpath);
+            break;
+        }
+    }
+
+    spdlog::debug("Found {} nodes at xpath '{}'", result.size(), AnyCast<String>(vs[0]));
+    return result;
+    ACTION_EPILOG(dt, vs);
+}
+
 Vector<String> XPathKeyBasedHandle(const SemanticValues& vs, Any& dt) {
     Argument& pegArg = ACTION_PROLOG(dt, vs);
     if (vs.size() < 2) {
@@ -665,9 +714,10 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
         MUST_FUNC                               <-  'must' '(' INFIX_EXPRESSION(LOGICAL_EXPRESSION, RELATIVE_OPERATOR) ')'
         COUNT_FUNC                              <-  'count' '(' XPATH_FUNC_FAMILY ')'
         EXISTS_FUNC                             <-  'exists' '(' XPATH_FUNC_FAMILY ')'
-        XPATH_FUNC_FAMILY                       <-  (XPATH_FUNC / XPATH_VALUE_FUNC / XPATH_MATCH_REGEX_FUNC / XPATH_KEY_BASED_FUNC / XPATH_KEY_REGEX_REPLACE_FUNC / XPATH_VALUE_KEY_REGEX_REPLACE_FUNC)
+        XPATH_FUNC_FAMILY                       <-  (XPATH_FUNC / XPATH_VALUE_FUNC / XPATH_ANY_FUNC / XPATH_MATCH_REGEX_FUNC / XPATH_KEY_BASED_FUNC / XPATH_KEY_REGEX_REPLACE_FUNC / XPATH_VALUE_KEY_REGEX_REPLACE_FUNC)
         XPATH_FUNC                              <-  'xpath' '(' (STRING / REFERENCE) ')'
         XPATH_VALUE_FUNC                        <-  'xpath_value' '(' (STRING / REFERENCE) ')'
+        XPATH_ANY_FUNC                          <-  'xpath_any' '(' STRING ')'
         XPATH_MATCH_REGEX_FUNC                  <-  'xpath_match_regex' '(' STRING (',' STRING){2} ')'
         XPATH_KEY_BASED_FUNC                    <-  'xpath_key_based' '(' STRING ',' STRING ')'
         XPATH_KEY_REGEX_REPLACE_FUNC            <-  'xpath_key_regex_replace' '(' STRING ',' STRING ')'
@@ -717,6 +767,7 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
     parser["XPATH_KEY_BASED_FUNC"] = SemanticAction::XPathKeyBasedHandle;
     parser["XPATH_KEY_REGEX_REPLACE_FUNC"] = SemanticAction::XPathKeyRegexReplaceHandle;
     parser["XPATH_MATCH_REGEX_FUNC"] = SemanticAction::XPathMatchRegexHandle;
+    parser["XPATH_ANY_FUNC"] = SemanticAction::XPathAnyHandle;
     parser["XPATH_VALUE_FUNC"] = SemanticAction::XPathValueHandle;
     parser["XPATH_VALUE_KEY_REGEX_REPLACE_FUNC"] = SemanticAction::XPathValueKeyRegexReplaceHandle;
 

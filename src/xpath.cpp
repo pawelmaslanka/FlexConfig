@@ -127,8 +127,8 @@ SharedPtr<Node> XPath::select2(SharedPtr<Node> root_node, const String xpath) {
 
         auto left_pos = item.find(XPath::SUBSCRIPT_LEFT_PARENTHESIS);
         auto right_pos = item.find(XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
-        if (left_pos != String::npos
-            && right_pos != String::npos) {
+        if (left_pos != StringEnd()
+            && right_pos != StringEnd()) {
             xpath_items->pop();
             for (auto new_item : { item.substr(0, left_pos), item.substr(left_pos + 1, (right_pos - left_pos - 1)) }) {
                 node_finder->init(new_item);
