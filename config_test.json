@@ -1,55 +1,55 @@
 {
     "interface": {
         "aggregate-ethernet": {
-            "ae-1": {
+            "lag-1": {
                 "members": {
-                    "eth-2_1": null
+                    "eth1-2_1": null
                 }
             },
-            "ae-10": {
+            "lag-10": {
                 "members": {
-                    "eth-10": null
+                    "eth1-10": null
                 }
             }
         },
         "ethernet": {
-            "eth-1": {
+            "eth1-1": {
                 "speed": "100G"
             },
-            "eth-10": {
+            "eth1-10": {
                 "speed": "100G"
             },
-            "eth-2_1": {
+            "eth1-2_1": {
                 "speed": "fixed"
             }
         }
     },
     "platform": {
         "port": {
-            "eth-1": {
+            "eth1-1": {
                 "breakout-mode": "none"
             },
-            "eth-10": {
+            "eth1-10": {
                 "breakout-mode": "none"
             },
-            "eth-2": {
+            "eth1-2": {
                 "breakout-mode": "4x100G"
             }
         }
     },
     "protocol": {
         "lacp": {
-            "ae-10": {}
+            "lag-10": {}
         }
     },
     "vlan": {
         "2": {
             "members": {
                 "tagged": {
-                    "eth-1": null
+                    "eth1-1": null
                 },
                 "untagged": {
-                    "ae-1": null
+                    "lag-1": null
                 }
             }
         }

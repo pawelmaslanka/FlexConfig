@@ -1,17 +1,17 @@
 {
     "interface": {
         "ethernet": {
-            "eth-1": {
+            "eth1-1": {
                 "speed": "100G"
             },
-            "eth-10": {
+            "eth1-10": {
                 "speed": "100G"
             }
         },
         "aggregate-ethernet": {
-            "ae-10": {
+            "lag-10": {
                 "members": {
-                    "eth-10": null
+                    "eth1-10": null
                 }
             }
         }
@@ -20,23 +20,23 @@
         "2": {
             "members": {
                 "tagged": {
-                    "eth-1": null
+                    "eth1-1": null
                 }
             }
         }
     },
     "protocol": {
         "lacp": {
-            "ae-10": {
+            "lag-10": {
             }
         }
     },
     "platform": {
         "port": {
-            "eth-1": {
+            "eth1-1": {
                 "breakout-mode": "none"
             },
-            "eth-10": {
+            "eth1-10": {
                 "breakout-mode": "none"
             }
         }

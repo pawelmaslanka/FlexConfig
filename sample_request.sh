@@ -22,14 +22,14 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
    -d '[
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-2",
+        "path": "/interface/ethernet/eth1-2",
         "value": {
             "speed": "100G"
         }
     },
     {
         "op": "add",
-        "path": "/platform/port/eth-2",
+        "path": "/platform/port/eth1-2",
         "value": {
             "breakout-mode": "none"
         }
@@ -38,7 +38,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/vlan/2/members/untagged",
         "value": {
-            "eth-2": null
+            "eth1-2": null
         }
     }
 ]'`
@@ -58,14 +58,14 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
    -d '[
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-2",
+        "path": "/interface/ethernet/eth1-2",
         "value": {
             "speed": "100G"
         }
     },
     {
         "op": "add",
-        "path": "/platform/port/eth-2",
+        "path": "/platform/port/eth1-2",
         "value": {
             "breakout-mode": "none"
         }
@@ -74,7 +74,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/vlan/2/members/untagged",
         "value": {
-            "eth-2": null
+            "eth1-2": null
         }
     }
 ]'`
@@ -87,28 +87,28 @@ else
     exit 1
 fi
 
-echo "Post update bad config due to duplicated key at xpath '/interface/ethernet/eth-1'"
+echo "Post update bad config due to duplicated key at xpath '/interface/ethernet/eth1-1'"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-1",
+        "path": "/interface/ethernet/eth1-1",
         "value": {
             "speed": "400G"
         }
     },
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-2",
+        "path": "/interface/ethernet/eth1-2",
         "value": {
             "speed": "100G"
         }
     },
     {
         "op": "add",
-        "path": "/platform/port/eth-2",
+        "path": "/platform/port/eth1-2",
         "value": {
             "breakout-mode": "none"
         }
@@ -117,7 +117,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/vlan/2/members/untagged",
         "value": {
-            "eth-2": null
+            "eth1-2": null
         }
     }
 ]'`
@@ -137,14 +137,14 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
    -d '[
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-2",
+        "path": "/interface/ethernet/eth1-2",
         "value": {
             "speed": "100G"
         }
     },
     {
         "op": "add",
-        "path": "/platform/port/eth-2",
+        "path": "/platform/port/eth1-2",
         "value": {
             "breakout-mode": "none"
         }
@@ -153,7 +153,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/vlan/2/members/untagged",
         "value": {
-            "eth-2": null
+            "eth1-2": null
         }
     }
 ]'`
@@ -190,14 +190,14 @@ fi
 #    -d '[
 #     {
 #         "op": "add",
-#         "path": "/interface/ethernet/eth-2",
+#         "path": "/interface/ethernet/eth1-2",
 #         "value": {
 #             "speed": "100G"
 #         }
 #     },
 #     {
 #         "op": "add",
-#         "path": "/platform/port/eth-2",
+#         "path": "/platform/port/eth1-2",
 #         "value": {
 #             "breakout-mode": "none"
 #         }
@@ -206,7 +206,7 @@ fi
 #         "op": "add",
 #         "path": "/vlan/2/members/untagged",
 #         "value": {
-#             "eth-2": null
+#             "eth1-2": null
 #         }
 #     }
 # ]'`
@@ -233,41 +233,41 @@ else
     exit 1
 fi
 
-echo "Post update bad config (no removed /interface/ethernet/eth-2)"
+echo "Post update bad config (no removed /interface/ethernet/eth1-2)"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
-        "path": "/interface/aggregate-ethernet/ae-1",
+        "path": "/interface/aggregate-ethernet/lag-1",
         "value": {
             "members": {
-                "eth-2_1": null
+                "eth1-2_1": null
             }
         }
     },
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-2_1",
+        "path": "/interface/ethernet/eth1-2_1",
         "value": {
         "speed": "fixed"
         }
     },
     {
         "op": "replace",
-        "path": "/platform/port/eth-2/breakout-mode",
+        "path": "/platform/port/eth1-2/breakout-mode",
         "value": "4x100G"
     },
     {
         "op": "remove",
-        "path": "/vlan/2/members/untagged/eth-2"
+        "path": "/vlan/2/members/untagged/eth1-2"
     },
     {
         "op": "add",
         "path": "/vlan/2/members/untagged",
         "value": {
-            "ae-1": null
+            "lag-1": null
         }
     }
 ]'`
@@ -280,38 +280,38 @@ else
     exit 1
 fi
 
-echo "Post update bad config (no added /interface/ethernet/eth-2_1)"
+echo "Post update bad config (no added /interface/ethernet/eth1-2_1)"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
-        "path": "/interface/aggregate-ethernet/ae-1",
+        "path": "/interface/aggregate-ethernet/lag-1",
         "value": {
             "members": {
-                "eth-2_1": null
+                "eth1-2_1": null
             }
         }
     },
     {
         "op": "remove",
-        "path": "/interface/ethernet/eth-2"
+        "path": "/interface/ethernet/eth1-2"
     },
     {
         "op": "replace",
-        "path": "/platform/port/eth-2/breakout-mode",
+        "path": "/platform/port/eth1-2/breakout-mode",
         "value": "4x100G"
     },
     {
         "op": "remove",
-        "path": "/vlan/2/members/untagged/eth-2"
+        "path": "/vlan/2/members/untagged/eth1-2"
     },
     {
         "op": "add",
         "path": "/vlan/2/members/untagged",
         "value": {
-            "ae-1": null
+            "lag-1": null
         }
     }
 ]'`
@@ -324,40 +324,40 @@ else
     exit 1
 fi
 
-echo "Post update bad config (no updated /platform/port/eth-2/breakout-mode)"
+echo "Post update bad config (no updated /platform/port/eth1-2/breakout-mode)"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
-        "path": "/interface/aggregate-ethernet/ae-1",
+        "path": "/interface/aggregate-ethernet/lag-1",
         "value": {
             "members": {
-                "eth-2_1": null
+                "eth1-2_1": null
             }
         }
     },
     {
         "op": "remove",
-        "path": "/interface/ethernet/eth-2"
+        "path": "/interface/ethernet/eth1-2"
     },
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-2_1",
+        "path": "/interface/ethernet/eth1-2_1",
         "value": {
         "speed": "fixed"
         }
     },
     {
         "op": "remove",
-        "path": "/vlan/2/members/untagged/eth-2"
+        "path": "/vlan/2/members/untagged/eth1-2"
     },
     {
         "op": "add",
         "path": "/vlan/2/members/untagged",
         "value": {
-            "ae-1": null
+            "lag-1": null
         }
     }
 ]'`
@@ -370,41 +370,41 @@ else
     exit 1
 fi
 
-echo "Post update bad config (no removed /vlan/id/2/members/eth-2)"
+echo "Post update bad config (no removed /vlan/id/2/members/eth1-2)"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
-        "path": "/interface/aggregate-ethernet/ae-1",
+        "path": "/interface/aggregate-ethernet/lag-1",
         "value": {
             "members": {
-                "eth-2_1": null
+                "eth1-2_1": null
             }
         }
     },
     {
         "op": "remove",
-        "path": "/interface/ethernet/eth-2"
+        "path": "/interface/ethernet/eth1-2"
     },
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-2_1",
+        "path": "/interface/ethernet/eth1-2_1",
         "value": {
         "speed": "fixed"
         }
     },
     {
         "op": "replace",
-        "path": "/platform/port/eth-2/breakout-mode",
+        "path": "/platform/port/eth1-2/breakout-mode",
         "value": "4x100G"
     },
     {
         "op": "add",
         "path": "/vlan/2/members/untagged",
         "value": {
-            "ae-1": null
+            "lag-1": null
         }
     }
 ]'`
@@ -417,36 +417,36 @@ else
     exit 1
 fi
 
-echo "Post update bad config (no created /interface/aggregate-ethernet/ae-1)"
+echo "Post update bad config (no created /interface/aggregate-ethernet/lag-1)"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "remove",
-        "path": "/interface/ethernet/eth-2"
+        "path": "/interface/ethernet/eth1-2"
     },
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-2_1",
+        "path": "/interface/ethernet/eth1-2_1",
         "value": {
         "speed": "fixed"
         }
     },
     {
         "op": "replace",
-        "path": "/platform/port/eth-2/breakout-mode",
+        "path": "/platform/port/eth1-2/breakout-mode",
         "value": "4x100G"
     },
     {
         "op": "remove",
-        "path": "/vlan/2/members/untagged/eth-2"
+        "path": "/vlan/2/members/untagged/eth1-2"
     },
     {
         "op": "add",
         "path": "/vlan/2/members/untagged",
         "value": {
-            "ae-1": null
+            "lag-1": null
         }
     }
 ]'`
@@ -466,36 +466,36 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
    -d '[
     {
         "op": "add",
-        "path": "/interface/aggregate-ethernet/ae-1",
+        "path": "/interface/aggregate-ethernet/lag-1",
         "value": {
             "members": {
-                "eth-2_1": null
+                "eth1-2_1": null
             }
         }
     },
     {
         "op": "remove",
-        "path": "/interface/ethernet/eth-2"
+        "path": "/interface/ethernet/eth1-2"
     },
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-2_1",
+        "path": "/interface/ethernet/eth1-2_1",
         "value": {
             "speed": "fixed"
         }
     },
     {
         "op": "replace",
-        "path": "/platform/port/eth-2/breakout-mode",
+        "path": "/platform/port/eth1-2/breakout-mode",
         "value": "4x100G"
     },
     {
         "op": "remove",
-        "path": "/vlan/2/members/untagged/eth-2"
+        "path": "/vlan/2/members/untagged/eth1-2"
     },
     {
         "op": "add",
-        "path": "/vlan/2/members/untagged/ae-1",
+        "path": "/vlan/2/members/untagged/lag-1",
         "value": null
     }
 ]'`
@@ -529,36 +529,36 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
    -d '[
     {
         "op": "add",
-        "path": "/interface/aggregate-ethernet/ae-1",
+        "path": "/interface/aggregate-ethernet/lag-1",
         "value": {
             "members": {
-                "eth-2_1": null
+                "eth1-2_1": null
             }
         }
     },
     {
         "op": "remove",
-        "path": "/interface/ethernet/eth-2"
+        "path": "/interface/ethernet/eth1-2"
     },
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-2_1",
+        "path": "/interface/ethernet/eth1-2_1",
         "value": {
             "speed": "fixed"
         }
     },
     {
         "op": "replace",
-        "path": "/platform/port/eth-2/breakout-mode",
+        "path": "/platform/port/eth1-2/breakout-mode",
         "value": "4x100G"
     },
     {
         "op": "remove",
-        "path": "/vlan/2/members/untagged/eth-2"
+        "path": "/vlan/2/members/untagged/eth1-2"
     },
     {
         "op": "add",
-        "path": "/vlan/2/members/untagged/ae-1",
+        "path": "/vlan/2/members/untagged/lag-1",
         "value": null
     }
 ]'`
@@ -641,23 +641,23 @@ else
     exit 1
 fi
 
-echo "Apply with success more complex diff config with two attributes embedded into xpath '/interface/ethernet/eth-11'"
+echo "Apply with success more complex diff config with two attributes embedded into xpath '/interface/ethernet/eth1-11'"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
     {
         "op": "add",
-        "path": "/interface/aggregate-ethernet/ae-11",
+        "path": "/interface/aggregate-ethernet/lag-11",
         "value": {
             "members": {
-                "eth-11": null
+                "eth1-11": null
             }
         }
     },
     {
         "op": "add",
-        "path": "/interface/ethernet/eth-11",
+        "path": "/interface/ethernet/eth1-11",
         "value": {
             "auto-negotiation": "enabled",
             "speed": "400G"
@@ -665,14 +665,14 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     },
     {
         "op": "add",
-        "path": "/platform/port/eth-11",
+        "path": "/platform/port/eth1-11",
         "value": {
             "breakout-mode": "none"
         }
     },
     {
         "op": "add",
-        "path": "/protocol/lacp/ae-11",
+        "path": "/protocol/lacp/lag-11",
         "value": {}
     },
     {
@@ -681,7 +681,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "value": {
             "members": {
                 "native": {
-                    "ae-11": null
+                    "lag-11": null
                 }
             }
         }
@@ -717,56 +717,56 @@ curl -s -X POST http://localhost:8001/config/running/diff \
 {
   "interface": {
     "aggregate-ethernet": {
-      "ae-1": {
+      "lag-1": {
         "members": {
-          "eth-2_1": null
+          "eth1-2_1": null
         }
       },
-      "ae-10": {
+      "lag-10": {
         "members": {
-          "eth-10": null
+          "eth1-10": null
         }
       }
     },
     "ethernet": {
-      "eth-1": {
+      "eth1-1": {
         "speed": "100G"
       },
-      "eth-10": {
+      "eth1-10": {
         "speed": "100G"
       },
-      "eth-2_1": {
+      "eth1-2_1": {
         "speed": "fixed"
       }
     }
   },
   "platform": {
     "port": {
-      "eth-1": {
+      "eth1-1": {
         "breakout-mode": "none"
       },
-      "eth-10": {
+      "eth1-10": {
         "breakout-mode": "none"
       },
-      "eth-2": {
+      "eth1-2": {
         "breakout-mode": "4x100G"
       }
     }
   },
   "protocol": {
     "lacp": {
-      "ae-10": {}
+      "lag-10": {}
     }
   },
   "vlan": {
     "2": {
       "members": {
         "tagged": {
-          "eth-1": null,
-          "eth-10": null
+          "eth1-1": null,
+          "eth1-10": null
         },
         "untagged": {
-          "ae-1": null
+          "lag-1": null
         }
       }
     }
@@ -780,7 +780,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
    -d '[
   {
     "op": "add",
-    "path": "/vlan/2/members/tagged/eth-10",
+    "path": "/vlan/2/members/tagged/eth1-10",
     "value": null
   }
 ]'`
@@ -800,56 +800,56 @@ curl -s -X POST http://localhost:8001/config/running/diff \
 {
   "interface": {
     "aggregate-ethernet": {
-      "ae-1": {
+      "lag-1": {
         "members": {
-          "eth-2_1": null
+          "eth1-2_1": null
         }
       },
-      "ae-10": {
+      "lag-10": {
         "members": {
-          "eth-1": null,
-          "eth-10": null
+          "eth1-1": null,
+          "eth1-10": null
         }
       }
     },
     "ethernet": {
-      "eth-1": {
+      "eth1-1": {
         "speed": "100G"
       },
-      "eth-10": {
+      "eth1-10": {
         "speed": "100G"
       },
-      "eth-2_1": {
+      "eth1-2_1": {
         "speed": "fixed"
       }
     }
   },
   "platform": {
     "port": {
-      "eth-1": {
+      "eth1-1": {
         "breakout-mode": "none"
       },
-      "eth-10": {
+      "eth1-10": {
         "breakout-mode": "none"
       },
-      "eth-2": {
+      "eth1-2": {
         "breakout-mode": "4x100G"
       }
     }
   },
   "protocol": {
     "lacp": {
-      "ae-10": {}
+      "lag-10": {}
     }
   },
   "vlan": {
     "2": {
       "members": {
         "tagged": {
-          "eth-1": null
+          "eth1-1": null
         },
         "untagged": {
-          "ae-1": null
+          "lag-1": null
         }
       }
     }
@@ -863,7 +863,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
    -d '[
   {
     "op": "add",
-    "path": "/interface/aggregate-ethernet/ae-10/members/eth-1",
+    "path": "/interface/aggregate-ethernet/lag-10/members/eth1-1",
     "value": null
   }
 ]'`
