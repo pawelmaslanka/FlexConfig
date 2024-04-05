@@ -39,7 +39,11 @@
     },
     "protocol": {
         "lacp": {
-            "lag-10": {}
+            "lag-10": {
+                "members": {
+                    "eth1-10": {}
+                }
+            }
         }
     },
     "vlan": {

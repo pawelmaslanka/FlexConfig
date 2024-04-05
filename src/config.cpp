@@ -283,8 +283,17 @@ bool Config::Manager::saveXPathReference(const List<String>& ordered_nodes_by_xp
         }
 
         auto reference_attr = schema_node->FindAttr(Config::PropertyName::REFERENCE);
-        for (const auto& ref : reference_attr) {
-            if (ref.find("@") != String::npos) {
+        for (const auto& xpath_reference : reference_attr) {
+            String ref = xpath_reference;
+            if (ref.find(XPath::ITEM_NAME_SUBSCRIPT) != StringEnd()) {
+                auto evaluated_xpath_ref = XPath::evaluate_xpath2(node, ref);
+                spdlog::debug("Evaluated reference '{}' to '{}'", ref, evaluated_xpath_ref);
+                if (evaluated_xpath_ref.size() > 0) {
+                    ref = evaluated_xpath_ref;
+                }
+            }
+
+            if (ref.find("@") != StringEnd()) {
                 String ref_xpath = ref;
                 Utils::find_and_replace_all(ref_xpath, "@", node->Name());
                 spdlog::debug("Created new reference xpath at xpath {}", ref_xpath, xpath);
@@ -975,6 +984,14 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     }
 
     auto copy_candidate_xpath_source_reference_by_xpath = node_references;
+    // This is only for debug purpose
+    // spdlog::info("All references:");
+    // for (const auto& [xpath, ref] : copy_candidate_xpath_source_reference_by_xpath) {
+    //     for (const auto& r : ref) {
+    //         spdlog::info("'{}' -> '{}'", xpath, r);
+    //     }
+    // }
+
     if (!config_mngr->removeXPathReference(ordered_nodes_by_xpath, node_config)) {
         spdlog::error("Failed to remove node reference");
         node_references = copy_candidate_xpath_source_reference_by_xpath;

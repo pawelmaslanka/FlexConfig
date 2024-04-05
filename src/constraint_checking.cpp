@@ -284,9 +284,15 @@ String ReferenceHandle(const SemanticValues& vs, Any& dt) {
 
     for (String ref : ref_attrs) {
         String node_name = pegArg.CurrentProcessingNode->Name();
-        Utils::find_and_replace_all(ref, "@", node_name);
-        if (XPath::select2(pegArg.RootNodeConfig, ref)) {
-            return ref;
+        if ((ref.find("/@") != StringEnd()) && (ref[ref.length() - 1] == '@')) {
+            Utils::find_and_replace_all(ref, "/@", XPath::SEPARATOR + node_name);
+        }
+
+        auto evaluated_ref = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, ref);
+        spdlog::debug("Evaluated reference of '{} to '{}''", ref, evaluated_ref);
+        if (XPath::select2(pegArg.RootNodeConfig, evaluated_ref)) {
+            spdlog::debug("Found node at xpath '{}'", evaluated_ref);
+            return evaluated_ref;
         }
     }
 
