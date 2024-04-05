@@ -1,2 +1,4 @@
 build/
 .vscode
+config_test.json
+schema_test.json
