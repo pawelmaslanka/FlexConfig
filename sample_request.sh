@@ -1156,7 +1156,7 @@ curl -s -X POST http://localhost:8001/config/running/diff \
   }
 }' | jq
 
-echo "Apply invalid LAG member removing when it still is reffering to LACP membership"
+echo "Apply valid LAG member removing when it still is reffering to LACP membership"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
@@ -1170,6 +1170,179 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     "path": "/protocol/lacp/lag-10/members/eth1-10"
   }
 ]'`
+
+if [ ${HTTP_STATUS} -eq 200 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Get running config"
+curl -s -X GET http://localhost:8001/config/running \
+   -H 'Content-Type: application/json' | jq
+
+echo "Get diff from invalid config due to not exists member of RSTP bridge"
+curl -s -X POST http://localhost:8001/config/running/diff \
+   -H 'Content-Type: application/json' \
+   -d '
+{
+  "interface": {
+    "aggregate-ethernet": {
+      "lag-1": {
+        "members": {
+          "eth1-2_1": null
+        }
+      },
+      "lag-10": {
+        "members": {
+          "eth1-10": null
+        }
+      }
+    },
+    "ethernet": {
+      "eth1-1": {
+        "speed": "100G"
+      },
+      "eth1-10": {
+        "speed": "100G"
+      },
+      "eth1-2_1": {
+        "speed": "fixed"
+      }
+    }
+  },
+  "platform": {
+    "port": {
+      "eth1-1": {
+        "breakout-mode": "none"
+      },
+      "eth1-10": {
+        "breakout-mode": "none"
+      },
+      "eth1-2": {
+        "breakout-mode": "4x100G"
+      }
+    }
+  },
+  "protocol": {
+    "lacp": {
+      "lag-10": {
+        "members": {
+          "eth1-10": {}
+        }
+      }
+    },
+    "rstp": {
+      "br-1": {
+        "members": {
+          "eth1-30": {}
+        }
+      }
+    }
+  },
+  "vlan": {
+    "2": {
+      "members": {
+        "tagged": {
+          "eth1-1": null
+        },
+        "untagged": {
+          "lag-1": null
+        }
+      }
+    }
+  }
+}' | jq
+
+echo "Apply invalid config due to not exists member of RSTP bridge"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d '[
+  {
+    "op": "add",
+    "path": "/protocol/rstp",
+    "value": {
+      "br-1": {
+        "members": {
+          "eth1-30": {}
+        }
+      }
+    }
+  }
+]'`
+
+if [ ${HTTP_STATUS} -eq 500 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Apply invalid config due to interface is part of LAG membership"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d '[
+  {
+    "op": "add",
+    "path": "/protocol/rstp",
+    "value": {
+      "br-1": {
+        "members": {
+          "eth1-10": {}
+        }
+      }
+    }
+  }
+]'`
+
+if [ ${HTTP_STATUS} -eq 500 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Apply valid config RSTP bridge"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d '[
+  {
+    "op": "add",
+    "path": "/protocol/rstp",
+    "value": {
+      "br-1": {
+        "members": {
+          "eth1-1": {}
+        }
+      }
+    }
+  }
+]'`
+
+if [ ${HTTP_STATUS} -eq 200 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Get running config"
+curl -s -X GET http://localhost:8001/config/running \
+   -H 'Content-Type: application/json' | jq
+
+echo "Apply candidate config"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d ''`
 
 if [ ${HTTP_STATUS} -eq 200 ] 
 then 
