@@ -1,0 +1,14 @@
+{
+    "properties": {
+        "platform": {
+            "description": "Platform configuration",
+            "type": "object",
+            "properties": {
+            },
+            "required": [
+                "port"
+            ],
+            "additionalProperties": false
+        }
+    }
+}

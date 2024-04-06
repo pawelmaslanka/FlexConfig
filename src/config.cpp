@@ -435,6 +435,32 @@ bool CheckIfThereIsDuplicatedKey(const String& json_filename) {
 bool Config::Manager::load() {
     std::ifstream schema_ifs(m_schema_filename);
     nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
+    const std::filesystem::path path = m_schema_filename;
+    for(const auto& p: std::filesystem::recursive_directory_iterator(path.parent_path())) {
+        if (!std::filesystem::is_directory(p)) {
+            if (p.path() == m_schema_filename) {
+                continue;
+            }
+
+            spdlog::debug("Parsing subschema '{}'", p.path().c_str());
+            std::ifstream subschema_ifs(p.path());
+            nlohmann::json jsubschema = nlohmann::json::parse(subschema_ifs);
+            nlohmann::json patch = nlohmann::json::diff(jschema, jsubschema);
+            nlohmann::json parsed_patch = nlohmann::json::array();
+            size_t i = 0;
+            for (auto& diff_item : patch) {
+                if (diff_item["op"] == "add") {
+                    parsed_patch[i++] = diff_item;
+                }
+            }
+
+            spdlog::debug("Dump json schema patch:\n{}\n", parsed_patch.dump(4));
+            jschema = jschema.patch(parsed_patch);
+        }
+    }
+
+    spdlog::debug("Dump json schema:\n{}\n", jschema.dump(4));
+
     if (CheckIfThereIsDuplicatedKey(m_config_filename)) {
         spdlog::error("There is duplicated key");
         return false;

@@ -1,0 +1,13 @@
+{
+    "properties": {
+        "interface": {
+            "description": "Interface configuration",
+            "type": "object",
+            "properties": {
+            },
+            "required": [
+            ],
+            "additionalProperties": false
+        }
+    }
+}

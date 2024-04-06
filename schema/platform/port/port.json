@@ -1,0 +1,50 @@
+{
+    "properties": {
+        "platform": {
+            "properties": {
+                "port": {
+                    "type": "object",
+                    "maxProperties": 64,
+                    "patternProperties": {
+                        "^(eth1-(6[5-6])|eth1-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9]))$": {
+                            "type": "object",
+                            "properties": {
+                                "breakout-mode": {
+                                    "enum": ["none", "4x100G"],
+                                    "default": "none",
+                                    "update-constraints": [
+                                        "if (xpath_value('/platform/port[@item]/breakout-mode') <> 'none') then must(exists(xpath_key_based('/interface/ethernet[@item]', '/platform/port[@item]')) == false)",
+                                        "if (xpath_value('/platform/port[@item]/breakout-mode') == 'none') then must(exists(xpath_match_regex('/interface/ethernet[@item]', '/interface/ethernet/*', '^(eth1-(6[5-6])|eth1-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4]))$')) == false)"
+                                    ],
+                                    "action": {
+                                        "on-update-path": "/update",
+                                        "on-delete-path": "/delete",
+                                        "server-address": "127.0.0.1:8000"
+                                    }
+                                },
+                                "additionalProperties": false
+                            },
+                            "required": [
+                                "breakout-mode"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "allOf": [{
+                        "anyOf": [
+                            { "required": [ "eth1-1" ]  }, { "required": [ "eth1-2" ]  }, { "required": [ "eth1-3" ]  }, { "required": [ "eth1-4" ]  }, { "required": [ "eth1-5" ]  }, { "required": [ "eth1-6" ]  }, { "required": [ "eth1-7" ]  }, { "required": [ "eth1-8" ]  }, { "required": [ "eth1-9" ]  }, { "required": [ "eth1-10" ] },
+                            { "required": [ "eth1-11" ] }, { "required": [ "eth1-12" ] }, { "required": [ "eth1-13" ] }, { "required": [ "eth1-14" ] }, { "required": [ "eth1-15" ] }, { "required": [ "eth1-16" ] }, { "required": [ "eth1-17" ] }, { "required": [ "eth1-18" ] }, { "required": [ "eth1-19" ] }, { "required": [ "eth1-20" ] },
+                            { "required": [ "eth1-21" ] }, { "required": [ "eth1-22" ] }, { "required": [ "eth1-23" ] }, { "required": [ "eth1-24" ] }, { "required": [ "eth1-25" ] }, { "required": [ "eth1-26" ] }, { "required": [ "eth1-27" ] }, { "required": [ "eth1-28" ] }, { "required": [ "eth1-29" ] }, { "required": [ "eth1-30" ] },
+                            { "required": [ "eth1-31" ] }, { "required": [ "eth1-32" ] }, { "required": [ "eth1-33" ] }, { "required": [ "eth1-34" ] }, { "required": [ "eth1-35" ] }, { "required": [ "eth1-36" ] }, { "required": [ "eth1-37" ] }, { "required": [ "eth1-38" ] }, { "required": [ "eth1-39" ] }, { "required": [ "eth1-40" ] },
+                            { "required": [ "eth1-41" ] }, { "required": [ "eth1-42" ] }, { "required": [ "eth1-43" ] }, { "required": [ "eth1-44" ] }, { "required": [ "eth1-45" ] }, { "required": [ "eth1-46" ] }, { "required": [ "eth1-47" ] }, { "required": [ "eth1-48" ] }, { "required": [ "eth1-49" ] }, { "required": [ "eth1-50" ] },
+                            { "required": [ "eth1-51" ] }, { "required": [ "eth1-52" ] }, { "required": [ "eth1-53" ] }, { "required": [ "eth1-54" ] }, { "required": [ "eth1-55" ] }, { "required": [ "eth1-56" ] }, { "required": [ "eth1-57" ] }, { "required": [ "eth1-58" ] }, { "required": [ "eth1-59" ] }, { "required": [ "eth1-60" ] },
+                            { "required": [ "eth1-61" ] }, { "required": [ "eth1-62" ] }, { "required": [ "eth1-63" ] }, { "required": [ "eth1-64" ] }
+                        ]
+                    }],
+                    "additionalProperties": false
+                },
+                "additionalProperties": false
+            }
+        }
+    }
+}

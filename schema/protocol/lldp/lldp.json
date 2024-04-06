@@ -1,0 +1,11 @@
+{
+    "properties": {
+        "protocol": {
+            "properties": {
+                "lldp": {
+                    "type": "object"
+                }
+            }
+        }
+    }
+}
