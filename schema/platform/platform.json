@@ -5,10 +5,10 @@
             "type": "object",
             "properties": {
             },
+            "additionalProperties": false,
             "required": [
                 "port"
-            ],
-            "additionalProperties": false
+            ]
         }
     }
 }

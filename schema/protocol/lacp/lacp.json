@@ -17,6 +17,7 @@
                                             "type": "object",
                                             "properties": {
                                             },
+                                            "additionalProperties": false,
                                             "reference": [
                                                 "/interface/aggregate-ethernet[@item]/members/@"
                                             ],
@@ -30,14 +31,13 @@
                                             ],
                                             "update-constraints": [
                                                 "must(exists(xpath(@)))"
-                                            ],
-                                            "additionalProperties": false
+                                            ]
                                         }
                                     },
                                     "additionalProperties": false
-                                },
-                                "additionalProperties": false
+                                }
                             },
+                            "additionalProperties": false,
                             "reference": [
                                 "/interface/aggregate-ethernet/@"
                             ],
@@ -51,8 +51,7 @@
                                 "on-update-path": "/update",
                                 "on-delete-path": "/delete",
                                 "server-address": "127.0.0.1:8000"
-                            },
-                            "additionalProperties": false
+                            }
                         }
                     },
                     "additionalProperties": false

@@ -25,11 +25,176 @@
 #include "httplib.h"
 
 nlohmann::json getSchemaByXPath2(const String& xpath, const String& schema_filename);
-static nlohmann::json g_running_jconfig;
-static nlohmann::json g_candidate_jconfig;
 
 static constexpr auto SCHEMA_NODE_PROPERTIES_NAME { "properties" };
 static constexpr auto SCHEMA_NODE_PATTERN_PROPERTIES_NAME { "patternProperties" };
+
+class CandidateJsonConfig {
+public:
+    // FIXME: Move constructor to private section
+    CandidateJsonConfig() = default;
+    static CandidateJsonConfig& instance() {
+        static SharedPtr<CandidateJsonConfig> json_config;
+        static Mutex mtx;
+        if (!json_config) {
+            LockGuard<Mutex> lock(mtx);
+            if (!json_config) {
+                json_config = std::make_shared<CandidateJsonConfig>();
+            }
+        }
+
+        return *json_config;
+    }
+
+    const nlohmann::json& get() {
+        if (_jconfig == nlohmann::json()) {
+            throw std::runtime_error("Candidate JSON config is not initialized yet");
+        }
+
+        return _jconfig;
+    }
+
+protected:
+    friend Config::Manager;
+    static void save(const nlohmann::json& jconfig) {
+        _jconfig = jconfig;
+    }
+
+    static void save(const nlohmann::json&& jconfig) {
+        _jconfig = jconfig;
+    }
+
+private:
+    static nlohmann::json _jconfig;
+};
+
+nlohmann::json CandidateJsonConfig::_jconfig;
+
+class RunningJsonConfig {
+public:
+    // FIXME: Move constructor to private section
+    RunningJsonConfig() = default;
+    static RunningJsonConfig& instance() {
+        static SharedPtr<RunningJsonConfig> json_schema;
+        static Mutex mtx;
+        if (!json_schema) {
+            LockGuard<Mutex> lock(mtx);
+            if (!json_schema) {
+                json_schema = std::make_shared<RunningJsonConfig>();
+            }
+        }
+
+        return *json_schema;
+    }
+
+    const nlohmann::json& get() {
+        if (_jconfig == nlohmann::json()) {
+            throw std::runtime_error("Running JSON config is not initialized yet");
+        }
+
+        return _jconfig;
+    }
+
+protected:
+    friend Config::Manager;
+    static void save(const nlohmann::json& jconfig) {
+        _jconfig = jconfig;
+    }
+
+    static void save(const nlohmann::json&& jconfig) {
+        _jconfig = jconfig;
+    }
+
+private:
+    static nlohmann::json _jconfig;
+};
+
+nlohmann::json RunningJsonConfig::_jconfig;
+
+class JsonSchema {
+public:
+    // FIXME: Move constructor to private section
+    JsonSchema() = default;
+    static JsonSchema& instance() {
+        static SharedPtr<JsonSchema> json_schema;
+        static Mutex mtx;
+        if (!json_schema) {
+            LockGuard<Mutex> lock(mtx);
+            if (!json_schema) {
+                json_schema = std::make_shared<JsonSchema>();
+            }
+        }
+
+        return *json_schema;
+    }
+
+    nlohmann::json& get() {
+        if (_jschema == nlohmann::json()) {
+            throw std::runtime_error("JSON schema is not initialized yet");
+        }
+
+        return _jschema;
+    }
+
+protected:
+    friend Config::Manager;
+    static bool load(StringView root_json_schema_filename) {
+        std::ifstream schema_ifs(root_json_schema_filename);
+        if (!schema_ifs.is_open()) {
+            spdlog::error("Failed to open JSON schema file '{}'", root_json_schema_filename);
+            return false;
+        }
+
+        nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
+        const std::filesystem::path path = root_json_schema_filename;
+        for(const auto& p: std::filesystem::recursive_directory_iterator(path.parent_path())) {
+            if (!std::filesystem::is_directory(p)) {
+                if (p.path() == root_json_schema_filename) {
+                    continue;
+                }
+
+                spdlog::debug("Parsing subschema '{}'", p.path().c_str());
+                std::ifstream subschema_ifs(p.path());
+                nlohmann::json jsubschema = nlohmann::json::parse(subschema_ifs);
+                nlohmann::json patch = nlohmann::json::diff(jschema, jsubschema);
+                nlohmann::json parsed_patch = nlohmann::json::array();
+                size_t i = 0;
+                for (auto& diff_item : patch) {
+                    if (diff_item["op"] == "add") {
+                        parsed_patch[i++] = diff_item;
+                    }
+                }
+
+                spdlog::debug("Dump json schema patch:\n{}\n", parsed_patch.dump(4));
+                jschema = jschema.patch(parsed_patch);
+            }
+        }
+
+        spdlog::debug("Dump json schema:\n{}\n", jschema.dump(4));
+        if (jschema == nlohmann::json()) {
+            spdlog::error("JSON schema file is empty");
+            return false;
+        }
+
+        _jschema = jschema;
+        return true;
+    }
+
+private:
+    static nlohmann::json _jschema;
+};
+
+nlohmann::json JsonSchema::_jschema;
+
+// bool AddNode(SharedPtr<Node>& root_node, StringView xpath) {
+//     auto xpath_tokens = XPath::parse4(String(xpath));
+//     auto new_node_name = xpath_tokens.back();
+//     xpath_tokens.pop_back();
+//     auto parent_xpath = XPath::mergeTokens(xpath_tokens);
+//     auto parent_node = XPath::select2(root_node, parent_xpath);
+//     // FIXME: Update xpath_reference_by_target
+//     return true;
+// }
 
 bool validateJsonConfig(nlohmann::json& jconfig, nlohmann::json& jschema) {
     nlohmann::json_schema::json_validator validator; // create validator
@@ -46,6 +211,7 @@ bool validateJsonConfig(nlohmann::json& jconfig, nlohmann::json& jschema) {
 	}
     catch (const std::exception &e) {
 		spdlog::critical("Validation failed, here is why: {}\n", e.what());
+        spdlog::critical("Here is actual schema:\n{}\n", jschema.dump(4));
         return false;
 	}
 
@@ -53,7 +219,6 @@ bool validateJsonConfig(nlohmann::json& jconfig, nlohmann::json& jschema) {
 }
 
 bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config);
-// bool parseAndLoadConfig2(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config, std::shared_ptr<SchemaComposite>& root_schema);
 bool loadPatternProperties(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config) {
     spdlog::debug("\n[{}:{}] {}\n ->\n {}\n\n", __func__, __LINE__, jconfig.dump(), jschema.dump());
     SharedPtr<Composite> node = root_config;
@@ -62,7 +227,6 @@ bool loadPatternProperties(nlohmann::json& jconfig, nlohmann::json& jschema, std
         for (auto& [ksch, vsch] : jschema.items()) {
             if (std::regex_match(k, Regex { ksch })) {
                 spdlog::trace("Matched key {} to pattern {}\n", k, ksch);
-                // Composite::Factory(k, root_config).get_object<Composite>()
                 node = std::make_shared<Composite>(k, root_config);
                 root_config->Add(node);
                 spdlog::debug("{} -> {}\n", node->Parent()->Name(), node->Name());
@@ -432,35 +596,68 @@ bool CheckIfThereIsDuplicatedKey(const String& json_filename) {
     return is_duplicated_key;
 }
 
-bool Config::Manager::load() {
-    std::ifstream schema_ifs(m_schema_filename);
-    nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
-    const std::filesystem::path path = m_schema_filename;
-    for(const auto& p: std::filesystem::recursive_directory_iterator(path.parent_path())) {
-        if (!std::filesystem::is_directory(p)) {
-            if (p.path() == m_schema_filename) {
-                continue;
-            }
-
-            spdlog::debug("Parsing subschema '{}'", p.path().c_str());
-            std::ifstream subschema_ifs(p.path());
-            nlohmann::json jsubschema = nlohmann::json::parse(subschema_ifs);
-            nlohmann::json patch = nlohmann::json::diff(jschema, jsubschema);
-            nlohmann::json parsed_patch = nlohmann::json::array();
-            size_t i = 0;
-            for (auto& diff_item : patch) {
-                if (diff_item["op"] == "add") {
-                    parsed_patch[i++] = diff_item;
-                }
-            }
-
-            spdlog::debug("Dump json schema patch:\n{}\n", parsed_patch.dump(4));
-            jschema = jschema.patch(parsed_patch);
-        }
+SharedPtr<Node> ReloadNodeConfig(nlohmann::json& jschema, nlohmann::json& jconfig, SharedPtr<Config::Manager> config_mngr) {
+    if (!validateJsonConfig(jconfig, jschema)) {
+        spdlog::error("Failed to validate config");
+        return nullptr;
     }
 
-    spdlog::debug("Dump json schema:\n{}\n", jschema.dump(4));
+    auto dependency_mngr = std::make_shared<NodeDependencyManager>(config_mngr);
+    List<String> ordered_nodes_by_xpath = {};
+    auto root_config = std::make_shared<Composite>(Config::ROOT_TREE_CONFIG_NAME);
+    auto properties_it = jschema.find(SCHEMA_NODE_PROPERTIES_NAME);
+    if (properties_it != jschema.end()) {
+        if (!parseAndLoadConfig(jconfig, *properties_it, root_config)) {
+            spdlog::error("Failed to load config based on 'properties' node");
+            return nullptr;
+        }
 
+        if (!dependency_mngr->resolve(root_config, ordered_nodes_by_xpath)) {
+            spdlog::error("Failed to resolve nodes dependency");
+            return nullptr;
+        }
+
+        spdlog::debug("Ordered xpath-actions:");
+        for (const auto& xpath : ordered_nodes_by_xpath) {
+            spdlog::debug("{}", xpath);
+        }
+
+        config_mngr->saveXPathReference(ordered_nodes_by_xpath, std::dynamic_pointer_cast<Node>(root_config));
+        return root_config;
+    }
+
+    properties_it = jschema.find(SCHEMA_NODE_PATTERN_PROPERTIES_NAME);
+    if (properties_it != jschema.end()) {
+        if (!loadPatternProperties(jconfig, *properties_it, root_config)) {
+            spdlog::error("Failed to load config based on 'patternProperties' node");
+            return nullptr;
+        }
+
+        if (!dependency_mngr->resolve(root_config, ordered_nodes_by_xpath)) {
+            spdlog::error("Failed to resolve nodes dependency");
+            return nullptr;
+        }
+
+        spdlog::debug("Ordered xpath-actions:");
+        for (const auto& xpath : ordered_nodes_by_xpath) {
+            spdlog::debug("{}", xpath);
+        }
+
+        config_mngr->saveXPathReference(ordered_nodes_by_xpath, std::dynamic_pointer_cast<Node>(root_config));
+        return root_config;
+    }
+
+    spdlog::error("Not found node 'properties' nor 'patternProperties' in root schema");
+    return nullptr;
+}
+
+bool Config::Manager::load() {
+    if (!JsonSchema::instance().load(m_schema_filename)) {
+        spdlog::error("Failed to load JON schema from file '{}'", m_schema_filename);
+        return false;
+    }
+
+    auto jschema = JsonSchema::instance().get();
     if (CheckIfThereIsDuplicatedKey(m_config_filename)) {
         spdlog::error("There is duplicated key");
         return false;
@@ -468,7 +665,6 @@ bool Config::Manager::load() {
 
     std::ifstream config_ifs(m_config_filename);
     nlohmann::json jconfig = nlohmann::json::parse(config_ifs);
-
     if (!validateJsonConfig(jconfig, jschema)) {
         spdlog::error("Failed to validate config");
         return false;
@@ -504,7 +700,7 @@ bool Config::Manager::load() {
 
         m_running_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
         m_running_config = root_config;
-        g_running_jconfig = jconfig;
+        RunningJsonConfig::instance().save(jconfig);
         return true;
     }
 
@@ -534,7 +730,7 @@ bool Config::Manager::load() {
 
         m_running_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
         m_running_config = root_config;
-        g_running_jconfig = jconfig;
+        RunningJsonConfig::instance().save(jconfig);
         return true;
     }
 
@@ -551,8 +747,7 @@ String Config::Manager::getConfigNode(const String& xpath) {
 #include <iostream>
 SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     // spdlog::debug("Find schema for xpath: {}", xpath);
-    std::ifstream schema_ifs(m_schema_filename);
-    nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
+    auto jschema = JsonSchema::instance().get();
     auto root_properties_it = jschema.find("properties");
     if (root_properties_it == jschema.end()) {
         spdlog::error("Invalid schema - missing 'properties' node on the top");
@@ -642,8 +837,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
 }
 
 nlohmann::json getSchemaByXPath2(const String& xpath, const String& schema_filename) {
-    std::ifstream schema_ifs(schema_filename);
-    nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
+    auto jschema = JsonSchema::instance().get();
     auto root_properties_it = jschema.find("properties");
     if (root_properties_it == jschema.end()) {
         spdlog::error("Invalid schema - missing 'properties' node on the top");
@@ -696,21 +890,18 @@ nlohmann::json getSchemaByXPath2(const String& xpath, const String& schema_filen
 }
 
 String Config::Manager::getConfigDiff(const String& patch) {
-    std::ifstream schema_ifs(m_schema_filename);
-    nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
+    auto jschema = JsonSchema::instance().get();
     auto new_jconfig = nlohmann::json().parse(patch);
-
     if (!validateJsonConfig(new_jconfig, jschema)) {
         spdlog::error("Failed to validate config");
         return {};
     }
 
-    auto diff2 = nlohmann::json::diff(g_running_jconfig, new_jconfig);
-    auto diff_patch = g_running_jconfig.patch(diff2);
-    auto copy_jconfig = g_running_jconfig;
+    auto diff2 = nlohmann::json::diff(RunningJsonConfig::instance().get(), new_jconfig);
+    auto diff_patch = RunningJsonConfig::instance().get().patch(diff2);
+    auto copy_jconfig = RunningJsonConfig::instance().get();
     copy_jconfig.merge_patch(diff_patch);
-    auto diff = nlohmann::json::diff(g_running_jconfig, copy_jconfig);
-    // g_running_jconfig.merge_patch(patch);
+    auto diff = nlohmann::json::diff(RunningJsonConfig::instance().get(), copy_jconfig);
     return diff2.dump();
 }
 
@@ -847,12 +1038,14 @@ bool ValidatePatch(const String& patch, const nlohmann::json& jconfig) {
 }
 
 bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, SharedPtr<Node>& node_config, const String& schema_filename, SharedPtr<Config::Manager>& config_mngr, Map<String, Set<String>>& node_references) {
+    spdlog::debug("Actual config:\n{}", jconfig.dump(4));
+    NodeCopyMakerVisitor node_copy_maker;
+    node_config->Accept(node_copy_maker);
+    auto candidate_node_config = node_copy_maker.getNodeConfigCopy();
     nlohmann::json json_config = jconfig;
     auto diff_patch = json_config.patch(nlohmann::json::parse(patch));
     json_config = diff_patch;
-    std::ifstream schema_ifs(schema_filename);
-    nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
-
+    auto jschema = JsonSchema::instance().get();
     if (!validateJsonConfig(json_config, jschema)) {
         spdlog::error("Failed to validate config");
         return false;
@@ -879,7 +1072,8 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             continue;
         }
 
-        auto xpath_tokens = XPath::parse3(path.get<String>());
+        auto xpath_node_to_remove = path.get<String>();
+        auto xpath_tokens = XPath::parse3(xpath_node_to_remove);
         if (xpath_tokens.empty()) {
             spdlog::error("Path is empty!");
             return false;
@@ -898,18 +1092,16 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             path_nodes.insert(xpath);
         }
 
-        auto root_node_name_to_remove = xpath_tokens.front();
-        auto root_node_xpath_to_remove = xpath + Config::XPATH_NODE_SEPARATOR + root_node_name_to_remove;
-        auto root_node_to_remove = XPath::select2(node_config, root_node_xpath_to_remove);
-        if (!root_node_to_remove) {
+        auto node_to_remove = XPath::select2(node_config, xpath_node_to_remove);
+        if (!node_to_remove) {
             spdlog::error("Failed to find root node to remove!");
             return false;
         }
 
         SubnodesGetterVisitor subnodes_getter_visitor;
-        root_node_to_remove->Accept(subnodes_getter_visitor);
+        node_to_remove->Accept(subnodes_getter_visitor);
         subnodes_xpath.merge(subnodes_getter_visitor.getSubnodesXPath());
-        subnodes_xpath.insert(root_node_xpath_to_remove);
+        subnodes_xpath.insert(xpath_node_to_remove);
         std::for_each(path_nodes.begin(), path_nodes.end(), [&xpaths_to_remove](const String& xpath) {
             xpaths_to_remove.insert(xpath);
         });
@@ -1009,18 +1201,9 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         node_to_remove.reset();
     }
 
-    auto copy_candidate_xpath_source_reference_by_xpath = node_references;
-    // This is only for debug purpose
-    // spdlog::info("All references:");
-    // for (const auto& [xpath, ref] : copy_candidate_xpath_source_reference_by_xpath) {
-    //     for (const auto& r : ref) {
-    //         spdlog::info("'{}' -> '{}'", xpath, r);
-    //     }
-    // }
-
+    Map<String, Set<String>> copy_candidate_xpath_source_reference_by_xpath = node_references;
     if (!config_mngr->removeXPathReference(ordered_nodes_by_xpath, node_config)) {
         spdlog::error("Failed to remove node reference");
-        node_references = copy_candidate_xpath_source_reference_by_xpath;
         return false;
     }
 
@@ -1028,7 +1211,8 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     auto rollback_removed_nodes = [&removed_nodes_by_xpath, &config_mngr, &schema_filename]() {
         while (!removed_nodes_by_xpath.empty()) {
             auto xpath = removed_nodes_by_xpath.top();
-            auto jnode = g_running_jconfig[nlohmann::json::json_pointer(xpath)];
+            nlohmann::json running_jconfig = RunningJsonConfig::instance().get();
+            auto jnode = running_jconfig[nlohmann::json::json_pointer(xpath)];
             removed_nodes_by_xpath.pop();
             auto schema_node = config_mngr->getSchemaByXPath(xpath);
             auto action_attr = schema_node->FindAttr(Config::PropertyName::ACTION_ON_UPDATE_PATH);
@@ -1116,14 +1300,18 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto result = cli.Post(path, body, content_type);
         if (!result) {
             spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
-            node_references = copy_candidate_xpath_source_reference_by_xpath;
             if (!rollback_removed_nodes()) {
-                spdlog::error("Failed to rollback removed nodes");
+                spdlog::critical("Failed to rollback removed nodes");
                 ::exit(EXIT_FAILURE);
             }
 
             return false;
         }
+
+        // if (!XPath::RemoveNode(SharedPtr<Node>& root_node, StringView xpath)) {
+        //     spdlog::critical("Failed to remove node by xpath '{}'", xpath);
+        //     ::exit(EXIT_FAILURE);
+        // }
 
         removed_nodes_by_xpath.push(xpath);
     }
@@ -1132,7 +1320,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto node = XPath::select2(node_config, xpath);
         if (!node) {
             spdlog::error("Failed to select node to remove at xpath {}", xpath);
-            node_references = copy_candidate_xpath_source_reference_by_xpath;
             if (!rollback_removed_nodes()) {
                 spdlog::error("Failed to rollback removed nodes");
                 ::exit(EXIT_FAILURE);
@@ -1145,7 +1332,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         if (auto node_parent_ptr = std::dynamic_pointer_cast<Composite>(node_parent)) {
             if (!node_parent_ptr->Remove(node->Name())) {
                 spdlog::error("Failed to remove node {} from collection of nodes come from its parent {}", node->Name(), node_parent_ptr->Name());
-                node_references = copy_candidate_xpath_source_reference_by_xpath;
                 if (!rollback_removed_nodes()) {
                     spdlog::error("Failed to rollback removed nodes");
                     ::exit(EXIT_FAILURE);
@@ -1180,7 +1366,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto xpath_tokens = XPath::parse3(path);
         if (xpath_tokens.empty()) {
             spdlog::error("Path is empty!");
-            node_references = copy_candidate_xpath_source_reference_by_xpath;
             if (!rollback_removed_nodes()) {
                 spdlog::error("Failed to rollback removed nodes");
                 ::exit(EXIT_FAILURE);
@@ -1203,7 +1388,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto jschema = getSchemaByXPath2(xpath, schema_filename);
         if (jschema == nlohmann::json({})) {
             spdlog::error("Not found schema at xpath {}", xpath);
-            node_references = copy_candidate_xpath_source_reference_by_xpath;
             if (!rollback_removed_nodes()) {
                 spdlog::error("Failed to rollback removed nodes");
                 ::exit(EXIT_FAILURE);
@@ -1229,7 +1413,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             if (!parseAndLoadConfig(json_config[nlohmann::json::json_pointer(xpath)], *properties_it, node)) {
                 spdlog::error("Failed to load config based on 'properties' node");
                 json_config = nlohmann::json();
-                node_references = copy_candidate_xpath_source_reference_by_xpath;
                 if (!rollback_removed_nodes()) {
                     spdlog::error("Failed to rollback removed nodes");
                     ::exit(EXIT_FAILURE);
@@ -1244,8 +1427,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
                 auto node = std::dynamic_pointer_cast<Composite>(root_node);
                 if (!loadPatternProperties(json_config[nlohmann::json::json_pointer(xpath)], *properties_it, node)) {
                     spdlog::error("Failed to load config based on 'patternProperties' node");
-                    g_candidate_jconfig = nlohmann::json();
-                    node_references = copy_candidate_xpath_source_reference_by_xpath;
                     if (!rollback_removed_nodes()) {
                         spdlog::error("Failed to rollback removed nodes");
                         ::exit(EXIT_FAILURE);
@@ -1260,7 +1441,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     ordered_nodes_by_xpath.clear();
     if (!dependency_mngr->resolve(node_config, ordered_nodes_by_xpath)) {
         spdlog::error("Failed to resolve nodes dependency");
-        node_references = copy_candidate_xpath_source_reference_by_xpath;
         if (!rollback_removed_nodes()) {
             spdlog::error("Failed to rollback removed nodes");
             ::exit(EXIT_FAILURE);
@@ -1298,7 +1478,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto schema_node = config_mngr->getSchemaByXPath(xpath);
         if (!schema_node) {
             spdlog::error("Failed to find schema node for {}", xpath);
-            node_references = copy_candidate_xpath_source_reference_by_xpath;
             if (!rollback_removed_nodes()) {
                 spdlog::error("Failed to rollback removed nodes");
                 ::exit(EXIT_FAILURE);
@@ -1311,7 +1490,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto node_to_check = XPath::select2(node_config, xpath);
         if (!node_to_check) {
             spdlog::error("Failed to find node to check {}", xpath);
-            node_references = copy_candidate_xpath_source_reference_by_xpath;
             if (!rollback_removed_nodes()) {
                 spdlog::error("Failed to rollback removed nodes");
                 ::exit(EXIT_FAILURE);
@@ -1323,7 +1501,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         for (auto& constraint : constraint_attr) {
             if (!constraint_checker->validate(node_to_check, constraint)) {
                 spdlog::error("Failed to validate againts constraints {} for node {}", constraint, xpath);
-                node_references = copy_candidate_xpath_source_reference_by_xpath;
                 if (!rollback_removed_nodes()) {
                     spdlog::error("Failed to rollback removed nodes");
                     ::exit(EXIT_FAILURE);
@@ -1337,7 +1514,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     // Save in case of further error
     if (!config_mngr->saveXPathReference(ordered_nodes_by_xpath, node_config)) {
         spdlog::error("Failed to remove node reference");
-        node_references = copy_candidate_xpath_source_reference_by_xpath;
         if (!rollback_removed_nodes()) {
             spdlog::error("Failed to rollback removed nodes");
             ::exit(EXIT_FAILURE);
@@ -1450,7 +1626,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto result = cli.Post(path, body, content_type);
         if (!result) {
             spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
-            node_references = copy_candidate_xpath_source_reference_by_xpath;
             if (!rollback_added_nodes()) {
                 spdlog::error("Failed to rollback added nodes");
                 ::exit(EXIT_FAILURE);
@@ -1467,26 +1642,15 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         added_nodes_by_xpath.push(xpath);
     }
 
-#if 0
-    spdlog::debug("Test rollback changes");
-    rollback_added_nodes();
-    rollback_removed_nodes();
-    return false;
-#endif
-
     jconfig = json_config;
-
     return true;
 }
 
 bool Config::Manager::makeCandidateConfig(const String& patch) {
-    
     NodeCopyMakerVisitor node_copy_maker;
     m_running_config->Accept(node_copy_maker);
-    auto candidate_config = node_copy_maker.getNodeConfigCopy();
-    PrintVisitor print_visitor;
-
-    auto candidate_jconfig = g_running_jconfig;
+    auto root_node_candidate_config = node_copy_maker.getNodeConfigCopy();
+    auto candidate_jconfig = RunningJsonConfig::instance().get();
     if (ValidatePatch(patch, candidate_jconfig)) {
         spdlog::error("Patch is invalid... probably does not come from this instance running");
         return false;
@@ -1494,37 +1658,35 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
 
     auto config_mngr = shared_from_this();
     spdlog::debug("Run make candidate config");
-    if (!gMakeCandidateConfigInternal(patch, candidate_jconfig, candidate_config, m_schema_filename, config_mngr, m_candidate_xpath_source_reference_by_target)) {
+    if (!gMakeCandidateConfigInternal(patch, candidate_jconfig, root_node_candidate_config, m_schema_filename, config_mngr, m_candidate_xpath_source_reference_by_target)) {
         spdlog::error("Failed to make candidate config");
         return false;
     }
 
-    spdlog::debug("Candidate jconfig:\n{}", candidate_jconfig.dump(4));
+    auto new_node_config = ReloadNodeConfig(JsonSchema::instance().get(), candidate_jconfig, shared_from_this());
+    if (!new_node_config) {
+        spdlog::error("Failed to reload node config");
+        return false;
+    }
 
+    m_candidate_config.reset();
+    m_candidate_config = new_node_config;
     m_running_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
-    m_candidate_config = candidate_config;
-    g_candidate_jconfig = candidate_jconfig;
+    CandidateJsonConfig::instance().save(candidate_jconfig);
     m_is_candidate_config_ready = true;
-
-    spdlog::debug("Candidate JSON config:\n{}", g_candidate_jconfig.dump(4));
-    spdlog::debug("Candidate nodes config:");
-    m_candidate_config->Accept(print_visitor);
-
     return true;
 }
 
 bool Config::Manager::applyCandidateConfig() {
     if (m_is_candidate_config_ready) {
         auto config_filename_tmp = m_config_filename + ".tmp";
-        // spdlog::debug("Save JSON config file to temporary file {}", config_filename_tmp);
-        // spdlog::debug("{}", 
         std::ofstream json_file(config_filename_tmp);
         if (!json_file) {
             spdlog::error("Failed to open file {} to save candidate config", config_filename_tmp);
             return false;
         }
 
-        json_file << std::setw(4) << g_candidate_jconfig;
+        json_file << std::setw(4) << CandidateJsonConfig::instance().get();
         if (!json_file) {
             spdlog::error("Failed to write candidate config to file {}", config_filename_tmp);
             return false;
@@ -1547,12 +1709,10 @@ bool Config::Manager::applyCandidateConfig() {
                 config_filename_tmp, err_code.message());
         }
 
-        // TODO: Do action on nodes
-        // TODO: Clear old m_running_config
         m_running_config = m_candidate_config;
-        g_running_jconfig = g_candidate_jconfig;
+        RunningJsonConfig::instance().save(CandidateJsonConfig::instance().get());
         m_candidate_config = nullptr;
-        g_candidate_jconfig = nlohmann::json();
+        CandidateJsonConfig::instance().save(nlohmann::json());
     }
     else {
         spdlog::warn("There is not candidate config");
@@ -1570,17 +1730,15 @@ bool Config::Manager::cancelCandidateConfig() {
     }
 
     PrintVisitor print_visitor;
-    auto patch = nlohmann::json::diff(g_candidate_jconfig, g_running_jconfig);
+    auto patch = nlohmann::json::diff(CandidateJsonConfig::instance().get(), RunningJsonConfig::instance().get());
     spdlog::debug("Changes to restore:\n{}", patch.dump(4));
-    auto candidate_jconfig = g_candidate_jconfig;
+    nlohmann::json candidate_jconfig = CandidateJsonConfig::instance().get();
     spdlog::debug("Patching...");
     auto patched_jconfig = candidate_jconfig.patch(patch);
     spdlog::debug("Patched config:\n", patched_jconfig .dump(4));
-    spdlog::debug("Diff config:\n", nlohmann::json::diff(patched_jconfig, g_candidate_jconfig).dump(4));
-    std::ifstream schema_ifs(m_schema_filename);
-    nlohmann::json jschema = nlohmann::json::parse(schema_ifs);
+    spdlog::debug("Diff config:\n", nlohmann::json::diff(patched_jconfig, CandidateJsonConfig::instance().get()).dump(4));
+    auto jschema = JsonSchema::instance().get();
     auto new_jconfig = patched_jconfig;
-
     if (!validateJsonConfig(new_jconfig, jschema)) {
         spdlog::error("Failed to validate config");
         return false;
@@ -1599,8 +1757,9 @@ bool Config::Manager::cancelCandidateConfig() {
         spdlog::debug("\n{}", diff_item.dump(4));
     }
 
-    auto copy_candidate_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
+    Map<String, Set<String>>  copy_candidate_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
     spdlog::debug("Patch to restore config:\n{}", patch.dump(4));
+    m_candidate_config->Accept(print_visitor);
     auto config_mngr = shared_from_this();
     if (!gMakeCandidateConfigInternal(patch.dump(), candidate_jconfig, m_candidate_config, m_schema_filename, config_mngr, m_candidate_xpath_source_reference_by_target)) {
         spdlog::error("Failed to rollback changes");
@@ -1608,19 +1767,17 @@ bool Config::Manager::cancelCandidateConfig() {
         return false;
     }
 
-    m_running_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
-    // TODO: Release config node by node?
-    m_candidate_config = nullptr;
-    g_candidate_jconfig = nlohmann::json();
+    m_candidate_config.reset();
+    CandidateJsonConfig::instance().save(nlohmann::json());
     m_is_candidate_config_ready = false;
 
     return true;
 }
 
 String Config::Manager::dumpRunningConfig() {
-    return g_running_jconfig.dump();
+    return RunningJsonConfig::instance().get().dump();
 }
 
 String Config::Manager::dumpCandidateConfig() {
-    return g_candidate_jconfig.dump();
+    return CandidateJsonConfig::instance().get().dump();
 }

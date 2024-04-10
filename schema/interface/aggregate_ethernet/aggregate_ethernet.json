@@ -33,14 +33,13 @@
                                             "update-constraints": [
                                                 "must(exists(xpath(@)))",
                                                 "must(exists(xpath_any('/vlan/*/members/@')) == false)"
-                                            ],
-                                            "additionalProperties": false
+                                            ]
                                         }
                                     },
                                     "additionalProperties": false
-                                },
-                                "additionalProperties": false
+                                }
                             },
+                            "additionalProperties": false,
                             "action": {
                                 "on-update-path": "/update",
                                 "on-delete-path": "/delete",
@@ -48,8 +47,7 @@
                             },
                             "delete-constraints": [
                                 "must(count(xpath('/interface/aggregate-ethernet[@item]/members')) == 0)"
-                            ],
-                            "additionalProperties": false
+                            ]
                         }
                     },
                     "additionalProperties": false

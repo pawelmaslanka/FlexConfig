@@ -40,7 +40,8 @@ Node::Node(const String& name, SharedPtr<Node> parent, SharedPtr<Node> schema_no
 }
 
 Node::~Node() {
-    
+    m_parent.reset();
+    m_schema_node.reset();
 }
 
 String Node::Name() const {
@@ -80,7 +81,7 @@ SchemaNode::SchemaNode(const String& name, SharedPtr<Node> parent, SharedPtr<Nod
 }
 
 SchemaNode::~SchemaNode() {
-
+    // ~Node() will remove all references 
 }
 
 void SchemaNode::AddAttr(const String& attr_name, const String& attr_val) {

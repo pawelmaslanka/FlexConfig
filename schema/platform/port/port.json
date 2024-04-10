@@ -21,15 +21,15 @@
                                         "on-delete-path": "/delete",
                                         "server-address": "127.0.0.1:8000"
                                     }
-                                },
-                                "additionalProperties": false
+                                }
                             },
+                            "additionalProperties": false,
                             "required": [
                                 "breakout-mode"
-                            ],
-                            "additionalProperties": false
+                            ]
                         }
                     },
+                    "additionalProperties": false,
                     "allOf": [{
                         "anyOf": [
                             { "required": [ "eth1-1" ]  }, { "required": [ "eth1-2" ]  }, { "required": [ "eth1-3" ]  }, { "required": [ "eth1-4" ]  }, { "required": [ "eth1-5" ]  }, { "required": [ "eth1-6" ]  }, { "required": [ "eth1-7" ]  }, { "required": [ "eth1-8" ]  }, { "required": [ "eth1-9" ]  }, { "required": [ "eth1-10" ] },
@@ -40,8 +40,7 @@
                             { "required": [ "eth1-51" ] }, { "required": [ "eth1-52" ] }, { "required": [ "eth1-53" ] }, { "required": [ "eth1-54" ] }, { "required": [ "eth1-55" ] }, { "required": [ "eth1-56" ] }, { "required": [ "eth1-57" ] }, { "required": [ "eth1-58" ] }, { "required": [ "eth1-59" ] }, { "required": [ "eth1-60" ] },
                             { "required": [ "eth1-61" ] }, { "required": [ "eth1-62" ] }, { "required": [ "eth1-63" ] }, { "required": [ "eth1-64" ] }
                         ]
-                    }],
-                    "additionalProperties": false
+                    }]
                 },
                 "additionalProperties": false
             }

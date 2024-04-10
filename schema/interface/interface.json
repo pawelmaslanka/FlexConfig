@@ -5,9 +5,9 @@
             "type": "object",
             "properties": {
             },
+            "additionalProperties": false,
             "required": [
-            ],
-            "additionalProperties": false
+            ]
         }
     }
 }

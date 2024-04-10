@@ -116,6 +116,7 @@ bool Server::Run(const String& host, const UInt16 port) {
 
     srv.Get(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this](const Http::Request &req, Http::Response &res) {
         if (!m_session_mngr.CheckActiveSessionToken(req, res)) {
+            spdlog::info("There is not active session to get candidate config");
             return;
         }
 

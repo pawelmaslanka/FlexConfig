@@ -17,6 +17,7 @@
                                             "type": "object",
                                             "properties": {
                                             },
+                                            "additionalProperties": false,
                                             "reference": [
                                                 "/interface/ethernet/@"
                                             ],
@@ -31,13 +32,32 @@
                                                 "on-update-path": "/update",
                                                 "on-delete-path": "/delete",
                                                 "server-address": "127.0.0.1:8000"
-                                            },
-                                            "additionalProperties": false
+                                            }
                                         },
-                                        "additionalProperties": false
-                                    }
-                                },
-                                "additionalProperties": false
+                                        "^(lag-(6[5-6])|lag-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9]))$": {
+                                            "type": "object",
+                                            "properties": {
+                                            },
+                                            "additionalProperties": false,
+                                            "reference": [
+                                                "/interface/aggregate-ethernet/@"
+                                            ],
+                                            "update-dependencies": [
+                                                "/interface/aggregate-ethernet[@item]",
+                                                "/interface/aggregate-ethernet[@item]/members"
+                                            ],
+                                            "update-constraints": [
+                                                "must(exists(xpath(@)))"
+                                            ],
+                                            "action": {
+                                                "on-update-path": "/update",
+                                                "on-delete-path": "/delete",
+                                                "server-address": "127.0.0.1:8000"
+                                            }
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
                             },
                             "additionalProperties": false
                         }

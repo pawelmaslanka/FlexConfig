@@ -13,7 +13,9 @@ Composite::Composite(const String name, SharedPtr<Node> parent, SharedPtr<Node> 
 }
 
 Composite::~Composite() {
-    
+    for (auto& [_, node] : m_node_by_name) {
+        node.reset();
+    }
 }
 
 bool Composite::Add(SharedPtr<Node> node) {
@@ -79,7 +81,7 @@ SchemaComposite::SchemaComposite(const String name, SharedPtr<Node> parent, Shar
 }
 
 SchemaComposite::~SchemaComposite() {
-    // TODO: Remove reference to this node from childs
+    // // ~Composite() will remove all references 
 }
 
 void SchemaComposite::Accept(Visitor& visitor) {

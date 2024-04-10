@@ -16,6 +16,63 @@ else
     exit 1
 fi
 
+echo "Get diff of valid config - add new interface 'eth1-2' and add it to vlan 2"
+curl -s -X POST http://localhost:8001/config/running/diff \
+   -H 'Content-Type: application/json' \
+   -d '
+{
+  "interface": {
+    "aggregate-ethernet": {
+      "lag-10": {
+        "members": {
+          "eth1-10": null
+        }
+      }
+    },
+    "ethernet": {
+      "eth1-1": {
+        "speed": "100G"
+      },
+      "eth1-2": {
+        "speed": "100G"
+      },
+      "eth1-10": {
+        "speed": "100G"
+      }
+    }
+  },
+  "platform": {
+    "port": {
+      "eth1-1": {
+        "breakout-mode": "none"
+      },
+      "eth1-2": {
+        "breakout-mode": "none"
+      },
+      "eth1-10": {
+        "breakout-mode": "none"
+      }
+    }
+  },
+  "protocol": {
+    "lacp": {
+      "lag-10": {}
+    }
+  },
+  "vlan": {
+    "2": {
+      "members": {
+        "tagged": {
+          "eth1-1": null
+        },
+        "untagged": {
+          "eth1-2": null
+        }
+      }
+    }
+  }
+}' | jq
+
 echo "Post update good config without session token"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
@@ -459,45 +516,116 @@ else
     exit 1
 fi
 
+echo "Get candidate config"
+curl -s -X GET http://localhost:8001/config/candidate \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -H 'Content-Type: application/json' | jq
+
+echo "Get running config"
+curl -s -X GET http://localhost:8001/config/running \
+   -H 'Content-Type: application/json' | jq
+
+echo "Get diff after breakout the port eth1-2"
+curl -s -X POST http://localhost:8001/config/running/diff \
+   -H 'Content-Type: application/json' \
+   -d '
+{
+  "interface": {
+    "aggregate-ethernet": {
+      "lag-1": {
+        "members": {
+          "eth1-2_1": null
+        }
+      },
+      "lag-10": {
+        "members": {
+          "eth1-10": null
+        }
+      }
+    },
+    "ethernet": {
+      "eth1-1": {
+        "speed": "100G"
+      },
+      "eth1-10": {
+        "speed": "100G"
+      },
+      "eth1-2_1": {
+        "speed": "fixed"
+      }
+    }
+  },
+  "platform": {
+    "port": {
+      "eth1-1": {
+        "breakout-mode": "none"
+      },
+      "eth1-10": {
+        "breakout-mode": "none"
+      },
+      "eth1-2": {
+        "breakout-mode": "4x100G"
+      }
+    }
+  },
+  "protocol": {
+    "lacp": {
+      "lag-10": {}
+    }
+  },
+  "vlan": {
+    "2": {
+      "members": {
+        "tagged": {
+          "eth1-1": null
+        },
+        "untagged": {
+          "lag-1": null
+        }
+      }
+    }
+  }
+}' | jq
+
 echo "Post update good config [2]"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
    -H 'Content-Type: application/json' \
    -H "Authorization: Bearer ${SESSION_TOKEN}" \
    -d '[
-    {
-        "op": "add",
-        "path": "/interface/aggregate-ethernet/lag-1",
-        "value": {
-            "members": {
-                "eth1-2_1": null
-            }
-        }
-    },
-    {
-        "op": "remove",
-        "path": "/interface/ethernet/eth1-2"
-    },
-    {
-        "op": "add",
-        "path": "/interface/ethernet/eth1-2_1",
-        "value": {
-            "speed": "fixed"
-        }
-    },
-    {
-        "op": "replace",
-        "path": "/platform/port/eth1-2/breakout-mode",
-        "value": "4x100G"
-    },
-    {
-        "op": "remove",
-        "path": "/vlan/2/members/untagged/eth1-2"
-    },
-    {
-        "op": "add",
-        "path": "/vlan/2/members/untagged/lag-1",
-        "value": null
+  {
+    "op": "add",
+    "path": "/interface/aggregate-ethernet/lag-1",
+    "value": {
+      "members": {
+        "eth1-2_1": null
+      }
     }
+  },
+  {
+    "op": "remove",
+    "path": "/interface/ethernet/eth1-2"
+  },
+  {
+    "op": "add",
+    "path": "/interface/ethernet/eth1-2_1",
+    "value": {
+      "speed": "fixed"
+    }
+  },
+  {
+    "op": "replace",
+    "path": "/platform/port/eth1-2/breakout-mode",
+    "value": "4x100G"
+  },
+  {
+    "op": "remove",
+    "path": "/vlan/2/members/untagged/eth1-2"
+  },
+  {
+    "op": "add",
+    "path": "/vlan/2/members/untagged/lag-1",
+    "value": null
+  }
 ]'`
 
 if [ ${HTTP_STATUS} -eq 200 ] 
@@ -709,6 +837,10 @@ else
     echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
+
+echo "Get running config"
+curl -s -X GET http://localhost:8001/config/running \
+   -H 'Content-Type: application/json' | jq
 
 echo "Get diff from invalid config due to membership of interface in LAG members when adding it to VLAN"
 curl -s -X POST http://localhost:8001/config/running/diff \
@@ -985,6 +1117,11 @@ else
     echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
+
+echo "Get candidate config"
+curl -s -X GET http://localhost:8001/config/candidate \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -H 'Content-Type: application/json' | jq
 
 echo "Apply candidate config"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \
@@ -1338,6 +1475,11 @@ echo "Get running config"
 curl -s -X GET http://localhost:8001/config/running \
    -H 'Content-Type: application/json' | jq
 
+echo "Get candidate config"
+curl -s -X GET http://localhost:8001/config/candidate \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -H 'Content-Type: application/json' | jq
+
 echo "Apply candidate config"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X PUT http://localhost:8001/config/candidate \
    -H 'Content-Type: application/json' \
@@ -1351,6 +1493,145 @@ else
     echo "Failed to process the request (${HTTP_STATUS})"
     exit 1
 fi
+
+echo "Get candidate config"
+curl -s -X GET http://localhost:8001/config/candidate \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -H 'Content-Type: application/json' | jq
+
+echo "Apply invalid LLDP config due to missing interface as a member"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d '[
+  {
+    "op": "add",
+    "path": "/protocol/lldp",
+    "value": {
+      "enabled": "yes",
+      "members": {
+        "eth1-22": {}
+      }
+    }
+  }
+]'`
+
+if [ ${HTTP_STATUS} -eq 500 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Get diff after add LLDP config"
+curl -s -X POST http://localhost:8001/config/running/diff \
+   -H 'Content-Type: application/json' \
+   -d '
+{
+  "interface": {
+    "aggregate-ethernet": {
+      "lag-1": {
+        "members": {
+          "eth1-2_1": null
+        }
+      },
+      "lag-10": {
+        "members": {
+          "eth1-10": null
+        }
+      }
+    },
+    "ethernet": {
+      "eth1-1": {
+        "speed": "100G"
+      },
+      "eth1-10": {
+        "speed": "100G"
+      },
+      "eth1-2_1": {
+        "speed": "fixed"
+      }
+    }
+  },
+  "platform": {
+    "port": {
+      "eth1-1": {
+        "breakout-mode": "none"
+      },
+      "eth1-10": {
+        "breakout-mode": "none"
+      },
+      "eth1-2": {
+        "breakout-mode": "4x100G"
+      }
+    }
+  },
+  "protocol": {
+    "lacp": {
+      "lag-10": {
+        "members": {
+          "eth1-10": {}
+        }
+      }
+    },
+    "lldp": {
+      "enabled": "yes",
+      "members": {
+        "eth1-10": {}
+      }
+    },
+    "rstp": {
+      "br-1": {
+        "members": {
+          "eth1-1": {}
+        }
+      }
+    }
+  },
+  "vlan": {
+    "2": {
+      "members": {
+        "tagged": {
+          "eth1-1": null
+        },
+        "untagged": {
+          "lag-1": null
+        }
+      }
+    }
+  }
+}' | jq
+
+echo "Apply valid LLDP config"
+HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8001/config/running/update \
+   -H 'Content-Type: application/json' \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -d '[
+  {
+    "op": "add",
+    "path": "/protocol/lldp",
+    "value": {
+      "enabled": "yes",
+      "members": {
+        "eth1-10": {}
+      }
+    }
+  }
+]'`
+
+if [ ${HTTP_STATUS} -eq 200 ] 
+then 
+    echo "Successfully processed the request" 
+else 
+    echo "Failed to process the request (${HTTP_STATUS})"
+    exit 1
+fi
+
+echo "Get candidate config"
+curl -s -X GET http://localhost:8001/config/candidate \
+   -H "Authorization: Bearer ${SESSION_TOKEN}" \
+   -H 'Content-Type: application/json' | jq
 
 echo "Delete session token"
 HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:8001/session/token \
