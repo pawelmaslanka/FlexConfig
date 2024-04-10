@@ -24,7 +24,7 @@
 
 #include "httplib.h"
 
-nlohmann::json getSchemaByXPath2(const String& xpath, const String& schema_filename);
+nlohmann::json GetJsonSchemaByXPath(const String& xpath);
 
 static constexpr auto SCHEMA_NODE_PROPERTIES_NAME { "properties" };
 static constexpr auto SCHEMA_NODE_PATTERN_PROPERTIES_NAME { "patternProperties" };
@@ -382,7 +382,7 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             // { "op": "add", "path": "/interface/ethernet/eth-2", "value": null }
             // with:
             // { "op": "add", "path": "/interface/ethernet", "value": "eth-2" }
-            auto xpath_jschema = getSchemaByXPath2(xpath, schema_filename);
+            auto xpath_jschema = GetJsonSchemaByXPath(xpath);
             if (xpath_jschema.find("type") != xpath_jschema.end()) {
                 if ((xpath_jschema.at("type") == "null") || (xpath_jschema.at("type") == "object")) {
                     auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
@@ -836,7 +836,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     return schema_node;
 }
 
-nlohmann::json getSchemaByXPath2(const String& xpath, const String& schema_filename) {
+nlohmann::json GetJsonSchemaByXPath(const String& xpath) {
     auto jschema = JsonSchema::instance().get();
     auto root_properties_it = jschema.find("properties");
     if (root_properties_it == jschema.end()) {
@@ -1243,7 +1243,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             }
             else {
                 auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
-                auto xpath_jschema = getSchemaByXPath2(xpath_jpointer.to_string(), schema_filename);
+                auto xpath_jschema = GetJsonSchemaByXPath(xpath_jpointer.to_string());
                 // Item has to be fixed if the type is 'null', like for member containers with reference
                 if (((xpath_jschema.find("type") != xpath_jschema.end())
                         && ((xpath_jschema.at("type") == "object") || (xpath_jschema.at("type") == "null")))) {
@@ -1283,7 +1283,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         diff[0]["op"] = "remove";
         diff[0]["path"] = xpath;
         auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
-        auto xpath_jschema = getSchemaByXPath2(xpath_jpointer.parent_pointer().to_string(), schema_filename);
+        auto xpath_jschema = GetJsonSchemaByXPath(xpath_jpointer.parent_pointer().to_string());
         if (((xpath_jschema.find("type") != xpath_jschema.end())
                 && ((xpath_jschema.at("type") == "object") || (xpath_jschema.at("type") == "null")))) {
             auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
@@ -1385,7 +1385,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             path_nodes.insert(xpath);
         }
 
-        auto jschema = getSchemaByXPath2(xpath, schema_filename);
+        auto jschema = GetJsonSchemaByXPath(xpath);
         if (jschema == nlohmann::json({})) {
             spdlog::error("Not found schema at xpath {}", xpath);
             if (!rollback_removed_nodes()) {
@@ -1546,7 +1546,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             action["path"] = xpath;
             action["value"] = nullptr;
             auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
-            auto xpath_jschema = getSchemaByXPath2(xpath_jpointer.parent_pointer().to_string(), schema_filename);
+            auto xpath_jschema = GetJsonSchemaByXPath(xpath_jpointer.parent_pointer().to_string());
             auto is_object = (xpath_jschema.find("type") != xpath_jschema.end()) && (xpath_jschema.at("object") == "null");
             // Item has to be fixed if the type is 'null', like for member containers with reference
             auto is_leaf_object = (xpath_jschema.find("type") != xpath_jschema.end()) && (xpath_jschema.at("type") == "null");
@@ -1605,7 +1605,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         * with:
         * { "op": "replace", "path": "/interface/ethernet", "value": "eth-2" }
         */
-        auto xpath_jschema = getSchemaByXPath2(xpath_jpointer.to_string(), schema_filename);
+        auto xpath_jschema = GetJsonSchemaByXPath(xpath_jpointer.to_string());
         // Item has to be fixed if the type is 'null', like for member containers with reference
         if (((xpath_jschema.find("type") != xpath_jschema.end())
                 && ((xpath_jschema.at("type") == "object") || (xpath_jschema.at("type") == "null")))) {

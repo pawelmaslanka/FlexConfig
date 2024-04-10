@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// This file should include only aliases to types from std:: namespace because it is included 
+// in a lot of files so it should not be changed too frequently.
+
 #include <any>
 #include <chrono>
 #include <deque>
@@ -17,6 +20,7 @@
 #include <regex>
 #include <set>
 #include <stack>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -44,9 +48,12 @@ template<class T> using Vector = std::vector<T>;
 using Any = std::any;
 using BadAnyCast = std::bad_any_cast;
 // using JThread = std::jthread;
+#define MakeShared std::make_shared
+#define MakeUnique std::make_unique
 using Mutex = std::mutex;
 #define NullOpt std::nullopt
 using Regex = std::regex;
+using RuntimeError = std::runtime_error;
 using String = std::string;
 using StringView = std::string_view;
 using Thread = std::thread;
