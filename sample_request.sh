@@ -533,11 +533,13 @@ curl -s -X POST http://localhost:8001/config/running/diff \
   "interface": {
     "aggregate-ethernet": {
       "lag-1": {
+        "mac-address": "FE:FE:FE:FE:FE:FE",
         "members": {
           "eth1-2_1": null
         }
       },
       "lag-10": {
+        "mac-address": "FE:DC:BA:98:76:54",
         "members": {
           "eth1-10": null
         }
@@ -596,6 +598,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     "op": "add",
     "path": "/interface/aggregate-ethernet/lag-1",
     "value": {
+      "mac-address": "FE:FE:FE:FE:FE:FE",
       "members": {
         "eth1-2_1": null
       }
@@ -659,6 +662,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/interface/aggregate-ethernet/lag-1",
         "value": {
+            "mac-address": "FE:FE:FE:FE:FE:FE",
             "members": {
                 "eth1-2_1": null
             }
@@ -778,6 +782,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/interface/aggregate-ethernet/lag-11",
         "value": {
+            "mac-address": "AA:BB:CC:DD:EE:FF",
             "members": {
                 "eth1-11": null
             }
@@ -850,11 +855,13 @@ curl -s -X POST http://localhost:8001/config/running/diff \
   "interface": {
     "aggregate-ethernet": {
       "lag-1": {
+        "mac-address": "AA:BB:CC:DD:EE:FF",
         "members": {
           "eth1-2_1": null
         }
       },
       "lag-10": {
+        "mac-address": "FE:DC:BA:98:76:54",
         "members": {
           "eth1-10": null
         }

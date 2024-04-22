@@ -212,6 +212,7 @@ bool validateJsonConfig(nlohmann::json& jconfig, nlohmann::json& jschema) {
     catch (const std::exception &e) {
 		spdlog::critical("Validation failed, here is why: {}\n", e.what());
         spdlog::critical("Here is actual schema:\n{}\n", jschema.dump(4));
+        spdlog::critical("Here is actual config:\n{}\n", jconfig.dump(4));
         return false;
 	}
 
