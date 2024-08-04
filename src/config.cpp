@@ -138,7 +138,7 @@ public:
 
 protected:
     friend Config::Manager;
-    static bool load(StringView root_json_schema_filename) {
+    static bool load(const String& root_json_schema_filename) {
         std::ifstream schema_ifs(root_json_schema_filename);
         if (!schema_ifs.is_open()) {
             spdlog::error("Failed to open JSON schema file '{}'", root_json_schema_filename);
@@ -791,7 +791,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     };
 
     String schema_xpath_composed = {};
-    // TODO: Create node hierarchy dynamically. Save in cache. Chek cache next time before traverse
+    // TODO: Create node hierarchy dynamically. Save in cache. Check cache next time before traverse
     for (auto token : xpath_tokens) {
         if (schema.find(token) == schema.end()) {
             if (schema.find("patternProperties") == schema.end()) {

@@ -40,7 +40,7 @@ build:
 #       $(MAKE) -f Makefile
 #       g++ -Wall -std=c++20 -I$(PWD)/src/ -I$(PWD)/src/node -I$(PWD)/src/lib -I$(PWD)/src/external -I$(PWD)/src/external/httplib -c -o flexconfig main.cpp
 
-# override_dh_auto_clean:
+override_dh_auto_clean:
 #	ls /
 #	ls /usr
 # ls /usr/local
