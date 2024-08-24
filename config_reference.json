@@ -13,7 +13,8 @@
                 "mac-address": "FE:DC:BA:98:76:54",
                 "members": {
                     "eth1-10": null
-                }
+                },
+                "protocol": "none"
             }
         }
     },

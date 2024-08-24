@@ -536,13 +536,15 @@ curl -s -X POST http://localhost:8001/config/running/diff \
         "mac-address": "FE:FE:FE:FE:FE:FE",
         "members": {
           "eth1-2_1": null
-        }
+        },
+        "protocol": "none"
       },
       "lag-10": {
         "mac-address": "FE:DC:BA:98:76:54",
         "members": {
           "eth1-10": null
-        }
+        },
+        "protocol": "none"
       }
     },
     "ethernet": {
@@ -601,7 +603,8 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
       "mac-address": "FE:FE:FE:FE:FE:FE",
       "members": {
         "eth1-2_1": null
-      }
+      },
+      "protocol": "none"
     }
   },
   {
@@ -665,7 +668,8 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
             "mac-address": "FE:FE:FE:FE:FE:FE",
             "members": {
                 "eth1-2_1": null
-            }
+            },
+            "protocol": "none"
         }
     },
     {
@@ -785,7 +789,8 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
             "mac-address": "AA:BB:CC:DD:EE:FF",
             "members": {
                 "eth1-11": null
-            }
+            },
+            "protocol": "lacp"
         }
     },
     {

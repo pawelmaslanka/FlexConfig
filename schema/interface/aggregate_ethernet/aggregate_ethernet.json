@@ -58,7 +58,7 @@
                                 }
                             },
                             "additionalProperties": false,
-                            "required": [ "mac-address" ],
+                            "required": [ "mac-address", "protocol" ],
                             "action": {
                                 "on-update-path": "/update",
                                 "on-delete-path": "/delete",
