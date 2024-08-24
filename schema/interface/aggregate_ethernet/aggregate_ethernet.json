@@ -46,6 +46,15 @@
                                         }
                                     },
                                     "additionalProperties": false
+                                },
+                                "protocol": {
+                                    "description": "LAG management protocol",
+                                    "enum": ["none", "lacp"],
+                                    "default": "none",
+                                    "action": {
+                                        "on-update-path": "/update",
+                                        "server-address": "127.0.0.1:8000"
+                                    }
                                 }
                             },
                             "additionalProperties": false,
@@ -54,6 +63,12 @@
                                 "on-update-path": "/update",
                                 "on-delete-path": "/delete",
                                 "server-address": "127.0.0.1:8000"
+                            },
+                            "action-parameters": {
+                                "on-update": [
+                                    "mac-address",
+                                    "protocol"
+                                ]
                             },
                             "delete-constraints": [
                                 "must(count(xpath('/interface/aggregate-ethernet[@item]/members')) == 0)"
