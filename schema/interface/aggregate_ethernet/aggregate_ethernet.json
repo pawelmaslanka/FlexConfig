@@ -14,11 +14,7 @@
                                 "mac-address": {
                                     "description": "Represents a MAC Address in the standard colon delimited format. Eg. `01:23:45:67:89:0A`",
                                     "type": "string",
-                                    "pattern": "^([A-F0-9]{2}:){5}[A-F0-9]{2}$",
-                                    "action": {
-                                        "on-update-path": "/update",
-                                        "server-address": "127.0.0.1:8000"
-                                    }
+                                    "pattern": "^([A-F0-9]{2}:){5}[A-F0-9]{2}$"
                                 },
                                 "members": {
                                     "description": "Members of Aggregate Interface",
@@ -50,11 +46,7 @@
                                 "protocol": {
                                     "description": "LAG management protocol - 'none' for static, 'lacp' for dynamic",
                                     "enum": ["none", "lacp"],
-                                    "default": "none",
-                                    "action": {
-                                        "on-update-path": "/update",
-                                        "server-address": "127.0.0.1:8000"
-                                    }
+                                    "default": "none"
                                 }
                             },
                             "additionalProperties": false,
