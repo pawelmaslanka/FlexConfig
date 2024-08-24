@@ -14,7 +14,7 @@
                 "members": {
                     "eth1-10": null
                 },
-                "protocol": "none"
+                "protocol": "lacp"
             }
         }
     },

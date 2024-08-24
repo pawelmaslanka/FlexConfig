@@ -42,10 +42,12 @@
                                 "/interface/aggregate-ethernet/@"
                             ],
                             "update-dependencies": [
-                                "/interface/aggregate-ethernet[@item]"
+                                "/interface/aggregate-ethernet[@item]",
+                                "/interface/aggregate-ethernet[@item]/protocol"
                             ],
                             "update-constraints": [
-                                "must(exists(xpath(@)))"
+                                "must(exists(xpath(@)))",
+                                "must(xpath_value('/interface/aggregate-ethernet[@item]/protocol') == 'lacp')"
                             ],
                             "action": {
                                 "on-update-path": "/update",

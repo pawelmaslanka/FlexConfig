@@ -5,13 +5,15 @@
                 "mac-address": "FE:FE:FE:FE:FE:FE",
                 "members": {
                     "eth1-2_1": null
-                }
+                },
+                "protocol": "none"
             },
             "lag-10": {
                 "mac-address": "FE:DC:BA:98:76:54",
                 "members": {
                     "eth1-10": null
-                }
+                },
+                "protocol": "lacp"
             }
         },
         "ethernet": {

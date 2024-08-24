@@ -48,7 +48,7 @@
                                     "additionalProperties": false
                                 },
                                 "protocol": {
-                                    "description": "LAG management protocol",
+                                    "description": "LAG management protocol - 'none' for static, 'lacp' for dynamic",
                                     "enum": ["none", "lacp"],
                                     "default": "none",
                                     "action": {
