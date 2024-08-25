@@ -2,9 +2,11 @@
     "interface": {
         "ethernet": {
             "eth1-1": {
+                "mac-address": "auto",
                 "speed": "100G"
             },
             "eth1-10": {
+                "mac-address": "auto",
                 "speed": "100G"
             }
         },

@@ -153,6 +153,7 @@ bool Server::Run(const String& host, const UInt16 port) {
         res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
     });
 
+    spdlog::info("Started listening on {}:{}", host, port);
     return srv.listen(host, port);;
 }
 

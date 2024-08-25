@@ -154,5 +154,6 @@ int main(int argc, char* argv[]) {
         ::exit(EXIT_FAILURE);
     }
 
+    spdlog::info("The '{}' daemon is going to shutdown", argv[0]);
     ::exit(EXIT_SUCCESS);
 }

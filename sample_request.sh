@@ -196,6 +196,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/interface/ethernet/eth1-2",
         "value": {
+            "mac-address": "auto",
             "speed": "100G"
         }
     },
@@ -615,6 +616,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
     "op": "add",
     "path": "/interface/ethernet/eth1-2_1",
     "value": {
+      "mac-address": "auto",
       "speed": "fixed"
     }
   },
@@ -680,6 +682,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "op": "add",
         "path": "/interface/ethernet/eth1-2_1",
         "value": {
+            "mac-address": "auto",
             "speed": "fixed"
         }
     },
@@ -798,6 +801,7 @@ HTTP_STATUS=`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:800
         "path": "/interface/ethernet/eth1-11",
         "value": {
             "auto-negotiation": "enabled",
+            "mac-address": "auto",
             "speed": "400G"
         }
     },

@@ -233,9 +233,10 @@ bool validateJsonConfig(nlohmann::json& jconfig, nlohmann::json& jschema) {
 		auto defaultPatch = validator.validate(jconfig); // validate the document - uses the default throwing error-handler
 	}
     catch (const std::exception &e) {
-		spdlog::critical("Validation failed, here is why: {}\n", e.what());
+        spdlog::error("Failed to validate json config");
         spdlog::critical("Here is actual schema:\n{}\n", jschema.dump(4));
         spdlog::critical("Here is actual config:\n{}\n", jconfig.dump(4));
+        spdlog::critical("Validation failure reason: {}\n", e.what());
         return false;
 	}
 
