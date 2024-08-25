@@ -28,6 +28,9 @@ nlohmann::json GetJsonSchemaByXPath(const String& xpath);
 
 static constexpr auto SCHEMA_NODE_PROPERTIES_NAME { "properties" };
 static constexpr auto SCHEMA_NODE_PATTERN_PROPERTIES_NAME { "patternProperties" };
+static constexpr auto SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME { "on-update" };
+static constexpr auto SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME { "on-delete" };
+static constexpr auto SCHEMA_NODE_ACTION_PARAM_NAME { "action-parameters" };
 
 class CandidateJsonConfig {
 public:
@@ -185,6 +188,26 @@ private:
 };
 
 nlohmann::json JsonSchema::_jschema;
+
+static nlohmann::json findAndAppendParamActionF(nlohmann::json& node_jschema, nlohmann::json& node_jconfig, const String& action_jnode_name) {
+    nlohmann::json parameters = nlohmann::json({});
+    if (node_jschema.find(SCHEMA_NODE_ACTION_PARAM_NAME) == node_jschema.end()) {
+        return parameters;
+    }
+
+    auto& action_params_jschema = node_jschema.at(SCHEMA_NODE_ACTION_PARAM_NAME);
+    spdlog::debug("Found action parameter {}: {}", action_jnode_name, action_params_jschema.find(action_jnode_name) != action_params_jschema.end());
+    if (action_params_jschema.find(action_jnode_name) != action_params_jschema.end()) {
+        for (auto param : action_params_jschema.at(action_jnode_name)) {
+            spdlog::debug("Action parameter item: {}", param);
+            if (node_jconfig.find(param) != node_jconfig.end()) {
+                parameters[param] = node_jconfig.at(param);
+            }
+        }
+    }
+
+    return parameters;
+}
 
 // bool AddNode(SharedPtr<Node>& root_node, StringView xpath) {
 //     auto xpath_tokens = XPath::parse4(String(xpath));
@@ -392,22 +415,7 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
                     diff[0]["path"] = xpath_jpointer.to_string();
                 }
 
-                if (xpath_jschema.find("action-parameters") != xpath_jschema.end()) {
-                    spdlog::debug("Dump schema:\n{}", json_node2.dump(4));
-                    auto& action_params_jschema = xpath_jschema.at("action-parameters");
-                    spdlog::debug("Found on-update: {}", action_params_jschema.find("on-update") != action_params_jschema.end());
-                    if (action_params_jschema.find("on-update") != action_params_jschema.end()) {
-                        for (auto param : action_params_jschema.at("on-update")) {
-                            spdlog::debug("Item: {}", param);
-                            if (json_node2.find(param) != json_node2.end()) {
-                                diff[0]["params"][param] = json_node2.at(param);
-                                spdlog::debug("Current request:\n{}", diff[0].dump(4));
-                            }
-                        }
-                    }
-
-                    spdlog::debug("Current request:\n{}", diff[0].dump(4));
-                }
+                diff[0]["params"] = findAndAppendParamActionF(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
             }
 
             auto server_addr = server_addr_attr.front();
@@ -428,21 +436,7 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
                     // It can be simply converted to "remove" operation since it is startup steps and there is
                     // not required to consider a "replace" operation
                     action["op"] = "remove";
-                    if (xpath_jschema.find("action-parameters") != xpath_jschema.end()) {
-                        spdlog::debug("Dump schema:\n{}", json_node2.dump(4));
-                        auto& action_params_jschema = xpath_jschema.at("action-parameters");
-                        if (action_params_jschema.find("on-delete") != action_params_jschema.end()) {
-                            for (auto param : action_params_jschema.at("on-delete")) {
-                                spdlog::debug("Found action parameters at on-delete");
-                                spdlog::debug("Item: {}", param);
-                                if (json_node2.find(param) != json_node2.end()) {
-                                    action[0]["params"][param] = json_node2.at(param);
-                                    spdlog::info("Current request:\n{}", action[0].dump(4));
-                                }
-                            }
-                        }
-                        spdlog::info("Current request:\n{}", action[0].dump(4));
-                    }
+                    action[0]["params"] = findAndAppendParamActionF(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
                     auto body = action.dump();
                     auto content_type = "application/json";
                     spdlog::debug("Path: {}\n Body: {}\n Content type: {}", path, body, content_type);
@@ -1283,23 +1277,8 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
                     action["value"] = xpath_jpointer.back();
                     xpath_jpointer.pop_back();
                     action["path"] = xpath_jpointer.to_string();
-                    if (xpath_jschema.find("action-parameters") != xpath_jschema.end()) {
-                        auto json_node2 = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
-                        spdlog::debug("Dump schema:\n{}", json_node2.dump(4));
-                        auto& action_params_jschema = xpath_jschema.at("action-parameters");
-                        spdlog::debug("Found on-update: {}", action_params_jschema.find("on-update") != action_params_jschema.end());
-                        if (action_params_jschema.find("on-update") != action_params_jschema.end()) {
-                            for (auto param : action_params_jschema.at("on-update")) {
-                                spdlog::debug("Item: {}", param);
-                                if (json_node2.find(param) != json_node2.end()) {
-                                    action[0]["params"][param] = json_node2.at(param);
-                                    spdlog::info("Current request:\n{}", action[0].dump(4));
-                                }
-                            }
-                        }
-
-                        spdlog::info("Current request:\n{}", action[0].dump(4));
-                    }
+                    auto xpath_jconfig = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
+                    action[0]["params"] = findAndAppendParamActionF(xpath_jschema, xpath_jconfig, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
                 }
             }
 
@@ -1341,22 +1320,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             diff[0]["value"] = xpath_jpointer.back();
             xpath_jpointer.pop_back();
             diff[0]["path"] = xpath_jpointer.to_string();
-
-            if (xpath_jschema.find("action-parameters") != xpath_jschema.end()) {
-                spdlog::debug("Dump schema:\n{}", json_node2.dump(4));
-                auto& action_params_jschema = xpath_jschema.at("action-parameters");
-                if (action_params_jschema.find("on-delete") != action_params_jschema.end()) {
-                    for (auto param : action_params_jschema.at("on-delete")) {
-                        spdlog::debug("Found action parameters at on-delete");
-                        spdlog::debug("Item: {}", param);
-                        if (json_node2.find(param) != json_node2.end()) {
-                            diff[0]["params"][param] = json_node2.at(param);
-                            spdlog::debug("Current request:\n{}", diff[0].dump(4));
-                        }
-                    }
-                }
-                spdlog::debug("Current request:\n{}", diff[0].dump(4));
-            }
+            diff[0]["params"] = findAndAppendParamActionF(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
         }
 
         auto server_addr = server_addr_attr.front();
@@ -1621,22 +1585,8 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
                 action["value"] = xpath_jpointer.back();
                 xpath_jpointer.pop_back();
                 action["path"] = xpath_jpointer.to_string();
-                if (xpath_jschema.find("action-parameters") != xpath_jschema.end()) {
-                    auto json_node2 = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
-                    spdlog::debug("Dump schema:\n{}", json_node2.dump(4));
-                    auto& action_params_jschema = xpath_jschema.at("action-parameters");
-                    if (action_params_jschema.find("on-delete") != action_params_jschema.end()) {
-                        for (auto param : action_params_jschema.at("on-delete")) {
-                            spdlog::debug("Found action parameters at on-delete");
-                            spdlog::debug("Item: {}", param);
-                            if (json_node2.find(param) != json_node2.end()) {
-                                action[0]["params"][param] = json_node2.at(param);
-                                spdlog::info("Current request:\n{}", action[0].dump(4));
-                            }
-                        }
-                    }
-                    spdlog::info("Current request:\n{}", action[0].dump(4));
-                }
+                auto xpath_jconfig = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
+                action[0]["params"] = findAndAppendParamActionF(xpath_jschema, xpath_jconfig, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
             }
             // NOTE: Since there is not permit array type so the below code is not longer necessary
             // if (auto leaf_ptr = std::dynamic_pointer_cast<Leaf>(node)) {
@@ -1698,23 +1648,9 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             diff[0]["path"] = xpath_jpointer.to_string();
             if (diff[0]["op"] == "replace") {
                 diff[0]["op"] = "add";
-                if (xpath_jschema.find("action-parameters") != xpath_jschema.end()) {
-                    spdlog::debug("Dump schema:\n{}", json_node2.dump(4));
-                    auto& action_params_jschema = xpath_jschema.at("action-parameters");
-                    spdlog::debug("Found on-update: {}", action_params_jschema.find("on-update") != action_params_jschema.end());
-                    if (action_params_jschema.find("on-update") != action_params_jschema.end()) {
-                        for (auto param : action_params_jschema.at("on-update")) {
-                            spdlog::debug("Item: {}", param);
-                            if (json_node2.find(param) != json_node2.end()) {
-                                diff[0]["params"][param] = json_node2.at(param);
-                                spdlog::debug("Current request:\n{}", diff[0].dump(4));
-                            }
-                        }
-                    }
-
-                    spdlog::debug("Current request:\n{}", diff[0].dump(4));
-                }
             }
+
+            diff[0]["params"] = findAndAppendParamActionF(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
         }
 
         auto server_addr = server_addr_attr.front();
