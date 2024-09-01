@@ -6,7 +6,7 @@
                     "type": "object",
                     "maxProperties": 64,
                     "patternProperties": {
-                        "^(eth1-(6[5-6])|eth1-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9]))$": {
+                        "^(eth[0-9]-(6[5-6])|eth[0-9]-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9]))$": {
                             "type": "object",
                             "properties": {
                                 "breakout-mode": {
@@ -14,7 +14,7 @@
                                     "default": "none",
                                     "update-constraints": [
                                         "if (xpath_value('/platform/port[@item]/breakout-mode') <> 'none') then must(exists(xpath_key_based('/interface/ethernet[@item]', '/platform/port[@item]')) == false)",
-                                        "if (xpath_value('/platform/port[@item]/breakout-mode') == 'none') then must(exists(xpath_match_regex('/interface/ethernet[@item]', '/interface/ethernet/*', '^(eth1-(6[5-6])|eth1-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4]))$')) == false)"
+                                        "if (xpath_value('/platform/port[@item]/breakout-mode') == 'none') then must(exists(xpath_match_regex('/interface/ethernet[@item]', '/interface/ethernet/*', '^(eth[0-9]-(6[5-6])|eth[0-9]-(6[0-6]|5[0-9]|4[0-9]|3[0-9]|2[0-9]|1[0-9]|[1-9])(_[1-4]))$')) == false)"
                                     ],
                                     "action": {
                                         "on-update-path": "/update",
