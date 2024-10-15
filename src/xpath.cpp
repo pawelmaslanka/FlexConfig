@@ -458,17 +458,3 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
 
     return evaluated_xpath;
 }
-
-List<String> XPath::parse2(const String xpath) {
-    std::list<String> xpath_items = {};
-    // Returns first token
-    char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
-    // Keep printing tokens while one of the
-    // delimiters present in str[].
-    while (token != nullptr) {
-        xpath_items.emplace_back(token);
-        token = std::strtok(nullptr, XPath::SEPARATOR);
-    }
-
-    return xpath_items;
-}

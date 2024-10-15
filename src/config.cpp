@@ -783,7 +783,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     }
 
     auto schema = *root_properties_it;
-    auto xpath_tokens = XPath::parse2(xpath);
+    auto xpath_tokens = XPath::parse4(xpath);
 
     auto root_schema_node = std::make_shared<SchemaComposite>("/");
     auto schema_node = root_schema_node;
@@ -873,7 +873,7 @@ nlohmann::json GetJsonSchemaByXPath(const String& xpath) {
     }
 
     auto schema = *root_properties_it;
-    auto xpath_tokens = XPath::parse2(xpath);
+    auto xpath_tokens = XPath::parse4(xpath);
 
     String schema_xpath_composed = {};
     // TODO: Create node hierarchy dynamically. Save in cache. Chek cache next time before traverse

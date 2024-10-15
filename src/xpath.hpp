@@ -30,7 +30,6 @@ namespace XPath {
     };
 
     SharedPtr<Queue<String>> parse(const String xpath);
-    List<String> parse2(const String xpath);
     Queue<String> parse3(const String xpath);
     Deque<String> parse4(const String xpath);
     SharedPtr<Node> select(SharedPtr<Node> root_node, const String xpath);
