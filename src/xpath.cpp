@@ -53,46 +53,6 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
     auto visiting_node = root_node;
     while (!xpath_items.empty()) { 
         auto item = xpath_items.front();
-        auto left_pos = item.find(XPath::SUBSCRIPT_LEFT_PARENTHESIS);
-        auto right_pos = item.find(XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
-        if (left_pos != String::npos
-            && right_pos != String::npos) {
-            xpath_items.pop_front();
-            for (auto new_item : { item.substr(0, left_pos), item.substr(left_pos + 1, (right_pos - left_pos - 1)) }) {
-                node_finder->init(new_item);
-                visiting_node->Accept(*node_finder);
-                visiting_node = node_finder->get_result();
-                if (!visiting_node) {
-                    return nullptr;
-                }
-            }
-
-            continue;
-        }
-
-        node_finder->init(xpath_items.front());
-        visiting_node->Accept(*node_finder);
-        visiting_node = node_finder->get_result();
-        if (!visiting_node) {
-            return nullptr;
-        }
-
-        xpath_items.pop_front();
-    }
-
-    return visiting_node;
-}
-
-SharedPtr<Node> XPath::select2(SharedPtr<Node> root_node, const String xpath) {
-    if (!root_node || xpath.empty()) {
-        return nullptr;
-    }
-
-    auto xpath_items = parse(xpath);
-    auto node_finder = std::make_shared<XPath::NodeFinder>();
-    auto visiting_node = root_node;
-    while (!xpath_items.empty()) { 
-        auto item = xpath_items.front();
         if ((item == "value") && (xpath_items.size() == 1)) {
             return visiting_node;
         }
@@ -141,39 +101,6 @@ String XPath::mergeTokens(const Deque<String>& xpath_tokens) {
 }
 
 String XPath::to_string(SharedPtr<Node> node) {
-    String xpath;
-    Stack<String> xpath_stack;
-    auto processing_node = node;
-
-    while (processing_node) {
-        if (processing_node->Parent()) {
-            if (auto dict = std::dynamic_pointer_cast<Composite>(processing_node->Parent())) {
-                xpath_stack.push(XPath::SUBSCRIPT_LEFT_PARENTHESIS + processing_node->Name() + XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
-                processing_node = processing_node->Parent();
-                continue;
-            }
-        }
-
-        xpath_stack.push(processing_node->Name());
-        processing_node = processing_node->Parent();
-    }
-
-    while (!xpath_stack.empty()) {
-        if (xpath_stack.top() != XPath::SEPARATOR) {
-            if (xpath_stack.top()[0] != '[') {
-                xpath += XPath::SEPARATOR;
-            }
-
-            xpath += xpath_stack.top();
-        }
-
-        xpath_stack.pop();
-    }
-
-    return xpath;
-}
-
-String XPath::to_string2(SharedPtr<Node> node) {
     String xpath;
     Stack<String> xpath_stack;
     auto processing_node = node;
@@ -237,7 +164,7 @@ String XPath::evaluate_xpath_key(SharedPtr<Node> start_node, String xpath) {
     }
 
     Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT);
-    auto node_xpath = to_string2(start_node);
+    auto node_xpath = to_string(start_node);
     auto xpath_tokens = parse(xpath);
     auto node_xpath_tokens = parse(node_xpath);
     while (!xpath_tokens.empty()) {
@@ -354,7 +281,7 @@ String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
     // Resolve @item key
     auto key_name_pos = idx_by_xpath_item.find(XPath::ITEM_NAME_SUBSCRIPT);
     if (key_name_pos != std::end(idx_by_xpath_item)) {
-        auto start_node_xpath = to_string2(start_node);
+        auto start_node_xpath = to_string(start_node);
         // Find last idx
         idx = 0; 
         auto range = idx_by_xpath_item.equal_range(XPath::ITEM_NAME_SUBSCRIPT);

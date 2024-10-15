@@ -214,7 +214,7 @@ static nlohmann::json findAndAppendParamActionF(nlohmann::json& node_jschema, nl
 //     auto new_node_name = xpath_tokens.back();
 //     xpath_tokens.pop_back();
 //     auto parent_xpath = XPath::mergeTokens(xpath_tokens);
-//     auto parent_node = XPath::select2(root_node, parent_xpath);
+//     auto parent_node = XPath::select(root_node, parent_xpath);
 //     // FIXME: Update xpath_reference_by_target
 //     return true;
 // }
@@ -373,7 +373,7 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             auto update_constraints = schema_node->FindAttr(Config::PropertyName::UPDATE_CONSTRAINTS);
             for (auto& update_constraint : update_constraints) {
                 spdlog::debug("Processing update constraint '{}' at node {}", update_constraint, xpath);
-                auto node = XPath::select2(node_config, xpath);
+                auto node = XPath::select(node_config, xpath);
                 if (!node) {
                     spdlog::debug("Not node indicated by xpath {}", xpath);
                     continue;
@@ -468,7 +468,7 @@ bool Config::Manager::saveXPathReference(const List<String>& ordered_nodes_by_xp
             continue;
         }
 
-        auto node = XPath::select2(root_config, xpath);
+        auto node = XPath::select(root_config, xpath);
         if (!node) {
             spdlog::debug("There is not exists node with reference attribute");
             continue;
@@ -489,7 +489,7 @@ bool Config::Manager::saveXPathReference(const List<String>& ordered_nodes_by_xp
                 String ref_xpath = ref;
                 Utils::find_and_replace_all(ref_xpath, "@", node->Name());
                 spdlog::debug("Created new reference xpath at xpath {}", ref_xpath, xpath);
-                if (XPath::select2(root_config, ref_xpath)) {
+                if (XPath::select(root_config, ref_xpath)) {
                     spdlog::debug("Found reference node {}", ref_xpath);
                     candidate_xpath_source_reference_by_target[ref_xpath].emplace(xpath);
                 }
@@ -510,7 +510,7 @@ bool Config::Manager::saveXPathReference_backup(const List<String>& ordered_node
             continue;
         }
 
-        auto node = XPath::select2(root_config, xpath);
+        auto node = XPath::select(root_config, xpath);
         if (!node) {
             spdlog::debug("There is not exists node with reference attribute");
             continue;
@@ -527,7 +527,7 @@ bool Config::Manager::saveXPathReference_backup(const List<String>& ordered_node
                     String ref_xpath = ref;
                     Utils::find_and_replace_all(ref_xpath, "@", subnode_name);
                     spdlog::debug("Created new reference xpath: {}", ref_xpath);
-                    if (XPath::select2(root_config, ref_xpath)) {
+                    if (XPath::select(root_config, ref_xpath)) {
                         spdlog::debug("Found reference node {}", ref_xpath);
                         candidate_xpath_source_reference_by_target[ref_xpath].emplace(xpath);
                     }
@@ -947,7 +947,7 @@ public:
             return false;
         }
 
-        m_subnodes_xpath.emplace(XPath::to_string2(node));
+        m_subnodes_xpath.emplace(XPath::to_string(node));
         return true;
     };
 
@@ -979,7 +979,7 @@ public:
             return false;
         }
 
-        auto xpath = XPath::to_string2(node);
+        auto xpath = XPath::to_string(node);
         if (xpath.empty()) {
             spdlog::warn("Cannot convert node {} to xpath", node->Name());
             return true;
@@ -993,7 +993,7 @@ public:
             auto parent_node = m_root_config;
             if (!xpath_tokens.empty()) {
                 auto parent_xpath = XPath::mergeTokens(xpath_tokens);
-                parent_node = XPath::select2(m_root_config, parent_xpath);
+                parent_node = XPath::select(m_root_config, parent_xpath);
                 if (!parent_node) {
                     spdlog::error("Failed to find parent node {} in new config", parent_xpath);
                     return false;
@@ -1120,7 +1120,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             path_nodes.insert(xpath);
         }
 
-        auto node_to_remove = XPath::select2(node_config, xpath_node_to_remove);
+        auto node_to_remove = XPath::select(node_config, xpath_node_to_remove);
         if (!node_to_remove) {
             spdlog::error("Failed to find root node to remove!");
             return false;
@@ -1141,7 +1141,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
 
     for (auto& subnode : xpaths_to_remove) {
         // Check if all nodes (xpath) exists in config
-        if (!XPath::select2(node_config, subnode)) {
+        if (!XPath::select(node_config, subnode)) {
             spdlog::error("There is not {} in config", subnode);
             return false;
         }
@@ -1207,7 +1207,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         }
 
         auto delete_constraint_attr = schema_node->FindAttr(Config::PropertyName::DELETE_CONSTRAINTS);
-        auto node_to_remove = XPath::select2(root_config_to_remove, xpath);
+        auto node_to_remove = XPath::select(root_config_to_remove, xpath);
         if (!node_to_remove) {
             spdlog::error("Failed to find node to remove {}", xpath);
             return false;
@@ -1251,7 +1251,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             }
 
             // NOTE: For added_node_by_xpath use node_config
-            auto node = XPath::select2(config_mngr->getRunningConfig(), xpath);
+            auto node = XPath::select(config_mngr->getRunningConfig(), xpath);
             if (!node) {
                 spdlog::error("There is not exists node under the path {}", xpath);
                 continue;
@@ -1349,7 +1349,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     }
 
     for (auto& xpath : ordered_nodes_by_xpath) {
-        auto node = XPath::select2(node_config, xpath);
+        auto node = XPath::select(node_config, xpath);
         if (!node) {
             spdlog::error("Failed to select node to remove at xpath {}", xpath);
             if (!rollback_removed_nodes()) {
@@ -1428,7 +1428,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             return false;
         }
 
-        auto root_node = XPath::select2(node_config, xpath);
+        auto root_node = XPath::select(node_config, xpath);
         if (!root_node) {
             spdlog::error("Failed to find node at xpath {}", xpath);
             if (!rollback_removed_nodes()) {
@@ -1519,7 +1519,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         }
 
         auto constraint_attr = schema_node->FindAttr(Config::PropertyName::UPDATE_CONSTRAINTS);
-        auto node_to_check = XPath::select2(node_config, xpath);
+        auto node_to_check = XPath::select(node_config, xpath);
         if (!node_to_check) {
             spdlog::error("Failed to find node to check {}", xpath);
             if (!rollback_removed_nodes()) {
@@ -1567,7 +1567,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             }
 
             // NOTE: For added_node_by_xpath use node_config
-            auto node = XPath::select2(node_config, xpath);
+            auto node = XPath::select(node_config, xpath);
             if (!node) {
                 spdlog::error("There is not exists node under the path {}", xpath);
                 continue;

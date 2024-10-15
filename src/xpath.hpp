@@ -31,11 +31,8 @@ namespace XPath {
 
     Deque<String> parse(const String xpath);
     SharedPtr<Node> select(SharedPtr<Node> root_node, const String xpath);
-    // Second version of select() iclude recognize "value" on the end of xpath string
-    SharedPtr<Node> select2(SharedPtr<Node> root_node, const String xpath);
     String mergeTokens(const Deque<String>& xpath_tokens);
     String to_string(SharedPtr<Node> node);
-    String to_string2(SharedPtr<Node> node);
     size_t count_members(SharedPtr<Node> root_node, const String xpath);
     SharedPtr<Node> get_root(SharedPtr<Node> start_node);
     String evaluate_xpath(SharedPtr<Node> start_node, String xpath);
