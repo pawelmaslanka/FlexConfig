@@ -478,7 +478,7 @@ bool Config::Manager::saveXPathReference(const List<String>& ordered_nodes_by_xp
         for (const auto& xpath_reference : reference_attr) {
             String ref = xpath_reference;
             if (ref.find(XPath::ITEM_NAME_SUBSCRIPT) != StringEnd()) {
-                auto evaluated_xpath_ref = XPath::evaluate_xpath2(node, ref);
+                auto evaluated_xpath_ref = XPath::evaluateXPath(node, ref);
                 spdlog::debug("Evaluated reference '{}' to '{}'", ref, evaluated_xpath_ref);
                 if (evaluated_xpath_ref.size() > 0) {
                     ref = evaluated_xpath_ref;
@@ -947,7 +947,7 @@ public:
             return false;
         }
 
-        m_subnodes_xpath.emplace(XPath::to_string(node));
+        m_subnodes_xpath.emplace(XPath::toString(node));
         return true;
     };
 
@@ -979,7 +979,7 @@ public:
             return false;
         }
 
-        auto xpath = XPath::to_string(node);
+        auto xpath = XPath::toString(node);
         if (xpath.empty()) {
             spdlog::warn("Cannot convert node {} to xpath", node->Name());
             return true;

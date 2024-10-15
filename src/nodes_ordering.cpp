@@ -218,8 +218,8 @@ public:
             // spdlog::debug("Visiting node: {}", node->Name());
         }
 
-        // TODO: XPath::to_string(node->SchemaNode())
-        auto xpath = XPath::to_string(node);
+        // TODO: XPath::toString(node->SchemaNode())
+        auto xpath = XPath::toString(node);
         spdlog::debug("Get xpath: {}", xpath);
         auto schema_node = m_config_mngr->getSchemaByXPath(xpath);
         if (!schema_node) {
@@ -230,7 +230,7 @@ public:
         auto update_depend_attrs = schema_node->FindAttr("update-dependencies");
         if (update_depend_attrs.empty()) {
             spdlog::debug("{} does not have dependencies", xpath);
-            auto xpath_schema_node = XPath::to_string(schema_node);
+            auto xpath_schema_node = XPath::toString(schema_node);
             if (m_dependencies->find(xpath_schema_node) == m_dependencies->end()) {
                 // Just create empty set
                 (*m_dependencies)[xpath_schema_node].clear();
@@ -240,7 +240,7 @@ public:
         }
 
         for (auto& dep : update_depend_attrs) {
-            auto xpath_schema_node = XPath::to_string(schema_node);
+            auto xpath_schema_node = XPath::toString(schema_node);
             (*m_dependencies)[xpath_schema_node].emplace(dep);
         }
 
@@ -264,12 +264,12 @@ public:
             return true;
         }
 
-        auto schema_node_xpath = XPath::to_string(schema_node);
+        auto schema_node_xpath = XPath::toString(schema_node);
         if (m_set_of_ordered_cmds.find(schema_node_xpath) != m_set_of_ordered_cmds.end()) {
             m_ordered_nodes[schema_node_xpath].emplace_front(node);
         }
-        else if (m_ordered_nodes.find(XPath::to_string(schema_node->Parent())) != m_ordered_nodes.end()) {
-            m_ordered_nodes[XPath::to_string(schema_node->Parent())].emplace_back(node);
+        else if (m_ordered_nodes.find(XPath::toString(schema_node->Parent())) != m_ordered_nodes.end()) {
+            m_ordered_nodes[XPath::toString(schema_node->Parent())].emplace_back(node);
         }
         else {
             m_unordered_nodes[schema_node_xpath].emplace_back(node);

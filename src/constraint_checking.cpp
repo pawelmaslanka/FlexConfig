@@ -270,15 +270,15 @@ String ReferenceHandle(const SemanticValues& vs, Any& dt) {
     }
 
     auto node = pegArg.CurrentProcessingNode;
-    auto schema_node = pegArg.ConfigMngr->getSchemaByXPath(XPath::to_string(pegArg.CurrentProcessingNode));
+    auto schema_node = pegArg.ConfigMngr->getSchemaByXPath(XPath::toString(pegArg.CurrentProcessingNode));
     if (!schema_node) {
-        spdlog::debug("Not found schema node at xpath '{}'", XPath::to_string(pegArg.CurrentProcessingNode));
+        spdlog::debug("Not found schema node at xpath '{}'", XPath::toString(pegArg.CurrentProcessingNode));
         return {};
     }
 
     auto ref_attrs = schema_node->FindAttr("reference");
     if (ref_attrs.empty()) {
-        spdlog::debug("Not found attribute 'reference' at schema node {}", XPath::to_string(schema_node));
+        spdlog::debug("Not found attribute 'reference' at schema node {}", XPath::toString(schema_node));
         return {};
     }
 
@@ -288,7 +288,7 @@ String ReferenceHandle(const SemanticValues& vs, Any& dt) {
             Utils::find_and_replace_all(ref, "/@", XPath::SEPARATOR + node_name);
         }
 
-        auto evaluated_ref = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, ref);
+        auto evaluated_ref = XPath::evaluateXPath(pegArg.CurrentProcessingNode, ref);
         spdlog::debug("Evaluated reference of '{} to '{}''", ref, evaluated_ref);
         if (XPath::select(pegArg.RootNodeConfig, evaluated_ref)) {
             spdlog::debug("Found node at xpath '{}'", evaluated_ref);
@@ -332,7 +332,7 @@ Vector<String> XPathHandle(const SemanticValues& vs, Any& dt) {
         return {};
     }
 
-    auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
+    auto resolved_xpath = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath);
     if (!XPath::select(pegArg.RootNodeConfig, resolved_xpath)) {
         spdlog::debug("Not found node at xpath '{}'", xpath);
         return {};
@@ -353,9 +353,9 @@ Any XPathValueHandle(const SemanticValues& vs, Any& dt) {
 
     Utils::find_and_replace_all(xpath, "[@item]", "/[@item]");
     auto xpath_tokens = XPath::parse(xpath);
-    auto resolved_xpath = XPath::to_string(pegArg.CurrentProcessingNode);
-    // FIXME: XPath::evaluate_xpath2() does not do the same what this code
-    // auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
+    auto resolved_xpath = XPath::toString(pegArg.CurrentProcessingNode);
+    // FIXME: XPath::evaluateXPath() does not do the same what this code
+    // auto resolved_xpath = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath);
     auto resolved_xpath_tokens = XPath::parse(resolved_xpath);
     String rebuild_resolved_xpath;
     while (!xpath_tokens.empty()) {
@@ -431,7 +431,7 @@ Vector<String> XPathMatchRegexHandle(const SemanticValues& vs, Any& dt) {
         auto wildcard_pos = xpath.find("/*");
         if ((i == 1) && (wildcard_pos != String::npos)) {
             xpath = xpath.substr(0, wildcard_pos);
-            auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
+            auto resolved_xpath = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath);
             auto node = XPath::select(pegArg.RootNodeConfig, resolved_xpath);
             if (!node) {
                 spdlog::debug("Node at xpath '{}' does not exists", resolved_xpath);
@@ -448,14 +448,14 @@ Vector<String> XPathMatchRegexHandle(const SemanticValues& vs, Any& dt) {
             continue;
         }
 
-        auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
+        auto resolved_xpath = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath);
         auto node = XPath::select(pegArg.RootNodeConfig, resolved_xpath);
         if (!node) {
             spdlog::debug("Not found node at xpath '{}'", xpath);
             return {};
         }
 
-        auto node_xpath = XPath::to_string(node);
+        auto node_xpath = XPath::toString(node);
         ForwardList<String> matched_xpaths;
         for (auto& xpath_node_child : xpath_subnodes) {
             if (xpath_node_child.find(node_xpath) != String::npos) {
@@ -500,7 +500,7 @@ Vector<String> XPathAnyHandle(const SemanticValues& vs, Any& dt) {
             spdlog::debug("Node at xpath '{}' does not exists", parent_xpath);
             return {};
         }
-        spdlog::debug("Converted node '{}' to xpath '{}'", node->Name(), XPath::to_string(node));
+        spdlog::debug("Converted node '{}' to xpath '{}'", node->Name(), XPath::toString(node));
         // TODO: Implement it based on WildcardDependencyResolverVisitior
         NodeChildsOnlyVisitor node_childs_only_visitor(node);
         node->Accept(node_childs_only_visitor);
@@ -548,7 +548,7 @@ Vector<String> XPathAllHandle(const SemanticValues& vs, Any& dt) {
             spdlog::debug("Node at xpath '{}' does not exists", parent_xpath);
             return {};
         }
-        spdlog::debug("Converted node '{}' to xpath '{}'", node->Name(), XPath::to_string(node));
+        spdlog::debug("Converted node '{}' to xpath '{}'", node->Name(), XPath::toString(node));
         // TODO: Implement it based on WildcardDependencyResolverVisitior
         NodeChildsOnlyVisitor node_childs_only_visitor(node);
         node->Accept(node_childs_only_visitor);
@@ -596,7 +596,7 @@ Vector<String> XPathKeyBasedHandle(const SemanticValues& vs, Any& dt) {
         }
 
         Utils::find_and_replace_all(xpath_key_reference, "[@item]", "/[@item]");
-        auto resolved_reference_xpath_key = XPath::evaluate_xpath_key(pegArg.CurrentProcessingNode, xpath_key_reference);
+        auto resolved_reference_xpath_key = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath_key_reference);
         if (resolved_reference_xpath_key.empty()) {
             spdlog::debug("Failed to resolve reference key at xpath '{}'", xpath_key_reference);
             return {};
@@ -641,9 +641,9 @@ Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
 
         Utils::find_and_replace_all(xpath, "[@item]", "/[@item]");
         auto xpath_tokens = XPath::parse(xpath);
-        auto resolved_xpath = XPath::to_string(pegArg.CurrentProcessingNode);
-        // FIXME: XPath::evaluate_xpath2() does not do the same what this code
-        // auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
+        auto resolved_xpath = XPath::toString(pegArg.CurrentProcessingNode);
+        // FIXME: XPath::evaluateXPath() does not do the same what this code
+        // auto resolved_xpath = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath);
         auto resolved_xpath_tokens = XPath::parse(resolved_xpath);
         String rebuild_resolved_xpath;
         while (!xpath_tokens.empty()) {
@@ -701,9 +701,9 @@ Any XPathValueKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
 
         Utils::find_and_replace_all(xpath, "[@item]", "/[@item]");
         auto xpath_tokens = XPath::parse(xpath);
-        auto resolved_xpath = XPath::to_string(pegArg.CurrentProcessingNode);
-        // FIXME: XPath::evaluate_xpath2() does not do the same what this code
-        // auto resolved_xpath = XPath::evaluate_xpath2(pegArg.CurrentProcessingNode, xpath);
+        auto resolved_xpath = XPath::toString(pegArg.CurrentProcessingNode);
+        // FIXME: XPath::evaluateXPath() does not do the same what this code
+        // auto resolved_xpath = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath);
         auto resolved_xpath_tokens = XPath::parse(resolved_xpath);
         String rebuild_resolved_xpath;
         while (!xpath_tokens.empty()) {

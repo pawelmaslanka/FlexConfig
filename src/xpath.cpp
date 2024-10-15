@@ -25,7 +25,7 @@ bool XPath::NodeFinder::visit(SharedPtr<Node> node) {
     return true; // Continue visiting other nodes
 }
 
-SharedPtr<Node> XPath::NodeFinder::get_result() {
+SharedPtr<Node> XPath::NodeFinder::getResult() {
     return _wanted_node;
 }
 
@@ -65,7 +65,7 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
             for (auto new_item : { item.substr(0, left_pos), item.substr(left_pos + 1, (right_pos - left_pos - 1)) }) {
                 node_finder->init(new_item);
                 visiting_node->Accept(*node_finder);
-                visiting_node = node_finder->get_result();
+                visiting_node = node_finder->getResult();
                 if (!visiting_node) {
                     return nullptr;
                 }
@@ -76,7 +76,7 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
 
         node_finder->init(xpath_items.front());
         visiting_node->Accept(*node_finder);
-        visiting_node = node_finder->get_result();
+        visiting_node = node_finder->getResult();
         if (!visiting_node) {
             return nullptr;
         }
@@ -100,7 +100,7 @@ String XPath::mergeTokens(const Deque<String>& xpath_tokens) {
     return xpath;
 }
 
-String XPath::to_string(SharedPtr<Node> node) {
+String XPath::toString(SharedPtr<Node> node) {
     String xpath;
     Stack<String> xpath_stack;
     auto processing_node = node;
@@ -135,56 +135,11 @@ struct NodeCounter : public Visitor {
     }
 };
 
-size_t XPath::count_members(SharedPtr<Node> root_node, const String xpath) {
-    auto wanted_node = select(root_node, xpath);
-    if (!wanted_node) {
-        return 0;
-    }
-
-    auto node_counter = std::make_shared<NodeCounter>();
-    wanted_node->Accept(*node_counter);
-    return node_counter->node_cnt;
-}
-
-SharedPtr<Node> XPath::get_root(SharedPtr<Node> start_node) {
-    if (!start_node) {
-        return nullptr;
-    }
-
-    while (start_node->Parent()) {
-        start_node = start_node->Parent();
-    }
-
-    return start_node;
-}
-
-String XPath::evaluate_xpath_key(SharedPtr<Node> start_node, String xpath) {
-    if (xpath.at(0) != XPath::SEPARATOR[0]) {
-        return {};
-    }
-
-    Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT);
-    auto node_xpath = to_string(start_node);
-    auto xpath_tokens = parse(xpath);
-    auto node_xpath_tokens = parse(node_xpath);
-    while (!xpath_tokens.empty()) {
-        auto token = xpath_tokens.front();
-        xpath_tokens.pop_front();
-        if (token == XPath::ITEM_NAME_SUBSCRIPT) {
-            return node_xpath_tokens.front();
-        }
-
-        node_xpath_tokens.pop_front();
-    }
-
-    return {};
-}
-
 // Resolves the xpath based on the node from the same xpath,
 // i.e. xpath = '/platform/port/[@item]/breakout-mode' then node
 // must be "breakout-mode" to successfully evaluate the node - it
 // cannot be i.e. '/interface/ethernet[@item]/auto-negotiation'
-String XPath::evaluate_xpath2(SharedPtr<Node> start_node, String xpath) {
+String XPath::evaluateXPath(SharedPtr<Node> start_node, String xpath) {
     if (xpath.at(0) != XPath::SEPARATOR[0]) {
         return {};
     }
@@ -243,106 +198,6 @@ String XPath::evaluate_xpath2(SharedPtr<Node> start_node, String xpath) {
             resolved_key_name = curr_node->Parent()->Name(); // We want to resolve name of parent node based on its child node
         }
 
-        // Resolve all occurences of XPath::ITEM_NAME_SUBSCRIPT
-        for (auto it = range.first; it != range.second; ++it) {
-            xpath_items.at(it->second) = resolved_key_name;
-        }
-    }
-
-    String evaluated_xpath;
-    for (auto item : xpath_items) {
-        evaluated_xpath += XPath::SEPARATOR;
-        evaluated_xpath += item;
-    }
-
-    return evaluated_xpath;
-}
-
-String XPath::evaluate_xpath(SharedPtr<Node> start_node, String xpath) {
-    if (xpath.at(0) != XPath::SEPARATOR[0]) {
-        return {};
-    }
-
-    Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT);
-    MultiMap<String, std::size_t> idx_by_xpath_item;
-    Vector<String> xpath_items;
-    // Returns first token
-    char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
-    // Keep printing tokens while one of the
-    // delimiters present in str[].
-    size_t idx = 0;
-    while (token != nullptr) {
-        xpath_items.push_back(token);
-        idx_by_xpath_item.emplace(token, idx);
-        token = strtok(NULL, XPath::SEPARATOR);
-        ++idx;
-    }
-
-    // Resolve @item key
-    auto key_name_pos = idx_by_xpath_item.find(XPath::ITEM_NAME_SUBSCRIPT);
-    if (key_name_pos != std::end(idx_by_xpath_item)) {
-        auto start_node_xpath = to_string(start_node);
-        // Find last idx
-        idx = 0; 
-        auto range = idx_by_xpath_item.equal_range(XPath::ITEM_NAME_SUBSCRIPT);
-        for (auto it = range.first; it != range.second; ++it) {
-            if (it->second > idx) {
-                idx = it->second;
-            }
-        }
-
-        String wanted_child = xpath_items.at(idx);
-        if (xpath_items.size() > (idx + 1)) {
-            wanted_child = xpath_items.at(idx + 1);
-        }
-
-        auto curr_node = start_node;
-        while ((curr_node->Name() != wanted_child)
-                && (curr_node->Parent() != nullptr)) {
-            curr_node = curr_node->Parent();
-        }
-
-        Queue<String> xpath_stack {};
-        token = std::strtok(const_cast<char*>(start_node_xpath.c_str()), XPath::SEPARATOR);
-        // Keep printing tokens while one of the
-        // delimiters present in str[].
-        while (token != nullptr) {
-            xpath_stack.push(token);
-            token = strtok(NULL, XPath::SEPARATOR);
-        }
-
-        String resolved_key_name;
-        auto root_node = get_root(start_node);
-        class KeyFindVisitor : public Visitor {
-        public:
-            virtual ~KeyFindVisitor() = default;
-            KeyFindVisitor(Queue<String> xpath_stack) : m_xpath_stack { xpath_stack } {}
-            virtual bool visit(SharedPtr<Node> node) {
-                if (m_xpath_stack.front() != node->Name()) {
-                    std::clog << "XPath stack node is invalid: " << node->Name() << ", expected: " << m_xpath_stack.front() << std::endl;
-                    return true;
-                }
-
-                m_xpath_stack.pop();
-                auto schema_node = std::dynamic_pointer_cast<SchemaNode>(node->SchemaNode());
-                if (schema_node && schema_node->Name() == "@item") {
-                    m_key = node->Name();
-                    return false;
-                }
-
-                return true;
-            }
-
-            String getKey() { return m_key; }
-
-        private:
-            String m_key {};
-            Queue<String> m_xpath_stack {};
-        };
-
-        KeyFindVisitor keyFindVisitor(xpath_stack);
-        root_node->Accept(keyFindVisitor);
-        resolved_key_name = keyFindVisitor.getKey();
         // Resolve all occurences of XPath::ITEM_NAME_SUBSCRIPT
         for (auto it = range.first; it != range.second; ++it) {
             xpath_items.at(it->second) = resolved_key_name;
