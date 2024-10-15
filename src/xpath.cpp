@@ -43,20 +43,6 @@ SharedPtr<Queue<String>> XPath::parse(const String xpath) {
     return xpath_items;
 }
 
-Queue<String> XPath::parse3(const String xpath) {
-    Queue<String> xpath_items;
-    // Returns first token
-    char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
-    // Keep printing tokens while one of the
-    // delimiters present in str[].
-    while (token != nullptr) {
-        xpath_items.push(token);
-        token = std::strtok(nullptr, XPath::SEPARATOR);
-    }
-
-    return xpath_items;
-}
-
 Deque<String> XPath::parse4(const String xpath) {
     Deque<String> xpath_items;
     // Returns first token
@@ -266,16 +252,16 @@ String XPath::evaluate_xpath_key(SharedPtr<Node> start_node, String xpath) {
 
     Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT);
     auto node_xpath = to_string2(start_node);
-    auto xpath_tokens = parse3(xpath);
-    auto node_xpath_tokens = parse3(node_xpath);
+    auto xpath_tokens = parse4(xpath);
+    auto node_xpath_tokens = parse4(node_xpath);
     while (!xpath_tokens.empty()) {
         auto token = xpath_tokens.front();
-        xpath_tokens.pop();
+        xpath_tokens.pop_front();
         if (token == XPath::ITEM_NAME_SUBSCRIPT) {
             return node_xpath_tokens.front();
         }
 
-        node_xpath_tokens.pop();
+        node_xpath_tokens.pop_front();
     }
 
     return {};

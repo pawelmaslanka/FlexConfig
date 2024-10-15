@@ -1101,7 +1101,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         }
 
         auto xpath_node_to_remove = path.get<String>();
-        auto xpath_tokens = XPath::parse3(xpath_node_to_remove);
+        auto xpath_tokens = XPath::parse4(xpath_node_to_remove);
         if (xpath_tokens.empty()) {
             spdlog::error("Path is empty!");
             return false;
@@ -1116,7 +1116,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             }
 
             xpath += xpath_tokens.front();
-            xpath_tokens.pop();
+            xpath_tokens.pop_front();
             path_nodes.insert(xpath);
         }
 
@@ -1395,7 +1395,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             continue;
         }
 
-        auto xpath_tokens = XPath::parse3(path);
+        auto xpath_tokens = XPath::parse4(path);
         if (xpath_tokens.empty()) {
             spdlog::error("Path is empty!");
             if (!rollback_removed_nodes()) {
@@ -1413,7 +1413,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             }
 
             xpath += xpath_tokens.front();
-            xpath_tokens.pop();
+            xpath_tokens.pop_front();
             path_nodes.insert(xpath);
         }
 

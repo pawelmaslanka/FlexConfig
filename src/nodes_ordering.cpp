@@ -27,7 +27,7 @@ public:
 
         spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
         spdlog::debug("Left xpath {}", m_post_wildcard);
-        m_pre_wildcard_tokens = XPath::parse3(m_pre_wildcard);
+        m_pre_wildcard_tokens = XPath::parse4(m_pre_wildcard);
     }
 
     Optional<String> getEvaluatedXpath() { return m_result; }
@@ -44,7 +44,7 @@ public:
             return true;
         }
 
-        m_pre_wildcard_tokens.pop();
+        m_pre_wildcard_tokens.pop_front();
         if (m_pre_wildcard_tokens.empty()) {
             spdlog::debug("We reached leaf token at node {}", node->Name());
             SubnodeChildsVisitor subnode_visitor(node->Name());
@@ -74,7 +74,7 @@ public:
     }
 
 private:
-    Queue<String> m_pre_wildcard_tokens {};
+    Deque<String> m_pre_wildcard_tokens {};
     String m_pre_wildcard {};
     String m_post_wildcard {};
     Optional<String> m_result {};
@@ -91,7 +91,7 @@ public:
 
         spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
         spdlog::debug("Left xpath {}", m_post_wildcard);
-        m_pre_wildcard_tokens = XPath::parse3(m_pre_wildcard);
+        m_pre_wildcard_tokens = XPath::parse4(m_pre_wildcard);
     }
 
     ForwardList<String> getEvaluatedXpath() { return m_result; }
@@ -108,7 +108,7 @@ public:
             return true;
         }
 
-        m_pre_wildcard_tokens.pop();
+        m_pre_wildcard_tokens.pop_front();
         if (m_pre_wildcard_tokens.empty()) {
             spdlog::debug("We reached leaf token at node {}", node->Name());
             SubnodeChildsVisitor subnode_visitor(node->Name());
@@ -137,7 +137,7 @@ public:
     }
 
 private:
-    Queue<String> m_pre_wildcard_tokens {};
+    Deque<String> m_pre_wildcard_tokens {};
     String m_pre_wildcard {};
     String m_post_wildcard {};
     ForwardList<String> m_result {};
@@ -146,7 +146,7 @@ private:
 class WildcardDependencyResolverVisitior : public Visitor {
 public:
     virtual ~WildcardDependencyResolverVisitior() {
-        while (!m_pre_wildcard_tokens.empty()) m_pre_wildcard_tokens.pop();
+        while (!m_pre_wildcard_tokens.empty()) m_pre_wildcard_tokens.pop_front();
         m_result.clear();
     };
 
@@ -158,7 +158,7 @@ public:
 
         spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
         spdlog::debug("Left xpath {}", m_post_wildcard);
-        m_pre_wildcard_tokens = XPath::parse3(m_pre_wildcard);
+        m_pre_wildcard_tokens = XPath::parse4(m_pre_wildcard);
     }
 
     ForwardList<String> getEvaluatedXpath() { return m_result; }
@@ -175,7 +175,7 @@ public:
             return true;
         }
 
-        m_pre_wildcard_tokens.pop();
+        m_pre_wildcard_tokens.pop_front();
         if (m_pre_wildcard_tokens.empty()) {
             spdlog::debug("We reached leaf token at node {}", node->Name());
             SubnodeChildsVisitor subnode_visitor(node->Name());
@@ -197,7 +197,7 @@ public:
     }
 
 private:
-    Queue<String> m_pre_wildcard_tokens {};
+    Deque<String> m_pre_wildcard_tokens {};
     String m_pre_wildcard {};
     String m_post_wildcard {};
     ForwardList<String> m_result {};
