@@ -27,7 +27,7 @@ public:
 
         spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
         spdlog::debug("Left xpath {}", m_post_wildcard);
-        m_pre_wildcard_tokens = XPath::parse4(m_pre_wildcard);
+        m_pre_wildcard_tokens = XPath::parse(m_pre_wildcard);
     }
 
     Optional<String> getEvaluatedXpath() { return m_result; }
@@ -91,7 +91,7 @@ public:
 
         spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
         spdlog::debug("Left xpath {}", m_post_wildcard);
-        m_pre_wildcard_tokens = XPath::parse4(m_pre_wildcard);
+        m_pre_wildcard_tokens = XPath::parse(m_pre_wildcard);
     }
 
     ForwardList<String> getEvaluatedXpath() { return m_result; }
@@ -158,7 +158,7 @@ public:
 
         spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
         spdlog::debug("Left xpath {}", m_post_wildcard);
-        m_pre_wildcard_tokens = XPath::parse4(m_pre_wildcard);
+        m_pre_wildcard_tokens = XPath::parse(m_pre_wildcard);
     }
 
     ForwardList<String> getEvaluatedXpath() { return m_result; }

@@ -210,7 +210,7 @@ static nlohmann::json findAndAppendParamActionF(nlohmann::json& node_jschema, nl
 }
 
 // bool AddNode(SharedPtr<Node>& root_node, StringView xpath) {
-//     auto xpath_tokens = XPath::parse4(String(xpath));
+//     auto xpath_tokens = XPath::parse(String(xpath));
 //     auto new_node_name = xpath_tokens.back();
 //     xpath_tokens.pop_back();
 //     auto parent_xpath = XPath::mergeTokens(xpath_tokens);
@@ -783,7 +783,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     }
 
     auto schema = *root_properties_it;
-    auto xpath_tokens = XPath::parse4(xpath);
+    auto xpath_tokens = XPath::parse(xpath);
 
     auto root_schema_node = std::make_shared<SchemaComposite>("/");
     auto schema_node = root_schema_node;
@@ -873,7 +873,7 @@ nlohmann::json GetJsonSchemaByXPath(const String& xpath) {
     }
 
     auto schema = *root_properties_it;
-    auto xpath_tokens = XPath::parse4(xpath);
+    auto xpath_tokens = XPath::parse(xpath);
 
     String schema_xpath_composed = {};
     // TODO: Create node hierarchy dynamically. Save in cache. Chek cache next time before traverse
@@ -988,7 +988,7 @@ public:
         auto node_it = m_nodes_to_collect.find(xpath);
         if (node_it != m_nodes_to_collect.end()) {
             spdlog::debug("Found xpath {} in collect of nodes", xpath);
-            auto xpath_tokens = XPath::parse4(xpath);
+            auto xpath_tokens = XPath::parse(xpath);
             xpath_tokens.pop_back();
             auto parent_node = m_root_config;
             if (!xpath_tokens.empty()) {
@@ -1101,7 +1101,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         }
 
         auto xpath_node_to_remove = path.get<String>();
-        auto xpath_tokens = XPath::parse4(xpath_node_to_remove);
+        auto xpath_tokens = XPath::parse(xpath_node_to_remove);
         if (xpath_tokens.empty()) {
             spdlog::error("Path is empty!");
             return false;
@@ -1395,7 +1395,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             continue;
         }
 
-        auto xpath_tokens = XPath::parse4(path);
+        auto xpath_tokens = XPath::parse(path);
         if (xpath_tokens.empty()) {
             spdlog::error("Path is empty!");
             if (!rollback_removed_nodes()) {

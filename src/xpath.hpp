@@ -29,8 +29,7 @@ namespace XPath {
         String _wanted_node_name;
     };
 
-    SharedPtr<Queue<String>> parse(const String xpath);
-    Deque<String> parse4(const String xpath);
+    Deque<String> parse(const String xpath);
     SharedPtr<Node> select(SharedPtr<Node> root_node, const String xpath);
     // Second version of select() iclude recognize "value" on the end of xpath string
     SharedPtr<Node> select2(SharedPtr<Node> root_node, const String xpath);

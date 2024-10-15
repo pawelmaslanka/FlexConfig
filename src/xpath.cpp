@@ -29,21 +29,7 @@ SharedPtr<Node> XPath::NodeFinder::get_result() {
     return _wanted_node;
 }
 
-SharedPtr<Queue<String>> XPath::parse(const String xpath) {
-    auto xpath_items = std::make_shared<Queue<String>>();
-    // Returns first token
-    char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
-    // Keep printing tokens while one of the
-    // delimiters present in str[].
-    while (token != nullptr) {
-        xpath_items->push(token);
-        token = std::strtok(nullptr, XPath::SEPARATOR);
-    }
-
-    return xpath_items;
-}
-
-Deque<String> XPath::parse4(const String xpath) {
+Deque<String> XPath::parse(const String xpath) {
     Deque<String> xpath_items;
     // Returns first token
     char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
@@ -65,13 +51,13 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
     auto xpath_items = parse(xpath);
     auto node_finder = std::make_shared<XPath::NodeFinder>();
     auto visiting_node = root_node;
-    while (!xpath_items->empty()) { 
-        auto item = xpath_items->front();
+    while (!xpath_items.empty()) { 
+        auto item = xpath_items.front();
         auto left_pos = item.find(XPath::SUBSCRIPT_LEFT_PARENTHESIS);
         auto right_pos = item.find(XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
         if (left_pos != String::npos
             && right_pos != String::npos) {
-            xpath_items->pop();
+            xpath_items.pop_front();
             for (auto new_item : { item.substr(0, left_pos), item.substr(left_pos + 1, (right_pos - left_pos - 1)) }) {
                 node_finder->init(new_item);
                 visiting_node->Accept(*node_finder);
@@ -84,14 +70,14 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
             continue;
         }
 
-        node_finder->init(xpath_items->front());
+        node_finder->init(xpath_items.front());
         visiting_node->Accept(*node_finder);
         visiting_node = node_finder->get_result();
         if (!visiting_node) {
             return nullptr;
         }
 
-        xpath_items->pop();
+        xpath_items.pop_front();
     }
 
     return visiting_node;
@@ -105,9 +91,9 @@ SharedPtr<Node> XPath::select2(SharedPtr<Node> root_node, const String xpath) {
     auto xpath_items = parse(xpath);
     auto node_finder = std::make_shared<XPath::NodeFinder>();
     auto visiting_node = root_node;
-    while (!xpath_items->empty()) { 
-        auto item = xpath_items->front();
-        if ((item == "value") && (xpath_items->size() == 1)) {
+    while (!xpath_items.empty()) { 
+        auto item = xpath_items.front();
+        if ((item == "value") && (xpath_items.size() == 1)) {
             return visiting_node;
         }
 
@@ -115,7 +101,7 @@ SharedPtr<Node> XPath::select2(SharedPtr<Node> root_node, const String xpath) {
         auto right_pos = item.find(XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
         if (left_pos != StringEnd()
             && right_pos != StringEnd()) {
-            xpath_items->pop();
+            xpath_items.pop_front();
             for (auto new_item : { item.substr(0, left_pos), item.substr(left_pos + 1, (right_pos - left_pos - 1)) }) {
                 node_finder->init(new_item);
                 visiting_node->Accept(*node_finder);
@@ -128,14 +114,14 @@ SharedPtr<Node> XPath::select2(SharedPtr<Node> root_node, const String xpath) {
             continue;
         }
 
-        node_finder->init(xpath_items->front());
+        node_finder->init(xpath_items.front());
         visiting_node->Accept(*node_finder);
         visiting_node = node_finder->get_result();
         if (!visiting_node) {
             return nullptr;
         }
 
-        xpath_items->pop();
+        xpath_items.pop_front();
     }
 
     return visiting_node;
@@ -252,8 +238,8 @@ String XPath::evaluate_xpath_key(SharedPtr<Node> start_node, String xpath) {
 
     Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT);
     auto node_xpath = to_string2(start_node);
-    auto xpath_tokens = parse4(xpath);
-    auto node_xpath_tokens = parse4(node_xpath);
+    auto xpath_tokens = parse(xpath);
+    auto node_xpath_tokens = parse(node_xpath);
     while (!xpath_tokens.empty()) {
         auto token = xpath_tokens.front();
         xpath_tokens.pop_front();
