@@ -370,7 +370,7 @@ Any XPathValueHandle(const SemanticValues& vs, Any& dt) {
             token = resolved_xpath_tokens.front();
         }
 
-        rebuild_resolved_xpath += "/" + token;
+        rebuild_resolved_xpath += XPath::SEPARATOR + token;
         if (!resolved_xpath_tokens.empty()) {
             resolved_xpath_tokens.pop_front();
         }
@@ -410,7 +410,8 @@ Any XPathValueHandle(const SemanticValues& vs, Any& dt) {
 
 Vector<String> XPathMatchRegexHandle(const SemanticValues& vs, Any& dt) {
     Argument& pegArg = ACTION_PROLOG(dt, vs);
-    if (vs.size() < 3) {
+    static constexpr auto XPATH_MATCH_REGEX_FUNC_ARGS_NUM = 3;
+    if (vs.size() < XPATH_MATCH_REGEX_FUNC_ARGS_NUM) {
         spdlog::error("There is too few arguments {} to perform action", vs.size());
         pegArg.ExpressionResult = false;
         STOP_PROCESSING(dt, vs);
@@ -419,8 +420,8 @@ Vector<String> XPathMatchRegexHandle(const SemanticValues& vs, Any& dt) {
     Vector<String> result;
     String regex_expression;
     ForwardList<String> xpath_subnodes;
-    for (auto i = 0; i < 3; ++i) {
-        String xpath = AnyCast<String>(vs[2 - i]);
+    for (auto i = 0; i < XPATH_MATCH_REGEX_FUNC_ARGS_NUM; ++i) {
+        String xpath = AnyCast<String>(vs[2 - i]); // Start from the end
         if (xpath.empty()) {
             spdlog::debug("There is not any xpath to convert to node");
             return {};
@@ -577,7 +578,8 @@ Vector<String> XPathAllHandle(const SemanticValues& vs, Any& dt) {
 
 Vector<String> XPathKeyBasedHandle(const SemanticValues& vs, Any& dt) {
     Argument& pegArg = ACTION_PROLOG(dt, vs);
-    if (vs.size() < 2) {
+    static constexpr auto XPATH_KEY_BASED_FUNC_ARGS_NUM = 2;
+    if (vs.size() < XPATH_KEY_BASED_FUNC_ARGS_NUM) {
         spdlog::error("There is too few arguments {} to perform action", vs.size());
         pegArg.ExpressionResult = false;
         STOP_PROCESSING(dt, vs);
@@ -586,8 +588,8 @@ Vector<String> XPathKeyBasedHandle(const SemanticValues& vs, Any& dt) {
     Vector<String> result;
     String xpath_key_reference;
     ForwardList<String> xpath_subnodes;
-    for (auto i = 0; i < 2; ++i) {
-        String xpath = AnyCast<String>(vs[1 - i]);
+    for (auto i = 0; i < XPATH_KEY_BASED_FUNC_ARGS_NUM; ++i) {
+        String xpath = AnyCast<String>(vs[1 - i]); // Start from the end
         if (xpath.empty()) {
             spdlog::debug("There is not any xpath to convert to node");
             return {};
@@ -605,7 +607,7 @@ Vector<String> XPathKeyBasedHandle(const SemanticValues& vs, Any& dt) {
             return {};
         }
 
-        Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, "/" + resolved_reference_xpath_key);
+        Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, XPath::SEPARATOR + resolved_reference_xpath_key);
         if (!XPath::select(pegArg.RootNodeConfig, xpath)) {
             spdlog::debug("Not found node at xpath '{}'", xpath);
             return {};
@@ -621,7 +623,8 @@ Vector<String> XPathKeyBasedHandle(const SemanticValues& vs, Any& dt) {
 
 Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
     Argument& pegArg = ACTION_PROLOG(dt, vs);
-    if (vs.size() < 2) {
+    static constexpr auto XPATH_KEY_REGEX_REPLACE_FUNC_ARGS_NUM = 2;
+    if (vs.size() < XPATH_KEY_REGEX_REPLACE_FUNC_ARGS_NUM) {
         spdlog::error("There is too few arguments {} to perform action", vs.size());
         pegArg.ExpressionResult = false;
         STOP_PROCESSING(dt, vs);
@@ -630,8 +633,8 @@ Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
     Vector<String> result;
     String regex_expression;
     ForwardList<String> xpath_subnodes;
-    for (auto i = 0; i < 2; ++i) {
-        String xpath = AnyCast<String>(vs[1 - i]);
+    for (auto i = 0; i < XPATH_KEY_REGEX_REPLACE_FUNC_ARGS_NUM; ++i) {
+        String xpath = AnyCast<String>(vs[1 - i]); // Start from the end
         if (xpath.empty()) {
             spdlog::debug("There is not any xpath to convert to node");
             return {};
@@ -658,7 +661,7 @@ Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
                 }
             }
 
-            rebuild_resolved_xpath += "/" + token;
+            rebuild_resolved_xpath += XPath::SEPARATOR + token;
             if (!resolved_xpath_tokens.empty()) {
                 resolved_xpath_tokens.pop_front();
             }
@@ -680,7 +683,8 @@ Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
 
 Any XPathValueKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
     Argument& pegArg = ACTION_PROLOG(dt, vs);
-    if (vs.size() < 2) {
+    static constexpr auto XPATH_VALUE_KEY_REGEX_REPLACE_FUNC_ARGS_NUM = 2;
+    if (vs.size() < XPATH_VALUE_KEY_REGEX_REPLACE_FUNC_ARGS_NUM) {
         spdlog::error("There is too few arguments {} to perform action", vs.size());
         pegArg.ExpressionResult = false;
         STOP_PROCESSING(dt, vs);
@@ -688,8 +692,8 @@ Any XPathValueKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
 
     String regex_expression;
     ForwardList<String> xpath_subnodes;
-    for (auto i = 0; i < 2; ++i) {
-        String xpath = AnyCast<String>(vs[1 - i]);
+    for (auto i = 0; i < XPATH_VALUE_KEY_REGEX_REPLACE_FUNC_ARGS_NUM; ++i) {
+        String xpath = AnyCast<String>(vs[1 - i]); // Start from the end
         if (xpath.empty()) {
             spdlog::debug("There is not any xpath to convert to node");
             return {};
@@ -716,7 +720,7 @@ Any XPathValueKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
                 }
             }
 
-            rebuild_resolved_xpath += "/" + token;
+            rebuild_resolved_xpath += XPath::SEPARATOR + token;
             if (!resolved_xpath_tokens.empty()) {
                 resolved_xpath_tokens.pop_front();
             }
