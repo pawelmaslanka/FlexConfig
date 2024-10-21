@@ -28,7 +28,7 @@ using namespace peg::udl;
 
 static const String ITEM_XPATH_NODE = String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT;
 static constexpr auto WILDCARD_XPATH_NODE = "/*";
-static constexpr char THIS_NODE = '@';
+static constexpr char REFERENCE_NODE_TOKEN = '@';
 
 template<class T, class F>
 inline std::pair<const std::type_index, std::function<void(std::any const&)>>
@@ -267,7 +267,7 @@ Int64 NumberHandle(const SemanticValues& vs, Any& dt) {
 String ReferenceHandle(const SemanticValues& vs, Any& dt) {
     Argument& pegArg = ACTION_PROLOG(dt, vs);
     String ref_token = vs.token_to_string();
-    if (ref_token != "@") {
+    if (ref_token != XPath::REFERENCE_TOKEN) {
         spdlog::error("Unexpected reference token '{}'", ref_token);
         pegArg.ExpressionResult = false;
         STOP_PROCESSING(dt, vs);
@@ -288,9 +288,9 @@ String ReferenceHandle(const SemanticValues& vs, Any& dt) {
 
     for (String ref : ref_attrs) {
         String node_name = pegArg.CurrentProcessingNode->Name();
-        static constexpr auto THIS_XPATH_NODE = "/@";
-        if ((ref.find(THIS_XPATH_NODE) != StringEnd()) && (ref[ref.length() - 1] == THIS_NODE)) {
-            Utils::find_and_replace_all(ref, THIS_XPATH_NODE, XPath::SEPARATOR + node_name);
+        static constexpr auto REFERENCE_XPATH_NODE = "/@";
+        if ((ref.find(REFERENCE_XPATH_NODE) != StringEnd()) && (ref[ref.length() - 1] == REFERENCE_NODE_TOKEN)) {
+            Utils::find_and_replace_all(ref, REFERENCE_XPATH_NODE, XPath::SEPARATOR + node_name);
         }
 
         auto evaluated_ref = XPath::evaluateXPath(pegArg.CurrentProcessingNode, ref);
@@ -488,7 +488,7 @@ Vector<String> XPathAnyHandle(const SemanticValues& vs, Any& dt) {
         return {};
     }
 
-    if (xpath[xpath.length() - 1] == THIS_NODE) {
+    if (xpath[xpath.length() - 1] == REFERENCE_NODE_TOKEN) {
         xpath = xpath.substr(0, xpath.length() - 1) + pegArg.CurrentProcessingNode->Name();
         spdlog::debug("Replaced reference mark as {} in xpath {}", pegArg.CurrentProcessingNode->Name(), xpath);
     }
@@ -536,7 +536,7 @@ Vector<String> XPathAllHandle(const SemanticValues& vs, Any& dt) {
         return {};
     }
 
-    if (xpath[xpath.length() - 1] == THIS_NODE) {
+    if (xpath[xpath.length() - 1] == REFERENCE_NODE_TOKEN) {
         xpath = xpath.substr(0, xpath.length() - 1) + pegArg.CurrentProcessingNode->Name();
         spdlog::debug("Replaced reference mark as {} in xpath {}", pegArg.CurrentProcessingNode->Name(), xpath);
     }

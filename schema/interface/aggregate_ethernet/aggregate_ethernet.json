@@ -31,7 +31,7 @@
                                                 "server-address": "127.0.0.1:8000"
                                             },
                                             "update-dependencies": [
-                                                "/interface/ethernet[@item]",
+                                                "/interface/ethernet/@",
                                                 "/interface/ethernet[@item]/speed",
                                                 "/interface/ethernet[@item]/auto-negotiation"
                                             ],

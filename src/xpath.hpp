@@ -12,6 +12,7 @@
 namespace XPath {
     static auto constexpr ITEM_NAME = "@item";
     static auto constexpr ITEM_NAME_SUBSCRIPT = "[@item]";
+    static auto constexpr REFERENCE_TOKEN = "@";
     static auto constexpr SUBSCRIPT_LEFT_PARENTHESIS = "[";
     static auto constexpr SUBSCRIPT_RIGHT_PARENTHESIS = "]";
     static auto constexpr SEPARATOR = "/";

@@ -42,7 +42,7 @@
                                 "/interface/aggregate-ethernet/@"
                             ],
                             "update-dependencies": [
-                                "/interface/aggregate-ethernet[@item]",
+                                "/interface/aggregate-ethernet/@",
                                 "/interface/aggregate-ethernet[@item]/protocol"
                             ],
                             "update-constraints": [
