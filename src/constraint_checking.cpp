@@ -26,6 +26,10 @@ using namespace peg::udl;
 #include <functional>
 #include <iomanip>
 
+static const String ITEM_XPATH_NODE = String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT;
+static constexpr auto WILDCARD_XPATH_NODE = "/*";
+static constexpr char THIS_NODE = '@';
+
 template<class T, class F>
 inline std::pair<const std::type_index, std::function<void(std::any const&)>>
     to_any_visitor(F const &f)
@@ -284,8 +288,9 @@ String ReferenceHandle(const SemanticValues& vs, Any& dt) {
 
     for (String ref : ref_attrs) {
         String node_name = pegArg.CurrentProcessingNode->Name();
-        if ((ref.find("/@") != StringEnd()) && (ref[ref.length() - 1] == '@')) {
-            Utils::find_and_replace_all(ref, "/@", XPath::SEPARATOR + node_name);
+        static constexpr auto THIS_XPATH_NODE = "/@";
+        if ((ref.find(THIS_XPATH_NODE) != StringEnd()) && (ref[ref.length() - 1] == THIS_NODE)) {
+            Utils::find_and_replace_all(ref, THIS_XPATH_NODE, XPath::SEPARATOR + node_name);
         }
 
         auto evaluated_ref = XPath::evaluateXPath(pegArg.CurrentProcessingNode, ref);
@@ -351,17 +356,15 @@ Any XPathValueHandle(const SemanticValues& vs, Any& dt) {
         return {};
     }
 
-    Utils::find_and_replace_all(xpath, "[@item]", "/[@item]");
+    Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, ITEM_XPATH_NODE);
     auto xpath_tokens = XPath::parse(xpath);
     auto resolved_xpath = XPath::toString(pegArg.CurrentProcessingNode);
-    // FIXME: XPath::evaluateXPath() does not do the same what this code
-    // auto resolved_xpath = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath);
     auto resolved_xpath_tokens = XPath::parse(resolved_xpath);
     String rebuild_resolved_xpath;
     while (!xpath_tokens.empty()) {
         auto token = xpath_tokens.front();
         xpath_tokens.pop_front();
-        if ((token == "[@item]")
+        if ((token == XPath::ITEM_NAME_SUBSCRIPT)
             && (!resolved_xpath_tokens.empty())) {
             spdlog::debug("Found '{}' token and it is going to be replaced with '{}'", token, resolved_xpath_tokens.front());
             token = resolved_xpath_tokens.front();
@@ -428,7 +431,7 @@ Vector<String> XPathMatchRegexHandle(const SemanticValues& vs, Any& dt) {
             continue;
         }
 
-        auto wildcard_pos = xpath.find("/*");
+        auto wildcard_pos = xpath.find(WILDCARD_XPATH_NODE);
         if ((i == 1) && (wildcard_pos != String::npos)) {
             xpath = xpath.substr(0, wildcard_pos);
             auto resolved_xpath = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath);
@@ -485,13 +488,13 @@ Vector<String> XPathAnyHandle(const SemanticValues& vs, Any& dt) {
         return {};
     }
 
-    if (xpath[xpath.length() - 1] == '@') {
+    if (xpath[xpath.length() - 1] == THIS_NODE) {
         xpath = xpath.substr(0, xpath.length() - 1) + pegArg.CurrentProcessingNode->Name();
         spdlog::debug("Replaced reference mark as {} in xpath {}", pegArg.CurrentProcessingNode->Name(), xpath);
     }
 
     ForwardList<String> xpath_subnodes;
-    auto wildcard_pos = xpath.find("/*");
+    auto wildcard_pos = xpath.find(WILDCARD_XPATH_NODE);
     if (wildcard_pos != StringEnd()) {
         spdlog::debug("Found wildcard mark at xpath {}", xpath);
         auto parent_xpath = xpath.substr(0, wildcard_pos);
@@ -533,13 +536,13 @@ Vector<String> XPathAllHandle(const SemanticValues& vs, Any& dt) {
         return {};
     }
 
-    if (xpath[xpath.length() - 1] == '@') {
+    if (xpath[xpath.length() - 1] == THIS_NODE) {
         xpath = xpath.substr(0, xpath.length() - 1) + pegArg.CurrentProcessingNode->Name();
         spdlog::debug("Replaced reference mark as {} in xpath {}", pegArg.CurrentProcessingNode->Name(), xpath);
     }
 
     ForwardList<String> xpath_subnodes;
-    auto wildcard_pos = xpath.find("/*");
+    auto wildcard_pos = xpath.find(WILDCARD_XPATH_NODE);
     if (wildcard_pos != StringEnd()) {
         spdlog::debug("Found wildcard mark at xpath {}", xpath);
         auto parent_xpath = xpath.substr(0, wildcard_pos);
@@ -595,14 +598,14 @@ Vector<String> XPathKeyBasedHandle(const SemanticValues& vs, Any& dt) {
             continue;
         }
 
-        Utils::find_and_replace_all(xpath_key_reference, "[@item]", "/[@item]");
+        Utils::find_and_replace_all(xpath_key_reference, XPath::ITEM_NAME_SUBSCRIPT, ITEM_XPATH_NODE);
         auto resolved_reference_xpath_key = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath_key_reference);
         if (resolved_reference_xpath_key.empty()) {
             spdlog::debug("Failed to resolve reference key at xpath '{}'", xpath_key_reference);
             return {};
         }
 
-        Utils::find_and_replace_all(xpath, "[@item]", "/" + resolved_reference_xpath_key);
+        Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, "/" + resolved_reference_xpath_key);
         if (!XPath::select(pegArg.RootNodeConfig, xpath)) {
             spdlog::debug("Not found node at xpath '{}'", xpath);
             return {};
@@ -639,17 +642,15 @@ Vector<String> XPathKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
             continue;
         }
 
-        Utils::find_and_replace_all(xpath, "[@item]", "/[@item]");
+        Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, ITEM_XPATH_NODE);
         auto xpath_tokens = XPath::parse(xpath);
         auto resolved_xpath = XPath::toString(pegArg.CurrentProcessingNode);
-        // FIXME: XPath::evaluateXPath() does not do the same what this code
-        // auto resolved_xpath = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath);
         auto resolved_xpath_tokens = XPath::parse(resolved_xpath);
         String rebuild_resolved_xpath;
         while (!xpath_tokens.empty()) {
             auto token = xpath_tokens.front();
             xpath_tokens.pop_front();
-            if ((token == "[@item]")
+            if ((token == XPath::ITEM_NAME_SUBSCRIPT)
                 && (!resolved_xpath_tokens.empty())) {
                 std::smatch matched;
                 if (std::regex_search(resolved_xpath_tokens.front(), matched, Regex { regex_expression })) {
@@ -699,17 +700,15 @@ Any XPathValueKeyRegexReplaceHandle(const SemanticValues& vs, Any& dt) {
             continue;
         }
 
-        Utils::find_and_replace_all(xpath, "[@item]", "/[@item]");
+        Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, ITEM_XPATH_NODE);
         auto xpath_tokens = XPath::parse(xpath);
         auto resolved_xpath = XPath::toString(pegArg.CurrentProcessingNode);
-        // FIXME: XPath::evaluateXPath() does not do the same what this code
-        // auto resolved_xpath = XPath::evaluateXPath(pegArg.CurrentProcessingNode, xpath);
         auto resolved_xpath_tokens = XPath::parse(resolved_xpath);
         String rebuild_resolved_xpath;
         while (!xpath_tokens.empty()) {
             auto token = xpath_tokens.front();
             xpath_tokens.pop_front();
-            if ((token == "[@item]")
+            if ((token == XPath::ITEM_NAME_SUBSCRIPT)
                 && (!resolved_xpath_tokens.empty())) {
                 std::smatch matched;
                 if (std::regex_search(resolved_xpath_tokens.front(), matched, Regex { regex_expression })) {
