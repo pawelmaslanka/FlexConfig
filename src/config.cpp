@@ -501,45 +501,6 @@ bool Config::Manager::saveXPathReference(const List<String>& ordered_nodes_by_xp
     return true;
 }
 
-bool Config::Manager::saveXPathReference_backup(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config) {
-    auto candidate_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
-    for (const auto& xpath : ordered_nodes_by_xpath) {
-        auto schema_node = getSchemaByXPath(xpath);
-        if (!schema_node) {
-            spdlog::debug("Not found schema for node at xpath {}", xpath);
-            continue;
-        }
-
-        auto node = XPath::select(root_config, xpath);
-        if (!node) {
-            spdlog::debug("There is not exists node with reference attribute");
-            continue;
-        }
-
-        SubnodeChildsVisitor subnode_child_visitor(node->Name());
-        node->Accept(subnode_child_visitor);
-        auto subnode_names = subnode_child_visitor.getAllSubnodes();
-        auto reference_attr = schema_node->FindAttr(Config::PropertyName::REFERENCE);
-        for (const auto& ref : reference_attr) {
-            if (ref.find("@") != String::npos) {
-                for (auto& subnode_name : subnode_names) {
-                    spdlog::debug("Checking if {} exists", subnode_name);
-                    String ref_xpath = ref;
-                    Utils::find_and_replace_all(ref_xpath, "@", subnode_name);
-                    spdlog::debug("Created new reference xpath: {}", ref_xpath);
-                    if (XPath::select(root_config, ref_xpath)) {
-                        spdlog::debug("Found reference node {}", ref_xpath);
-                        candidate_xpath_source_reference_by_target[ref_xpath].emplace(xpath);
-                    }
-                }
-            }
-        }
-    }
-
-    m_candidate_xpath_source_reference_by_target = candidate_xpath_source_reference_by_target;
-    return true;
-}
-
 bool Config::Manager::removeXPathReference(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config) {
     auto candidate_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
     auto nodes_by_xpath = ordered_nodes_by_xpath;
