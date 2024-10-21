@@ -8,20 +8,20 @@
 #include <iostream>
 
 Leaf::Leaf(const String& name, const Value value, SharedPtr<Node> parent, SharedPtr<Node> schema_node)
-: Node(name, parent, schema_node), m_value(value) {
+: Node(name, parent, schema_node), _value(value) {
 
 }
 
 void Leaf::SetValue(const Value value) {
-    m_value = value;
+    _value = value;
 }
 
 Value Leaf::getValue() const {
-    return m_value;
+    return _value;
 }
 
 SharedPtr<Node> Leaf::MakeCopy(SharedPtr<Node> parent) const {
-    auto copy_node = std::make_shared<Leaf>(Name(), m_value);
+    auto copy_node = std::make_shared<Leaf>(Name(), _value);
     copy_node->SetParent(parent ? parent : Parent());
     copy_node->SetSchemaNode(SchemaNode());
 

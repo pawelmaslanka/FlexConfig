@@ -20,17 +20,17 @@ class NodeReferenceResolverVisitior : public Visitor {
 public:
     virtual ~NodeReferenceResolverVisitior() = default;
     NodeReferenceResolverVisitior(const String& xpath_to_resolve) {
-        m_pre_wildcard = xpath_to_resolve.substr(0, xpath_to_resolve.find("/@"));
+        _pre_wildcard = xpath_to_resolve.substr(0, xpath_to_resolve.find("/@"));
         if ((xpath_to_resolve.find("/@") + 1) < xpath_to_resolve.size()) {
-            m_post_wildcard = xpath_to_resolve.substr(xpath_to_resolve.find("/@") + 2);
+            _post_wildcard = xpath_to_resolve.substr(xpath_to_resolve.find("/@") + 2);
         }
 
-        spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
-        spdlog::debug("Left xpath {}", m_post_wildcard);
-        m_pre_wildcard_tokens = XPath::parse(m_pre_wildcard);
+        spdlog::debug("Fillout all subnodes for xpath {}", _pre_wildcard);
+        spdlog::debug("Left xpath {}", _post_wildcard);
+        _pre_wildcard_tokens = XPath::parse(_pre_wildcard);
     }
 
-    Optional<String> getEvaluatedXpath() { return m_result; }
+    Optional<String> getEvaluatedXpath() { return _result; }
 
     virtual bool visit(SharedPtr<Node> node) override {
         if (!node) {
@@ -38,32 +38,32 @@ public:
             return false;
         }
 
-        if (m_pre_wildcard_tokens.empty()
-            || (node->Name() != m_pre_wildcard_tokens.front())) {
+        if (_pre_wildcard_tokens.empty()
+            || (node->Name() != _pre_wildcard_tokens.front())) {
             spdlog::debug("Failed to find key selector");
             return true;
         }
 
-        m_pre_wildcard_tokens.pop_front();
-        if (m_pre_wildcard_tokens.empty()) {
+        _pre_wildcard_tokens.pop_front();
+        if (_pre_wildcard_tokens.empty()) {
             spdlog::debug("We reached leaf token at node {}", node->Name());
             SubnodeChildsVisitor subnode_visitor(node->Name());
             node->Accept(subnode_visitor);
             for (const auto& subnode : subnode_visitor.getAllSubnodes()) {
-                String resolved_wildcard_xpath = m_pre_wildcard + "/" + subnode;
-                if (!m_post_wildcard.empty()) {
+                String resolved_wildcard_xpath = _pre_wildcard + "/" + subnode;
+                if (!_post_wildcard.empty()) {
                     if ((resolved_wildcard_xpath.size() > 1)
                         && (resolved_wildcard_xpath.at(resolved_wildcard_xpath.size() - 1) != Config::XPATH_NODE_SEPARATOR[0])) {
-                        if (m_post_wildcard.at(0) != Config::XPATH_NODE_SEPARATOR[0]) {
+                        if (_post_wildcard.at(0) != Config::XPATH_NODE_SEPARATOR[0]) {
                             resolved_wildcard_xpath += Config::XPATH_NODE_SEPARATOR;
                         }
                     }
 
-                    resolved_wildcard_xpath += m_post_wildcard;
+                    resolved_wildcard_xpath += _post_wildcard;
                 }
 
                 spdlog::debug("Resolved node reference {}", resolved_wildcard_xpath);
-                m_result = resolved_wildcard_xpath;
+                _result = resolved_wildcard_xpath;
                 break;
             }
             // Let's break processing
@@ -74,27 +74,27 @@ public:
     }
 
 private:
-    Deque<String> m_pre_wildcard_tokens {};
-    String m_pre_wildcard {};
-    String m_post_wildcard {};
-    Optional<String> m_result {};
+    Deque<String> _pre_wildcard_tokens {};
+    String _pre_wildcard {};
+    String _post_wildcard {};
+    Optional<String> _result {};
 };
 
 class KeySelectorResolverVisitior : public Visitor {
 public:
     virtual ~KeySelectorResolverVisitior() = default;
     KeySelectorResolverVisitior(const String& xpath_to_resolve) {
-        m_pre_wildcard = xpath_to_resolve.substr(0, xpath_to_resolve.find("[@item]"));
+        _pre_wildcard = xpath_to_resolve.substr(0, xpath_to_resolve.find("[@item]"));
         if ((xpath_to_resolve.find("[@item]") + 6) < xpath_to_resolve.size()) {
-            m_post_wildcard = xpath_to_resolve.substr(xpath_to_resolve.find("[@item]") + 7);
+            _post_wildcard = xpath_to_resolve.substr(xpath_to_resolve.find("[@item]") + 7);
         }
 
-        spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
-        spdlog::debug("Left xpath {}", m_post_wildcard);
-        m_pre_wildcard_tokens = XPath::parse(m_pre_wildcard);
+        spdlog::debug("Fillout all subnodes for xpath {}", _pre_wildcard);
+        spdlog::debug("Left xpath {}", _post_wildcard);
+        _pre_wildcard_tokens = XPath::parse(_pre_wildcard);
     }
 
-    ForwardList<String> getEvaluatedXpath() { return m_result; }
+    ForwardList<String> getEvaluatedXpath() { return _result; }
 
     virtual bool visit(SharedPtr<Node> node) override {
         if (!node) {
@@ -102,32 +102,32 @@ public:
             return false;
         }
 
-        if (m_pre_wildcard_tokens.empty()
-            || (node->Name() != m_pre_wildcard_tokens.front())) {
+        if (_pre_wildcard_tokens.empty()
+            || (node->Name() != _pre_wildcard_tokens.front())) {
             spdlog::debug("Failed to find key selector");
             return true;
         }
 
-        m_pre_wildcard_tokens.pop_front();
-        if (m_pre_wildcard_tokens.empty()) {
+        _pre_wildcard_tokens.pop_front();
+        if (_pre_wildcard_tokens.empty()) {
             spdlog::debug("We reached leaf token at node {}", node->Name());
             SubnodeChildsVisitor subnode_visitor(node->Name());
             node->Accept(subnode_visitor);
             for (const auto& subnode : subnode_visitor.getAllSubnodes()) {
-                String resolved_wildcard_xpath = m_pre_wildcard + "/" + subnode;
-                if (!m_post_wildcard.empty()) {
+                String resolved_wildcard_xpath = _pre_wildcard + "/" + subnode;
+                if (!_post_wildcard.empty()) {
                     if ((resolved_wildcard_xpath.size() > 1)
                         && (resolved_wildcard_xpath.at(resolved_wildcard_xpath.size() - 1) != Config::XPATH_NODE_SEPARATOR[0])) {
-                        if (m_post_wildcard.at(0) != Config::XPATH_NODE_SEPARATOR[0]) {
+                        if (_post_wildcard.at(0) != Config::XPATH_NODE_SEPARATOR[0]) {
                             resolved_wildcard_xpath += Config::XPATH_NODE_SEPARATOR;
                         }
                     }
 
-                    resolved_wildcard_xpath += m_post_wildcard;
+                    resolved_wildcard_xpath += _post_wildcard;
                 }
 
                 spdlog::debug("Resolved key selector {}", resolved_wildcard_xpath);
-                m_result.emplace_front(resolved_wildcard_xpath);
+                _result.emplace_front(resolved_wildcard_xpath);
             }
             // Let's break processing
             return false;
@@ -137,31 +137,31 @@ public:
     }
 
 private:
-    Deque<String> m_pre_wildcard_tokens {};
-    String m_pre_wildcard {};
-    String m_post_wildcard {};
-    ForwardList<String> m_result {};
+    Deque<String> _pre_wildcard_tokens {};
+    String _pre_wildcard {};
+    String _post_wildcard {};
+    ForwardList<String> _result {};
 };
 
 class WildcardDependencyResolverVisitior : public Visitor {
 public:
     virtual ~WildcardDependencyResolverVisitior() {
-        while (!m_pre_wildcard_tokens.empty()) m_pre_wildcard_tokens.pop_front();
-        m_result.clear();
+        while (!_pre_wildcard_tokens.empty()) _pre_wildcard_tokens.pop_front();
+        _result.clear();
     };
 
     WildcardDependencyResolverVisitior(const String& xpath_to_resolve) {
-        m_pre_wildcard = xpath_to_resolve.substr(0, xpath_to_resolve.find("/*"));
+        _pre_wildcard = xpath_to_resolve.substr(0, xpath_to_resolve.find("/*"));
         if ((xpath_to_resolve.find("/*") + 2) < xpath_to_resolve.size()) {
-            m_post_wildcard = xpath_to_resolve.substr(xpath_to_resolve.find("/*") + 3);
+            _post_wildcard = xpath_to_resolve.substr(xpath_to_resolve.find("/*") + 3);
         }
 
-        spdlog::debug("Fillout all subnodes for xpath {}", m_pre_wildcard);
-        spdlog::debug("Left xpath {}", m_post_wildcard);
-        m_pre_wildcard_tokens = XPath::parse(m_pre_wildcard);
+        spdlog::debug("Fillout all subnodes for xpath {}", _pre_wildcard);
+        spdlog::debug("Left xpath {}", _post_wildcard);
+        _pre_wildcard_tokens = XPath::parse(_pre_wildcard);
     }
 
-    ForwardList<String> getEvaluatedXpath() { return m_result; }
+    ForwardList<String> getEvaluatedXpath() { return _result; }
 
     virtual bool visit(SharedPtr<Node> node) override {
         if (!node) {
@@ -169,25 +169,25 @@ public:
             return false;
         }
 
-        if (m_pre_wildcard_tokens.empty()
-            || (node->Name() != m_pre_wildcard_tokens.front())) {
+        if (_pre_wildcard_tokens.empty()
+            || (node->Name() != _pre_wildcard_tokens.front())) {
             spdlog::debug("Failed to resolve wildcard");
             return true;
         }
 
-        m_pre_wildcard_tokens.pop_front();
-        if (m_pre_wildcard_tokens.empty()) {
+        _pre_wildcard_tokens.pop_front();
+        if (_pre_wildcard_tokens.empty()) {
             spdlog::debug("We reached leaf token at node {}", node->Name());
             SubnodeChildsVisitor subnode_visitor(node->Name());
             node->Accept(subnode_visitor);
             for (const auto& subnode : subnode_visitor.getAllSubnodes()) {
-                String resolved_wildcard_xpath = m_pre_wildcard + "/" + subnode;
-                if (!m_post_wildcard.empty()) {
-                    resolved_wildcard_xpath += "/" + m_post_wildcard;
+                String resolved_wildcard_xpath = _pre_wildcard + "/" + subnode;
+                if (!_post_wildcard.empty()) {
+                    resolved_wildcard_xpath += "/" + _post_wildcard;
                 }
 
                 spdlog::debug("Resolved wildcard {}", resolved_wildcard_xpath);
-                m_result.emplace_front(resolved_wildcard_xpath);
+                _result.emplace_front(resolved_wildcard_xpath);
             }
             // Let's break processing
             return false;
@@ -197,10 +197,10 @@ public:
     }
 
 private:
-    Deque<String> m_pre_wildcard_tokens {};
-    String m_pre_wildcard {};
-    String m_post_wildcard {};
-    ForwardList<String> m_result {};
+    Deque<String> _pre_wildcard_tokens {};
+    String _pre_wildcard {};
+    String _post_wildcard {};
+    ForwardList<String> _result {};
 };
 
 // TODO: Write next another version of DependencyGetterVisitor class to load all nodes
@@ -208,7 +208,7 @@ class DependencyGetterVisitior2 : public Visitor {
 public:
     virtual ~DependencyGetterVisitior2() = default;
     DependencyGetterVisitior2(SharedPtr<Config::Manager>& config_mngr)
-        : m_config_mngr { config_mngr }, m_dependencies { std::make_shared<Map<String, Set<String>>>() } {}
+        : _config_mngr { config_mngr }, _dependencies { std::make_shared<Map<String, Set<String>>>() } {}
     virtual bool visit(SharedPtr<Node> node) override {
         if (!node) {
             spdlog::error("Node is null");
@@ -221,7 +221,7 @@ public:
         // TODO: XPath::toString(node->SchemaNode())
         auto xpath = XPath::toString(node);
         spdlog::debug("Get xpath: {}", xpath);
-        auto schema_node = m_config_mngr->getSchemaByXPath(xpath);
+        auto schema_node = _config_mngr->getSchemaByXPath(xpath);
         if (!schema_node) {
             spdlog::debug("Does not have schema");
             return true;
@@ -231,9 +231,9 @@ public:
         if (update_depend_attrs.empty()) {
             spdlog::debug("{} does not have dependencies", xpath);
             auto xpath_schema_node = XPath::toString(schema_node);
-            if (m_dependencies->find(xpath_schema_node) == m_dependencies->end()) {
+            if (_dependencies->find(xpath_schema_node) == _dependencies->end()) {
                 // Just create empty set
-                (*m_dependencies)[xpath_schema_node].clear();
+                (*_dependencies)[xpath_schema_node].clear();
             }
 
             return true;
@@ -241,23 +241,23 @@ public:
 
         for (auto& dep : update_depend_attrs) {
             auto xpath_schema_node = XPath::toString(schema_node);
-            (*m_dependencies)[xpath_schema_node].emplace(dep);
+            (*_dependencies)[xpath_schema_node].emplace(dep);
         }
 
         return true;
     }
 
-    SharedPtr<Map<String, Set<String>>> getDependencies() { return m_dependencies; }
+    SharedPtr<Map<String, Set<String>>> getDependencies() { return _dependencies; }
 
 private:
-    SharedPtr<Map<String, Set<String>>> m_dependencies;
-    SharedPtr<Config::Manager> m_config_mngr;
+    SharedPtr<Map<String, Set<String>>> _dependencies;
+    SharedPtr<Config::Manager> _config_mngr;
 };
 
 class DependencyMapperVisitior : public Visitor {
 public:
     virtual ~DependencyMapperVisitior() = default;
-    DependencyMapperVisitior(Set<String> set_of_ordered_cmds) : m_set_of_ordered_cmds { set_of_ordered_cmds } {}
+    DependencyMapperVisitior(Set<String> set_of_ordered_cmds) : _set_of_ordered_cmds { set_of_ordered_cmds } {}
     virtual bool visit(SharedPtr<Node> node) override {
         auto schema_node = std::dynamic_pointer_cast<SchemaNode>(node->SchemaNode());
         if (!schema_node) {
@@ -265,36 +265,36 @@ public:
         }
 
         auto schema_node_xpath = XPath::toString(schema_node);
-        if (m_set_of_ordered_cmds.find(schema_node_xpath) != m_set_of_ordered_cmds.end()) {
-            m_ordered_nodes[schema_node_xpath].emplace_front(node);
+        if (_set_of_ordered_cmds.find(schema_node_xpath) != _set_of_ordered_cmds.end()) {
+            _ordered_nodes[schema_node_xpath].emplace_front(node);
         }
-        else if (m_ordered_nodes.find(XPath::toString(schema_node->Parent())) != m_ordered_nodes.end()) {
-            m_ordered_nodes[XPath::toString(schema_node->Parent())].emplace_back(node);
+        else if (_ordered_nodes.find(XPath::toString(schema_node->Parent())) != _ordered_nodes.end()) {
+            _ordered_nodes[XPath::toString(schema_node->Parent())].emplace_back(node);
         }
         else {
-            m_unordered_nodes[schema_node_xpath].emplace_back(node);
+            _unordered_nodes[schema_node_xpath].emplace_back(node);
         }
 
         return true;
     }
 
-    Map<String, std::list<SharedPtr<Node>>> getOrderedNodes() { return m_ordered_nodes; }
-    Map<String, std::list<SharedPtr<Node>>> getUnorderedNodes() { return m_unordered_nodes; }
+    Map<String, std::list<SharedPtr<Node>>> getOrderedNodes() { return _ordered_nodes; }
+    Map<String, std::list<SharedPtr<Node>>> getUnorderedNodes() { return _unordered_nodes; }
 
 private:
-    Set<String> m_set_of_ordered_cmds {};
-    Map<String, std::list<SharedPtr<Node>>> m_ordered_nodes {};
-    Map<String, std::list<SharedPtr<Node>>> m_unordered_nodes {};
+    Set<String> _set_of_ordered_cmds {};
+    Map<String, std::list<SharedPtr<Node>>> _ordered_nodes {};
+    Map<String, std::list<SharedPtr<Node>>> _unordered_nodes {};
 };
 
 NodeDependencyManager::NodeDependencyManager(SharedPtr<Config::Manager>& config_mngr)
-: m_config_mngr { config_mngr } {
+: _config_mngr { config_mngr } {
 }
 
 bool NodeDependencyManager::resolve(const SharedPtr<Node>& config, List<String>& ordered_nodes_by_xpath) {
-    DependencyGetterVisitior2 depVisitor(m_config_mngr);
+    DependencyGetterVisitior2 depVisitor(_config_mngr);
     spdlog::debug("Looking for dependencies");
-    spdlog::debug("m_config_mngr: {}, running_config: {}", m_config_mngr != nullptr, config != nullptr);
+    spdlog::debug("m_config_mngr: {}, running_config: {}", _config_mngr != nullptr, config != nullptr);
     config->Accept(depVisitor);
     spdlog::debug("Completed looking for dependencies");
 

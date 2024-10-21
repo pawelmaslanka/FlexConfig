@@ -76,7 +76,7 @@ inline void process(const std::any& a)
 }
 
 ConstraintChecker::ConstraintChecker(SharedPtr<Config::Manager>& ConfigMngr, SharedPtr<Node>& RootNodeConfig)
-: m_config_mngr { ConfigMngr }, m_root_config { RootNodeConfig } {
+: _config_mngr { ConfigMngr }, _root_config { RootNodeConfig } {
 
 }
 
@@ -832,7 +832,7 @@ bool ConstraintChecker::validate(SharedPtr<Node>& node_to_validate, const String
     parser.enable_packrat_parsing(); // Enable packrat parsing
 
     SemanticAction::Argument pegArg = {
-        m_config_mngr, m_root_config, node_to_validate
+        _config_mngr, _root_config, node_to_validate
     };
 
     auto peg_arg_opaque = std::any(pegArg);

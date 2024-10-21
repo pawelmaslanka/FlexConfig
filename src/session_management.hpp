@@ -47,20 +47,20 @@ private:
         std::chrono::time_point<std::chrono::system_clock> StartAt;
     };
 
-    Map<String, SessionDetails> m_leased_session_tokens;
-    Optional<String> m_active_session_token;
-    Mutex m_session_token_mutex;
-    Thread m_checking_session_expiration_thread;
-    Map<String, SessionTimeoutCB> m_session_timeout_callbacks;
-    Mutex m_session_timeout_callbacks_mutex;
-    std::chrono::seconds m_session_timeout_sec;
-    std::atomic_bool m_checking_session_expiration_quit_flag = false;
+    Map<String, SessionDetails> _leased_session_tokens;
+    Optional<String> _active_session_token;
+    Mutex _session_token_mutex;
+    Thread _checking_session_expiration_thread;
+    Map<String, SessionTimeoutCB> _session_timeout_callbacks;
+    Mutex _session_timeout_callbacks_mutex;
+    std::chrono::seconds _session_timeout_sec;
+    std::atomic_bool _checking_session_expiration_quit_flag = false;
     struct TimerThreadDetails {
         SessionTokenTimerCB TimerCB;
         std::chrono::time_point<std::chrono::system_clock> StartAt;
         std::chrono::seconds Timeout;
         bool QuitFlag; // TODO: Since the structure is protected by mutex, is required atomic operation here?
     };
-    Map<String, TimerThreadDetails> m_session_token_timers;
-    Mutex m_session_token_timers_mutex;
+    Map<String, TimerThreadDetails> _session_token_timers;
+    Mutex _session_token_timers_mutex;
 };

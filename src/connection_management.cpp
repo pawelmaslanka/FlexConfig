@@ -16,9 +16,9 @@ namespace Http = httplib;
 using namespace std::chrono_literals;
 
 Server::Server()
-: m_session_mngr(360s /* session timeout */) {
-    m_session_mngr.RegisterSessionTimeoutCallback(m_callback_register_id, [this](const String session_token) {
-        m_session_mngr.RemoveSessionToken(session_token);
+: _session_mngr(360s /* session timeout */) {
+    _session_mngr.RegisterSessionTimeoutCallback(_callback_register_id, [this](const String session_token) {
+        _session_mngr.RemoveSessionToken(session_token);
     });
 }
 
@@ -33,46 +33,46 @@ bool Server::removeConnectionHandler(Map<String, RequestCallback>& callbacks, co
 }
 
 bool Server::addOnDeleteConnectionHandler(const String& id, RequestCallback handler) {
-    return addConnectionHandler(m_on_delete_callback_by_id, id, handler);
+    return addConnectionHandler(_on_delete_callback_by_id, id, handler);
 }
 
 bool Server::removeOnDeleteConnectionHandler(const String& id) {
-    return removeConnectionHandler(m_on_delete_callback_by_id, id);
+    return removeConnectionHandler(_on_delete_callback_by_id, id);
 }
 
 bool Server::addOnGetConnectionHandler(const String& id, RequestCallback handler) {
-    return addConnectionHandler(m_on_get_callback_by_id, id, handler);
+    return addConnectionHandler(_on_get_callback_by_id, id, handler);
 }
 
 bool Server::removeOnGetConnectionHandler(const String& id) {
-    return removeConnectionHandler(m_on_get_callback_by_id, id);
+    return removeConnectionHandler(_on_get_callback_by_id, id);
 }
 
 bool Server::addOnPostConnectionHandler(const String& id, RequestCallback handler) {
-    return addConnectionHandler(m_on_post_callback_by_id, id, handler);
+    return addConnectionHandler(_on_post_callback_by_id, id, handler);
 }
 
 bool Server::removeOnPostConnectionHandler(const String& id) {
-    return removeConnectionHandler(m_on_post_callback_by_id, id);
+    return removeConnectionHandler(_on_post_callback_by_id, id);
 }
 
 bool Server::addOnPutConnectionHandler(const String& id, RequestCallback handler) {
-    return addConnectionHandler(m_on_put_callback_by_id, id, handler);
+    return addConnectionHandler(_on_put_callback_by_id, id, handler);
 }
 
 bool Server::removeOnPutConnectionHandler(const String& id) {
-    return removeConnectionHandler(m_on_put_callback_by_id, id);
+    return removeConnectionHandler(_on_put_callback_by_id, id);
 }
 
 bool Server::Run(const String& host, const UInt16 port) {
     Http::Server srv;
     srv.Post(ConnectionManagement::URIRequestPath::Session::TOKEN, [this](const Http::Request &req, Http::Response &res) {
-        m_session_mngr.RegisterSessionToken(req, res);
+        _session_mngr.RegisterSessionToken(req, res);
         return res.status;
     });
 
     srv.Delete(ConnectionManagement::URIRequestPath::Session::TOKEN, [this](const Http::Request &req, Http::Response &res) {
-        m_session_mngr.RemoveSessionToken(req, res);
+        _session_mngr.RemoveSessionToken(req, res);
     });
 
     srv.Get(ConnectionManagement::URIRequestPath::Config::RUNNING, [this](const Http::Request &req, Http::Response &res) {
@@ -85,21 +85,21 @@ bool Server::Run(const String& host, const UInt16 port) {
     });
 
     srv.Post(ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE, [this](const Http::Request &req, Http::Response &res) {
-        if (!m_session_mngr.SetActiveSessionToken(req, res)) {
+        if (!_session_mngr.SetActiveSessionToken(req, res)) {
             return;
         }
 
-        m_session_mngr.CancelSessionTokenTimerOnce(req);
+        _session_mngr.CancelSessionTokenTimerOnce(req);
         String return_data;
         spdlog::debug("Got POST request:\n {}", req.body);
         res.status = processRequest(HTTP::Method::POST, ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE, req.body, return_data);
         auto return_message = HTTP::IsSuccess(static_cast<HTTP::StatusCode>(res.status)) ? return_data : "Failed";
         res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
-        if (!m_session_mngr.SetSessionTokenTimerOnce(req, [this]([[maybe_unused]] const String session_token) {
+        if (!_session_mngr.SetSessionTokenTimerOnce(req, [this]([[maybe_unused]] const String session_token) {
                 String req_data_stub;
                 String res_data_stub;
                 processRequest(HTTP::Method::DEL, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req_data_stub, res_data_stub);
-                m_session_mngr.RemoveActiveSessionToken(session_token);
+                _session_mngr.RemoveActiveSessionToken(session_token);
             },
             180s)) {
             // FIXME: Handle error
@@ -115,7 +115,7 @@ bool Server::Run(const String& host, const UInt16 port) {
     });
 
     srv.Get(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this](const Http::Request &req, Http::Response &res) {
-        if (!m_session_mngr.CheckActiveSessionToken(req, res)) {
+        if (!_session_mngr.CheckActiveSessionToken(req, res)) {
             spdlog::info("There is not active session to get candidate config");
             return;
         }
@@ -128,11 +128,11 @@ bool Server::Run(const String& host, const UInt16 port) {
     });
 
     srv.Put(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this](const Http::Request &req, Http::Response &res) {
-        if (!m_session_mngr.CheckActiveSessionToken(req, res)) {
+        if (!_session_mngr.CheckActiveSessionToken(req, res)) {
             return;
         }
 
-        m_session_mngr.CancelSessionTokenTimerOnce(req);
+        _session_mngr.CancelSessionTokenTimerOnce(req);
         String return_data;
         spdlog::debug("Got PUT request:\n {}", req.body);
         res.status = processRequest(HTTP::Method::PUT, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
@@ -141,11 +141,11 @@ bool Server::Run(const String& host, const UInt16 port) {
     });
 
     srv.Delete(ConnectionManagement::URIRequestPath::Config::CANDIDATE, [this](const Http::Request &req, Http::Response &res) {
-        if (!m_session_mngr.CheckActiveSessionToken(req, res)) {
+        if (!_session_mngr.CheckActiveSessionToken(req, res)) {
             return;
         }
 
-        m_session_mngr.CancelSessionTokenTimerOnce(req);
+        _session_mngr.CancelSessionTokenTimerOnce(req);
         String return_data;
         spdlog::debug("Got DELETE request:\n {}", req.body);
         res.status = processRequest(HTTP::Method::DEL, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
@@ -167,7 +167,7 @@ HTTP::StatusCode Server::processRequest(const HTTP::Method method, const String&
 
     switch (method) {
     case HTTP::Method::GET: {
-        for (auto& [_, cb] : m_on_get_callback_by_id) {
+        for (auto& [_, cb] : _on_get_callback_by_id) {
             status_code = cb(path, request_data, return_data);
             if (check_internal_success(status_code)) {
                 continue;
@@ -179,7 +179,7 @@ HTTP::StatusCode Server::processRequest(const HTTP::Method method, const String&
         break;
     }
     case HTTP::Method::POST: {
-        for (auto& [_, cb] : m_on_post_callback_by_id) {
+        for (auto& [_, cb] : _on_post_callback_by_id) {
             status_code = cb(path, request_data, return_data);
             if (check_internal_success(status_code)) {
                 continue;
@@ -191,7 +191,7 @@ HTTP::StatusCode Server::processRequest(const HTTP::Method method, const String&
         break;
     }
     case HTTP::Method::PUT: {
-        for (auto& [_, cb] : m_on_put_callback_by_id) {
+        for (auto& [_, cb] : _on_put_callback_by_id) {
             status_code = cb(path, request_data, return_data);
             if (check_internal_success(status_code)) {
                 continue;
@@ -203,7 +203,7 @@ HTTP::StatusCode Server::processRequest(const HTTP::Method method, const String&
         break;
     }
     case HTTP::Method::DEL: {
-        for (auto& [_, cb] : m_on_delete_callback_by_id) {
+        for (auto& [_, cb] : _on_delete_callback_by_id) {
             status_code = cb(path, request_data, return_data);
             if (check_internal_success(status_code)) {
                 continue;

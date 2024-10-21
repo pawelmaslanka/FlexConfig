@@ -35,39 +35,39 @@ const Set<String> SchemaNode::TYPE_NAME = {
 };
 
 Node::Node(const String& name, SharedPtr<Node> parent, SharedPtr<Node> schema_node)
- : m_name { name }, m_parent { parent }, m_schema_node { schema_node } {
+ : _name { name }, _parent { parent }, _schema_node { schema_node } {
 
 }
 
 Node::~Node() {
-    m_parent.reset();
-    m_schema_node.reset();
+    _parent.reset();
+    _schema_node.reset();
 }
 
 String Node::Name() const {
-    return m_name;
+    return _name;
 }
 
 void Node::SetParent(SharedPtr<Node> parent) {
-    m_parent = parent;
+    _parent = parent;
 }
 
 SharedPtr<Node> Node::Parent() const {
-    return m_parent;
+    return _parent;
 }
 
 void Node::SetSchemaNode(SharedPtr<Node> schema_node) {
-    m_schema_node = schema_node;
+    _schema_node = schema_node;
 }
 
 SharedPtr<Node> Node::SchemaNode() const {
-    return m_schema_node;
+    return _schema_node;
 }
 
 SharedPtr<Node> Node::MakeCopy(SharedPtr<Node> parent) const {
-    auto copy_node = std::make_shared<Node>(m_name);
-    copy_node->m_parent = parent ? parent : m_parent;
-    copy_node->m_schema_node = m_schema_node;
+    auto copy_node = std::make_shared<Node>(_name);
+    copy_node->_parent = parent ? parent : _parent;
+    copy_node->_schema_node = _schema_node;
     return copy_node;
 }
 
@@ -85,12 +85,12 @@ SchemaNode::~SchemaNode() {
 }
 
 void SchemaNode::AddAttr(const String& attr_name, const String& attr_val) {
-    m_attr_by_name[attr_name].emplace_front(attr_val);
+    _attr_by_name[attr_name].emplace_front(attr_val);
 }
 
 ForwardList<String> SchemaNode::FindAttr(const String& attr_name) {
-    auto attr_it = m_attr_by_name.find(attr_name);
-    if (attr_it != m_attr_by_name.end()) {
+    auto attr_it = _attr_by_name.find(attr_name);
+    if (attr_it != _attr_by_name.end()) {
         return attr_it->second;
     }
 
@@ -98,7 +98,7 @@ ForwardList<String> SchemaNode::FindAttr(const String& attr_name) {
 }
 
 void SchemaNode::Accept(Visitor& visitor) {
-    for (auto& [attr, value] : m_attr_by_name) {
+    for (auto& [attr, value] : _attr_by_name) {
         for (auto& val : value) {
             std::clog << attr << " -> " << val << std::endl;
         }

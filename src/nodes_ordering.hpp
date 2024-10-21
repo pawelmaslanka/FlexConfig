@@ -15,5 +15,5 @@ public:
     bool resolve(const SharedPtr<Node>& config, List<String>& ordered_nodes_by_xpath);
 
 private:
-    SharedPtr<Config::Manager> m_config_mngr;
+    SharedPtr<Config::Manager> _config_mngr;
 };

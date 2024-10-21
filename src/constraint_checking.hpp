@@ -18,6 +18,6 @@ public:
     bool validate(SharedPtr<Node>& node_to_validate, const String& constraint_definition);
 
 private:
-    SharedPtr<Config::Manager>& m_config_mngr;
-    SharedPtr<Node> m_root_config;
+    SharedPtr<Config::Manager>& _config_mngr;
+    SharedPtr<Node> _root_config;
 };

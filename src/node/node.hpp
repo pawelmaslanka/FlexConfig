@@ -24,9 +24,9 @@ class Node : public IVisitable, public inheritable_enable_shared_from_this<Node>
     virtual void Accept(Visitor& visitor) override;
 
   private:
-    SharedPtr<Node> m_parent;
-    SharedPtr<Node> m_schema_node;
-    String m_name;
+    SharedPtr<Node> _parent;
+    SharedPtr<Node> _schema_node;
+    String _name;
 };
 
 class SchemaNode : virtual public Node, public inheritable_enable_shared_from_this<SchemaNode> {
@@ -40,6 +40,6 @@ class SchemaNode : virtual public Node, public inheritable_enable_shared_from_th
   private:
     static const Set<String> ATTR_NAME;
     static const Set<String> TYPE_NAME;
-    Map<String, ForwardList<String>> m_attr_by_name; // Attribute definition by its name
-    Set<String> m_references; // Or to do from that just observer? onUpdate()/onDelete(), use with attribute: ref
+    Map<String, ForwardList<String>> _attr_by_name; // Attribute definition by its name
+    Set<String> _references; // Or to do from that just observer? onUpdate()/onDelete(), use with attribute: ref
 };

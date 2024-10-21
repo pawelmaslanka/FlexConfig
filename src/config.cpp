@@ -346,7 +346,7 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
 }
 
 Config::Manager::Manager(StringView config_filename, StringView schema_filename, SharedPtr<RegistryClass>& registry)
- : m_config_filename { config_filename }, m_schema_filename { schema_filename } {
+ : _config_filename { config_filename }, _schema_filename { schema_filename } {
 
 }
 
@@ -460,7 +460,7 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
 }
 
 bool Config::Manager::saveXPathReference(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config) {
-    auto candidate_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
+    auto candidate_xpath_source_reference_by_target = _candidate_xpath_source_reference_by_target;
     for (const auto& xpath : ordered_nodes_by_xpath) {
         auto schema_node = getSchemaByXPath(xpath);
         if (!schema_node) {
@@ -497,12 +497,12 @@ bool Config::Manager::saveXPathReference(const List<String>& ordered_nodes_by_xp
         }
     }
 
-    m_candidate_xpath_source_reference_by_target = candidate_xpath_source_reference_by_target;
+    _candidate_xpath_source_reference_by_target = candidate_xpath_source_reference_by_target;
     return true;
 }
 
 bool Config::Manager::removeXPathReference(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config) {
-    auto candidate_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
+    auto candidate_xpath_source_reference_by_target = _candidate_xpath_source_reference_by_target;
     auto nodes_by_xpath = ordered_nodes_by_xpath;
 
     for (const auto& xpath : nodes_by_xpath) {
@@ -543,7 +543,7 @@ bool Config::Manager::removeXPathReference(const List<String>& ordered_nodes_by_
         candidate_xpath_source_reference_by_target.erase(xpath);
     }
 
-    m_candidate_xpath_source_reference_by_target = candidate_xpath_source_reference_by_target;
+    _candidate_xpath_source_reference_by_target = candidate_xpath_source_reference_by_target;
     return true;
 }
 
@@ -641,18 +641,18 @@ SharedPtr<Node> ReloadNodeConfig(nlohmann::json& jschema, nlohmann::json& jconfi
 }
 
 bool Config::Manager::load() {
-    if (!JsonSchema::instance().load(m_schema_filename)) {
-        spdlog::error("Failed to load JON schema from file '{}'", m_schema_filename);
+    if (!JsonSchema::instance().load(_schema_filename)) {
+        spdlog::error("Failed to load JON schema from file '{}'", _schema_filename);
         return false;
     }
 
     auto jschema = JsonSchema::instance().get();
-    if (CheckIfThereIsDuplicatedKey(m_config_filename)) {
+    if (CheckIfThereIsDuplicatedKey(_config_filename)) {
         spdlog::error("There is duplicated key");
         return false;
     }
 
-    std::ifstream config_ifs(m_config_filename);
+    std::ifstream config_ifs(_config_filename);
     nlohmann::json jconfig = nlohmann::json::parse(config_ifs);
     if (!validateJsonConfig(jconfig, jschema)) {
         spdlog::error("Failed to validate config");
@@ -682,13 +682,13 @@ bool Config::Manager::load() {
 
         saveXPathReference(ordered_nodes_by_xpath, std::dynamic_pointer_cast<Node>(root_config));
 
-        if (!gPerformAction(shared_from_this(), root_config, m_schema_filename)) {
+        if (!gPerformAction(shared_from_this(), root_config, _schema_filename)) {
             spdlog::error("Failed to perform action on the config");
             return false;
         }
 
-        m_running_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
-        m_running_config = root_config;
+        _running_xpath_source_reference_by_target = _candidate_xpath_source_reference_by_target;
+        _running_config = root_config;
         RunningJsonConfig::instance().save(jconfig);
         return true;
     }
@@ -712,13 +712,13 @@ bool Config::Manager::load() {
 
         saveXPathReference(ordered_nodes_by_xpath, std::dynamic_pointer_cast<Node>(root_config));
 
-        if (!gPerformAction(shared_from_this(), root_config, m_schema_filename)) {
+        if (!gPerformAction(shared_from_this(), root_config, _schema_filename)) {
             spdlog::error("Failed to perform action on the config");
             return false;
         }
 
-        m_running_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
-        m_running_config = root_config;
+        _running_xpath_source_reference_by_target = _candidate_xpath_source_reference_by_target;
+        _running_config = root_config;
         RunningJsonConfig::instance().save(jconfig);
         return true;
     }
@@ -728,7 +728,7 @@ bool Config::Manager::load() {
 }
 
 String Config::Manager::getConfigNode(const String& xpath) {
-    std::ifstream config_ifs(m_config_filename);
+    std::ifstream config_ifs(_config_filename);
     nlohmann::json jconfig = nlohmann::json::parse(config_ifs);
     return jconfig[nlohmann::json::json_pointer(xpath)].dump();
 }
@@ -895,7 +895,7 @@ String Config::Manager::getConfigDiff(const String& patch) {
 }
 
 SharedPtr<Node> Config::Manager::getRunningConfig() {
-    return m_running_config;
+    return _running_config;
 }
 
 class SubnodesGetterVisitor : public Visitor {
@@ -908,14 +908,14 @@ public:
             return false;
         }
 
-        m_subnodes_xpath.emplace(XPath::toString(node));
+        _subnodes_xpath.emplace(XPath::toString(node));
         return true;
     };
 
-    Set<String> getSubnodesXPath() { return m_subnodes_xpath; }
+    Set<String> getSubnodesXPath() { return _subnodes_xpath; }
 
 private:
-    Set<String> m_subnodes_xpath;
+    Set<String> _subnodes_xpath;
 };
 
 class PrintVisitor : public Visitor {
@@ -931,8 +931,8 @@ class NodesCollectorVisitor : public Visitor {
 public:
     virtual ~NodesCollectorVisitor() = default;
     NodesCollectorVisitor(const Set<String>& nodes_to_collect)
-    : m_nodes_to_collect { nodes_to_collect },
-      m_root_config { std::make_shared<Composite>(Config::ROOT_TREE_CONFIG_NAME) } { }
+    : _nodes_to_collect { nodes_to_collect },
+      _root_config { std::make_shared<Composite>(Config::ROOT_TREE_CONFIG_NAME) } { }
 
     virtual bool visit(SharedPtr<Node> node) override {
         if (!node) {
@@ -946,15 +946,15 @@ public:
             return true;
         }
 
-        auto node_it = m_nodes_to_collect.find(xpath);
-        if (node_it != m_nodes_to_collect.end()) {
+        auto node_it = _nodes_to_collect.find(xpath);
+        if (node_it != _nodes_to_collect.end()) {
             spdlog::debug("Found xpath {} in collect of nodes", xpath);
             auto xpath_tokens = XPath::parse(xpath);
             xpath_tokens.pop_back();
-            auto parent_node = m_root_config;
+            auto parent_node = _root_config;
             if (!xpath_tokens.empty()) {
                 auto parent_xpath = XPath::mergeTokens(xpath_tokens);
-                parent_node = XPath::select(m_root_config, parent_xpath);
+                parent_node = XPath::select(_root_config, parent_xpath);
                 if (!parent_node) {
                     spdlog::error("Failed to find parent node {} in new config", parent_xpath);
                     return false;
@@ -966,26 +966,26 @@ public:
                 parent_node_ptr->Add(new_node);
             }
 
-            m_node_by_xpath.emplace(xpath, new_node);
+            _node_by_xpath.emplace(xpath, new_node);
         }
 
         return true;
     };
 
-    Map<String, SharedPtr<Node>> getNodesByXPath() { return m_node_by_xpath; }
-    SharedPtr<Node> getRootConfig() { return m_root_config; }
+    Map<String, SharedPtr<Node>> getNodesByXPath() { return _node_by_xpath; }
+    SharedPtr<Node> getRootConfig() { return _root_config; }
 
 private:
-    Set<String> m_nodes_to_collect;
-    Map<String, SharedPtr<Node>> m_node_by_xpath;
-    SharedPtr<Node> m_root_config;
+    Set<String> _nodes_to_collect;
+    Map<String, SharedPtr<Node>> _node_by_xpath;
+    SharedPtr<Node> _root_config;
 };
 
 class NodeCopyMakerVisitor : public Visitor {
 public:
     virtual ~NodeCopyMakerVisitor() = default;
     NodeCopyMakerVisitor()
-    : m_root_config { std::make_shared<Composite>(Config::ROOT_TREE_CONFIG_NAME) } { }
+    : _root_config { std::make_shared<Composite>(Config::ROOT_TREE_CONFIG_NAME) } { }
 
     virtual bool visit(SharedPtr<Node> node) override {
         if (!node) {
@@ -995,7 +995,7 @@ public:
 
         auto parent_node = node->Parent();
         if (!parent_node || (parent_node->Name() == Config::ROOT_TREE_CONFIG_NAME)) {
-            parent_node = m_root_config;
+            parent_node = _root_config;
         }
 
         auto new_node = node->MakeCopy(parent_node);
@@ -1006,10 +1006,10 @@ public:
         return true;
     };
 
-    SharedPtr<Node> getNodeConfigCopy() { return m_root_config; }
+    SharedPtr<Node> getNodeConfigCopy() { return _root_config; }
 
 private:
-    SharedPtr<Node> m_root_config;
+    SharedPtr<Node> _root_config;
 };
 
 bool ValidatePatch(const String& patch, const nlohmann::json& jconfig) {
@@ -1645,7 +1645,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
 
 bool Config::Manager::makeCandidateConfig(const String& patch) {
     NodeCopyMakerVisitor node_copy_maker;
-    m_running_config->Accept(node_copy_maker);
+    _running_config->Accept(node_copy_maker);
     auto root_node_candidate_config = node_copy_maker.getNodeConfigCopy();
     auto candidate_jconfig = RunningJsonConfig::instance().get();
     if (ValidatePatch(patch, candidate_jconfig)) {
@@ -1655,7 +1655,7 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
 
     auto config_mngr = shared_from_this();
     spdlog::debug("Run make candidate config");
-    if (!gMakeCandidateConfigInternal(patch, candidate_jconfig, root_node_candidate_config, m_schema_filename, config_mngr, m_candidate_xpath_source_reference_by_target)) {
+    if (!gMakeCandidateConfigInternal(patch, candidate_jconfig, root_node_candidate_config, _schema_filename, config_mngr, _candidate_xpath_source_reference_by_target)) {
         spdlog::error("Failed to make candidate config");
         return false;
     }
@@ -1666,17 +1666,17 @@ bool Config::Manager::makeCandidateConfig(const String& patch) {
         return false;
     }
 
-    m_candidate_config.reset();
-    m_candidate_config = new_node_config;
-    m_running_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
+    _candidate_config.reset();
+    _candidate_config = new_node_config;
+    _running_xpath_source_reference_by_target = _candidate_xpath_source_reference_by_target;
     CandidateJsonConfig::instance().save(candidate_jconfig);
-    m_is_candidate_config_ready = true;
+    _is_candidate_config_ready = true;
     return true;
 }
 
 bool Config::Manager::applyCandidateConfig() {
-    if (m_is_candidate_config_ready) {
-        auto config_filename_tmp = m_config_filename + ".tmp";
+    if (_is_candidate_config_ready) {
+        auto config_filename_tmp = _config_filename + ".tmp";
         std::ofstream json_file(config_filename_tmp);
         if (!json_file) {
             spdlog::error("Failed to open file {} to save candidate config", config_filename_tmp);
@@ -1692,10 +1692,10 @@ bool Config::Manager::applyCandidateConfig() {
         json_file.flush();
         json_file.close();
         std::error_code err_code = {};
-        std::filesystem::rename(std::filesystem::path(config_filename_tmp), m_config_filename, err_code);
+        std::filesystem::rename(std::filesystem::path(config_filename_tmp), _config_filename, err_code);
         if (err_code) {
             spdlog::error("Failed to save temporary filename {} into final config filename {}: {}",
-                config_filename_tmp, m_config_filename, err_code.message());
+                config_filename_tmp, _config_filename, err_code.message());
             return false;
         }
 
@@ -1706,9 +1706,9 @@ bool Config::Manager::applyCandidateConfig() {
                 config_filename_tmp, err_code.message());
         }
 
-        m_running_config = m_candidate_config;
+        _running_config = _candidate_config;
         RunningJsonConfig::instance().save(CandidateJsonConfig::instance().get());
-        m_candidate_config = nullptr;
+        _candidate_config = nullptr;
         CandidateJsonConfig::instance().save(nlohmann::json());
     }
     else {
@@ -1716,12 +1716,12 @@ bool Config::Manager::applyCandidateConfig() {
         return false;
     }
 
-    m_is_candidate_config_ready = false;
+    _is_candidate_config_ready = false;
     return true;
 }
 
 bool Config::Manager::cancelCandidateConfig() {
-    if (!m_is_candidate_config_ready) {
+    if (!_is_candidate_config_ready) {
         spdlog::warn("There is not candidate config");
         return false;
     }
@@ -1754,19 +1754,19 @@ bool Config::Manager::cancelCandidateConfig() {
         spdlog::debug("\n{}", diff_item.dump(4));
     }
 
-    Map<String, Set<String>>  copy_candidate_xpath_source_reference_by_target = m_candidate_xpath_source_reference_by_target;
+    Map<String, Set<String>>  copy_candidate_xpath_source_reference_by_target = _candidate_xpath_source_reference_by_target;
     spdlog::debug("Patch to restore config:\n{}", patch.dump(4));
-    m_candidate_config->Accept(print_visitor);
+    _candidate_config->Accept(print_visitor);
     auto config_mngr = shared_from_this();
-    if (!gMakeCandidateConfigInternal(patch.dump(), candidate_jconfig, m_candidate_config, m_schema_filename, config_mngr, m_candidate_xpath_source_reference_by_target)) {
+    if (!gMakeCandidateConfigInternal(patch.dump(), candidate_jconfig, _candidate_config, _schema_filename, config_mngr, _candidate_xpath_source_reference_by_target)) {
         spdlog::error("Failed to rollback changes");
-        m_candidate_xpath_source_reference_by_target = copy_candidate_xpath_source_reference_by_target;
+        _candidate_xpath_source_reference_by_target = copy_candidate_xpath_source_reference_by_target;
         return false;
     }
 
-    m_candidate_config.reset();
+    _candidate_config.reset();
     CandidateJsonConfig::instance().save(nlohmann::json());
-    m_is_candidate_config_ready = false;
+    _is_candidate_config_ready = false;
 
     return true;
 }

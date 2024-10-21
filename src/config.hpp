@@ -52,15 +52,15 @@ public:
     bool removeXPathReference(const List<String>& ordered_nodes_by_xpath, SharedPtr<Node> root_config);
 
 private:
-    const std::string m_config_filename;
-    const std::string m_schema_filename;
-    SharedPtr<Node> m_running_config;
-    SharedPtr<Node> m_candidate_config;
-    bool m_is_candidate_config_ready = { false };
+    const std::string _config_filename;
+    const std::string _schema_filename;
+    SharedPtr<Node> _running_config;
+    SharedPtr<Node> _candidate_config;
+    bool _is_candidate_config_ready = { false };
 
     // E.g. /interface/ethernet/eth-1 -> /vlan/id/2/members/ge2
-    Map<String, Set<String>> m_running_xpath_source_reference_by_target;
-    Map<String, Set<String>> m_candidate_xpath_source_reference_by_target;
+    Map<String, Set<String>> _running_xpath_source_reference_by_target;
+    Map<String, Set<String>> _candidate_xpath_source_reference_by_target;
 
 }; // class Manager
 

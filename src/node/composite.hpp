@@ -26,7 +26,7 @@ class Composite
     virtual size_t Count() const;
 
   private:
-    Map<String, SharedPtr<Node>> m_node_by_name;
+    Map<String, SharedPtr<Node>> _node_by_name;
 };
 
 // TODO: Czy potrzebny jest SchemaComposite? Niewystarczy nam posiadanie samego Composite?

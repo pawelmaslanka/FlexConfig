@@ -50,11 +50,11 @@ private:
     HTTP::StatusCode processRequest(const HTTP::Method method, const String& path, const String& request_data, String& return_data);
     bool addConnectionHandler(Map<String, RequestCallback>& callbacks, const String& id, RequestCallback handler);
     bool removeConnectionHandler(Map<String, RequestCallback>& callbacks, const String& id);
-    Map<String, RequestCallback> m_on_delete_callback_by_id;
-    Map<String, RequestCallback> m_on_get_callback_by_id;
-    Map<String, RequestCallback> m_on_post_callback_by_id;
-    Map<String, RequestCallback> m_on_put_callback_by_id;
-    SessionManager m_session_mngr;
-    String m_callback_register_id = "HttpServer";
+    Map<String, RequestCallback> _on_delete_callback_by_id;
+    Map<String, RequestCallback> _on_get_callback_by_id;
+    Map<String, RequestCallback> _on_post_callback_by_id;
+    Map<String, RequestCallback> _on_put_callback_by_id;
+    SessionManager _session_mngr;
+    String _callback_register_id = "HttpServer";
 };
 } // ConnectionManagement

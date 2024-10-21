@@ -22,5 +22,5 @@ public:
     virtual void Accept(Visitor& visitor) override;
 
 private:
-    Value m_value;
+    Value _value;
 };

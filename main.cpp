@@ -78,8 +78,18 @@ int main(int argc, char* argv[]) {
     auto json_schema_filename = args::get(schema_file);
     auto registry = std::make_shared<RegistryClass>();
     auto config_mngr = std::make_shared<Config::Manager>(json_config_filename, json_schema_filename, registry);
-    if (!config_mngr->load()) {
-        spdlog::error("Failed to load config_file file");
+    try {
+        if (!config_mngr->load()) {
+            spdlog::error("Failed to load config file");
+            ::exit(EXIT_FAILURE);
+        }
+    }
+    catch (std::exception& ex) {
+        spdlog::critical("Failed to load config file {} along with schema {}", json_config_filename, json_schema_filename);
+        ::exit(EXIT_FAILURE);
+    }
+    catch (...) {
+        spdlog::critical("Unexpected error during loading config file {} along with schema {}", json_config_filename, json_schema_filename);
         ::exit(EXIT_FAILURE);
     }
 

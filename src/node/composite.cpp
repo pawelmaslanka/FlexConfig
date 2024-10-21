@@ -13,30 +13,30 @@ Composite::Composite(const String name, SharedPtr<Node> parent, SharedPtr<Node> 
 }
 
 Composite::~Composite() {
-    for (auto& [_, node] : m_node_by_name) {
+    for (auto& [_, node] : _node_by_name) {
         node.reset();
     }
 }
 
 bool Composite::Add(SharedPtr<Node> node) {
-    // if (!m_node_by_name.insert({ node->Name(), node }).second) {
+    // if (!_node_by_name.insert({ node->Name(), node }).second) {
     //     // std::cerr << "Node '" << node->Name() << "' already exists in set of '" << Name() << "'\n";
     //     return false;
     // }
 
-    m_node_by_name[node->Name()] = node;
+    _node_by_name[node->Name()] = node;
     node->SetParent(Node::downcasted_shared_from_this<Composite>());
     return true;
 }
 
 bool Composite::Remove(const String node_name) {
-    auto node_it = m_node_by_name.find(node_name);
-    if (node_it == m_node_by_name.end()) {
+    auto node_it = _node_by_name.find(node_name);
+    if (node_it == _node_by_name.end()) {
         return false;
     }
 
     node_it->second->SetParent(nullptr);
-    m_node_by_name.erase(node_it);
+    _node_by_name.erase(node_it);
     return true;
 }
 
@@ -44,8 +44,8 @@ SharedPtr<Node> Composite::MakeCopy(SharedPtr<Node> parent) const {
     auto copy_node = std::make_shared<Composite>(Name());
     copy_node->SetParent(parent ? parent : Parent());
     copy_node->SetSchemaNode(SchemaNode());
-    for (auto& [name, node] : m_node_by_name) {
-        copy_node->m_node_by_name.emplace(name, node->MakeCopy(copy_node));
+    for (auto& [name, node] : _node_by_name) {
+        copy_node->_node_by_name.emplace(name, node->MakeCopy(copy_node));
     }
 
     return copy_node;
@@ -53,7 +53,7 @@ SharedPtr<Node> Composite::MakeCopy(SharedPtr<Node> parent) const {
 
 // TODO: Get value from Visitor if it prefere DFS or BFS
 void Composite::Accept(Visitor& visitor) {
-    for (auto node : m_node_by_name) {
+    for (auto node : _node_by_name) {
         if (!visitor.visit(node.second)) {
             break;
         }
@@ -63,8 +63,8 @@ void Composite::Accept(Visitor& visitor) {
 }
 
 SharedPtr<Node> Composite::FindNode(const String node_name) {
-    auto node_it = m_node_by_name.find(node_name);
-    if (node_it != m_node_by_name.end()) {
+    auto node_it = _node_by_name.find(node_name);
+    if (node_it != _node_by_name.end()) {
         return node_it->second;
     }
 
@@ -72,7 +72,7 @@ SharedPtr<Node> Composite::FindNode(const String node_name) {
 }
 
 size_t Composite::Count() const {
-    return m_node_by_name.size();
+    return _node_by_name.size();
 }
 
 SchemaComposite::SchemaComposite(const String name, SharedPtr<Node> parent, SharedPtr<Node> schema_node)
