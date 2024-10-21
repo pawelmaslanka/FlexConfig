@@ -9,7 +9,9 @@
 // in a lot of files so it should not be changed too frequently.
 
 #include <any>
+#include <array>
 #include <chrono>
+#include <condition_variable>
 #include <deque>
 #include <forward_list>
 #include <list>
@@ -19,6 +21,7 @@
 #include <queue>
 #include <regex>
 #include <set>
+#include <sstream>
 #include <stack>
 #include <stdexcept>
 #include <string>
@@ -29,7 +32,8 @@
 
 // Keep it in alphabetical order
 template<class T> using Deque = std::deque<T>;
-#define Duration std::chrono::duration
+// FIXME: Conflict with class Duration in ABSL library
+// #define Duration std::chrono::duration
 template<class T> using ForwardList = std::forward_list<T>;
 template<class T> using List = std::list<T>;
 template<class Mutex> using LockGuard = std::lock_guard<Mutex>;
@@ -42,22 +46,28 @@ template<class... MutexTypes> using ScopedLock = std::scoped_lock<MutexTypes...>
 template<class T> using Set = std::set<T>;
 template<class T> using SharedPtr = std::shared_ptr<T>;
 template<class T> using Stack = std::stack<T>;
+template<class T> using UniqueLock = std::unique_lock<T>;
+template<class T> using UniquePtr = std::unique_ptr<T>;
 template<class T> using WeakPtr = std::weak_ptr<T>;
 template<class T> using Vector = std::vector<T>;
 
 using Any = std::any;
+#define Array std::array
 using BadAnyCast = std::bad_any_cast;
+using ConditionVariable = std::condition_variable;
 // using JThread = std::jthread;
-#define MakeShared std::make_shared
-#define MakeUnique std::make_unique
+#define MakeSharedPtr std::make_shared
+#define MakeUniquePtr std::make_unique
 using Mutex = std::mutex;
 #define NullOpt std::nullopt
 using Regex = std::regex;
 using RuntimeError = std::runtime_error;
 using String = std::string;
+using StringStream = std::stringstream;
 using StringView = std::string_view;
 using Thread = std::thread;
 
+using Byte = std::uint8_t;
 using UInt16 = std::uint16_t;
 using UInt64 = std::uint64_t;
 

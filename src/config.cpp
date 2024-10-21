@@ -6,10 +6,9 @@
 // For some reason this include statement for spdlog must be at the top due to an error:
 // "function template partial specialization is not allowed"
 #include <spdlog/spdlog.h>
+#include <nlohmann/json-schema.hpp>
 
 #include "config.hpp"
-
-#include <nlohmann/json-schema.hpp>
 
 #include "composite.hpp"
 #include "constraint_checking.hpp"
