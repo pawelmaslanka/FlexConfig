@@ -21,7 +21,7 @@ Value Leaf::getValue() const {
 }
 
 SharedPtr<Node> Leaf::MakeCopy(SharedPtr<Node> parent) const {
-    auto copy_node = std::make_shared<Leaf>(Name(), _value);
+    auto copy_node = MakeSharedPtr<Leaf>(Name(), _value);
     copy_node->SetParent(parent ? parent : Parent());
     copy_node->SetSchemaNode(SchemaNode());
 

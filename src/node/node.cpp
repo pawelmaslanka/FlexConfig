@@ -65,7 +65,7 @@ SharedPtr<Node> Node::SchemaNode() const {
 }
 
 SharedPtr<Node> Node::MakeCopy(SharedPtr<Node> parent) const {
-    auto copy_node = std::make_shared<Node>(_name);
+    auto copy_node = MakeSharedPtr<Node>(_name);
     copy_node->_parent = parent ? parent : _parent;
     copy_node->_schema_node = _schema_node;
     return copy_node;

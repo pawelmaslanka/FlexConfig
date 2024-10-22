@@ -49,7 +49,7 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
     }
 
     auto xpath_items = parse(xpath);
-    auto node_finder = std::make_shared<XPath::NodeFinder>();
+    auto node_finder = MakeSharedPtr<XPath::NodeFinder>();
     auto visiting_node = root_node;
     while (!xpath_items.empty()) { 
         auto item = xpath_items.front();

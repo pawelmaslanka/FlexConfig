@@ -144,8 +144,8 @@ int main(int argc, char* argv[]) {
 
     auto json_config_filename = args::get(config_file);
     auto json_schema_filename = args::get(schema_file);
-    auto registry = std::make_shared<RegistryClass>();
-    auto config_mngr = std::make_shared<Config::Manager>(json_config_filename, json_schema_filename, registry);
+    auto registry = MakeSharedPtr<RegistryClass>();
+    auto config_mngr = MakeSharedPtr<Config::Manager>(json_config_filename, json_schema_filename, registry);
     try {
         if (!config_mngr->load()) {
             spdlog::error("Failed to load config file");

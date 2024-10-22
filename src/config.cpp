@@ -41,7 +41,7 @@ public:
         if (!json_config) {
             LockGuard<Mutex> lock(mtx);
             if (!json_config) {
-                json_config = std::make_shared<CandidateJsonConfig>();
+                json_config = MakeSharedPtr<CandidateJsonConfig>();
             }
         }
 
@@ -82,7 +82,7 @@ public:
         if (!json_schema) {
             LockGuard<Mutex> lock(mtx);
             if (!json_schema) {
-                json_schema = std::make_shared<RunningJsonConfig>();
+                json_schema = MakeSharedPtr<RunningJsonConfig>();
             }
         }
 
@@ -123,7 +123,7 @@ public:
         if (!json_schema) {
             LockGuard<Mutex> lock(mtx);
             if (!json_schema) {
-                json_schema = std::make_shared<JsonSchema>();
+                json_schema = MakeSharedPtr<JsonSchema>();
             }
         }
 
@@ -251,7 +251,7 @@ bool loadPatternProperties(nlohmann::json& jconfig, nlohmann::json& jschema, std
         for (auto& [ksch, vsch] : jschema.items()) {
             if (std::regex_match(k, Regex { ksch })) {
                 spdlog::trace("Matched key {} to pattern {}\n", k, ksch);
-                node = std::make_shared<Composite>(k, root_config);
+                node = MakeSharedPtr<Composite>(k, root_config);
                 root_config->Add(node);
                 spdlog::debug("{} -> {}\n", node->Parent()->Name(), node->Name());
                 if ((vsch.find("properties") == vsch.end())
@@ -283,13 +283,13 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
         spdlog::debug("Found {} in config based on schema", k);
         if ((v.find("type") != v.end()) && (v.at("type") == "array")) {
             spdlog::debug("Found {} is array. Load its items", k);
-            auto leaf = std::make_shared<Composite>(k, root_config);
+            auto leaf = MakeSharedPtr<Composite>(k, root_config);
             root_config->Add(leaf);
             for (const auto& item : jconfig.at(k)) {
                 Value val(Value::Type::STRING);
                 // TODO: Make a reference instead of string
                 val.set_string(item.get<String>());
-                auto item_leaf = std::make_shared<Leaf>(item.get<String>(), val, leaf);
+                auto item_leaf = MakeSharedPtr<Leaf>(item.get<String>(), val, leaf);
                 leaf->Add(item_leaf);
             }
         } // leaf node does not include "properties"
@@ -302,12 +302,12 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
             // TODO: Replace Value with std::variant
             Value val(Value::Type::STRING);
             val.set_string(jconfig.at(k).get<String>());
-            auto leaf = std::make_shared<Leaf>(k, val, root_config);
+            auto leaf = MakeSharedPtr<Leaf>(k, val, root_config);
             root_config->Add(leaf);
             continue;
         }
         else {
-            node = std::make_shared<Composite>(k, root_config);
+            node = MakeSharedPtr<Composite>(k, root_config);
             root_config->Add(node);
             spdlog::debug("{} -> {}\n", node->Parent()->Name(), node->Name());
         }
@@ -350,7 +350,7 @@ Config::Manager::Manager(StringView config_filename, StringView schema_filename,
 }
 
 bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node_config, const String& schema_filename) {
-    auto dependency_mngr = std::make_shared<NodeDependencyManager>(config_mngr);
+    auto dependency_mngr = MakeSharedPtr<NodeDependencyManager>(config_mngr);
     List<String> ordered_nodes_by_xpath = {};
     if (!dependency_mngr->resolve(node_config, ordered_nodes_by_xpath)) {
         spdlog::error("Failed to resolve nodes dependency");
@@ -368,7 +368,7 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             }
 
             auto config = node_config;
-            auto constraint_checker = std::make_shared<ConstraintChecker>(config_mngr, config);
+            auto constraint_checker = MakeSharedPtr<ConstraintChecker>(config_mngr, config);
             auto update_constraints = schema_node->FindAttr(Config::PropertyName::UPDATE_CONSTRAINTS);
             for (auto& update_constraint : update_constraints) {
                 spdlog::debug("Processing update constraint '{}' at node {}", update_constraint, xpath);
@@ -590,9 +590,9 @@ SharedPtr<Node> ReloadNodeConfig(nlohmann::json& jschema, nlohmann::json& jconfi
         return nullptr;
     }
 
-    auto dependency_mngr = std::make_shared<NodeDependencyManager>(config_mngr);
+    auto dependency_mngr = MakeSharedPtr<NodeDependencyManager>(config_mngr);
     List<String> ordered_nodes_by_xpath = {};
-    auto root_config = std::make_shared<Composite>(Config::ROOT_TREE_CONFIG_NAME);
+    auto root_config = MakeSharedPtr<Composite>(Config::ROOT_TREE_CONFIG_NAME);
     auto properties_it = jschema.find(SCHEMA_NODE_PROPERTIES_NAME);
     if (properties_it != jschema.end()) {
         if (!parseAndLoadConfig(jconfig, *properties_it, root_config)) {
@@ -659,9 +659,9 @@ bool Config::Manager::load() {
     }
 
     auto config_mngr = shared_from_this();
-    auto dependency_mngr = std::make_shared<NodeDependencyManager>(config_mngr);
+    auto dependency_mngr = MakeSharedPtr<NodeDependencyManager>(config_mngr);
     List<String> ordered_nodes_by_xpath = {};
-    auto root_config = std::make_shared<Composite>(ROOT_TREE_CONFIG_NAME);
+    auto root_config = MakeSharedPtr<Composite>(ROOT_TREE_CONFIG_NAME);
     auto properties_it = jschema.find(SCHEMA_NODE_PROPERTIES_NAME);
     if (properties_it != jschema.end()) {
         if (!parseAndLoadConfig(jconfig, *properties_it, root_config)) {
@@ -745,7 +745,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     auto schema = *root_properties_it;
     auto xpath_tokens = XPath::parse(xpath);
 
-    auto root_schema_node = std::make_shared<SchemaComposite>("/");
+    auto root_schema_node = MakeSharedPtr<SchemaComposite>("/");
     auto schema_node = root_schema_node;
     static const Set<String> SUPPORTED_ATTRIBUTES = {
         Config::PropertyName::ACTION, Config::PropertyName::ACTION_ON_DELETE_PATH, Config::PropertyName::ACTION_ON_UPDATE_PATH, Config::PropertyName::ACTION_SERVER_ADDRESS,
@@ -753,7 +753,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     };
 
     auto load_schema_attributes = [](nlohmann::json& schema, String& node_name, SharedPtr<SchemaComposite>& root_schema_node) {
-        auto schema_node = std::make_shared<SchemaComposite>(node_name, root_schema_node);
+        auto schema_node = MakeSharedPtr<SchemaComposite>(node_name, root_schema_node);
         auto attributes = nlohmann::json(schema.patch(schema.diff({}, schema)));
         for (auto& [k, v] : attributes.items()) {
             if (SUPPORTED_ATTRIBUTES.find(k) != SUPPORTED_ATTRIBUTES.end()) {
@@ -931,7 +931,7 @@ public:
     virtual ~NodesCollectorVisitor() = default;
     NodesCollectorVisitor(const Set<String>& nodes_to_collect)
     : _nodes_to_collect { nodes_to_collect },
-      _root_config { std::make_shared<Composite>(Config::ROOT_TREE_CONFIG_NAME) } { }
+      _root_config { MakeSharedPtr<Composite>(Config::ROOT_TREE_CONFIG_NAME) } { }
 
     virtual bool visit(SharedPtr<Node> node) override {
         if (!node) {
@@ -984,7 +984,7 @@ class NodeCopyMakerVisitor : public Visitor {
 public:
     virtual ~NodeCopyMakerVisitor() = default;
     NodeCopyMakerVisitor()
-    : _root_config { std::make_shared<Composite>(Config::ROOT_TREE_CONFIG_NAME) } { }
+    : _root_config { MakeSharedPtr<Composite>(Config::ROOT_TREE_CONFIG_NAME) } { }
 
     virtual bool visit(SharedPtr<Node> node) override {
         if (!node) {
@@ -1111,7 +1111,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     node_config->Accept(nodes_collector_visitor);
     auto nodes_by_xpath = nodes_collector_visitor.getNodesByXPath();
     auto root_config_to_remove = nodes_collector_visitor.getRootConfig();
-    auto dependency_mngr = std::make_shared<NodeDependencyManager>(config_mngr);
+    auto dependency_mngr = MakeSharedPtr<NodeDependencyManager>(config_mngr);
     List<String> ordered_nodes_by_xpath = {};
     if (!dependency_mngr->resolve(root_config_to_remove, ordered_nodes_by_xpath)) {
         spdlog::error("Failed to resolve nodes dependency");
@@ -1158,7 +1158,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     });
 
     ordered_nodes_by_xpath.reverse();
-    auto constraint_checker = std::make_shared<ConstraintChecker>(config_mngr, root_config_to_remove);
+    auto constraint_checker = MakeSharedPtr<ConstraintChecker>(config_mngr, root_config_to_remove);
     for (auto& xpath : ordered_nodes_by_xpath) {
         auto schema_node = config_mngr->getSchemaByXPath(xpath);
         if (!schema_node) {
@@ -1465,7 +1465,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         return not_marked_to_be_added.find(xpath) != not_marked_to_be_added.end();
     });
 
-    constraint_checker = std::make_shared<ConstraintChecker>(config_mngr, node_config);
+    constraint_checker = MakeSharedPtr<ConstraintChecker>(config_mngr, node_config);
     for (auto& xpath : ordered_nodes_by_xpath) {
         auto schema_node = config_mngr->getSchemaByXPath(xpath);
         if (!schema_node) {

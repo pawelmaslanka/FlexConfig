@@ -66,7 +66,7 @@ std::optional<std::string> makeGraphNode(std::map<std::string, std::set<std::str
 
     for (auto& edge_name : adj_it->second) { // go through all node adjacency
         // std::cout << "Edge: " << edge_name << std::endl;
-        auto edge = std::make_shared<Graph::Node>(edge_name);
+        auto edge = MakeSharedPtr<Graph::Node>(edge_name);
         node.addEdge(edge);
         // Break cyclic
         auto edge_adj_it = adj_list.find(edge_name);
@@ -122,7 +122,7 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
     // std::cout << "Adjacency list size: " << adj_list.size() << std::endl;
     std::list<SharedPtr<Graph::Node>> graph_nodes;
     for (auto& node : adj_list) {
-        graph_nodes.emplace_front(std::make_shared<Graph::Node>(node.first));
+        graph_nodes.emplace_front(MakeSharedPtr<Graph::Node>(node.first));
         if (auto err = makeGraphNode(adj_list, *graph_nodes.front())) {
             return err;
         }

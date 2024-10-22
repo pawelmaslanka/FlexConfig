@@ -11,6 +11,9 @@
 
 #include "lib/std_types.hpp"
 
+/**
+    Get all subnodes of 'parent_node', e.g. 'subnode_name'
+ */
 class SubnodeChildsVisitor : public Visitor {
 public:
     virtual ~SubnodeChildsVisitor() = default;
@@ -34,6 +37,9 @@ private:
     ForwardList<String> _child_subnode_names;
 };
 
+/**
+    Get all subnodes of 'parent_node' as relative path, e.g. 'parent_node/subnode_name'
+ */
 class NodeChildsOnlyVisitor : public Visitor {
 public:
     virtual ~NodeChildsOnlyVisitor() = default;
@@ -44,7 +50,7 @@ public:
         if (node &&
             (XPath::toString(node->Parent()) == _parent_name)) {
             // TODO: Extend it to check full xpath!
-            _child_subnode_names.emplace_front(_parent_name + "/" + node->Name());
+            _child_subnode_names.emplace_front(_parent_name + XPath::SEPARATOR + node->Name());
         }
 
         return true;

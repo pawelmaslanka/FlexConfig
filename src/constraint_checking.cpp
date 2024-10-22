@@ -545,7 +545,7 @@ Vector<String> XPathAllHandle(const SemanticValues& vs, Any& dt) {
     ForwardList<String> xpath_subnodes;
     auto wildcard_pos = xpath.find(WILDCARD_XPATH_NODE);
     if (wildcard_pos != StringEnd()) {
-        spdlog::debug("Found wildcard mark at xpath {}", xpath);
+        spdlog::debug("Found wildcard token at xpath {}", xpath);
         auto parent_xpath = xpath.substr(0, wildcard_pos);
         auto node = XPath::select(pegArg.RootNodeConfig, parent_xpath);
         if (!node) {

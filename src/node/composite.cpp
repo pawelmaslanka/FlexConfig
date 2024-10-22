@@ -41,7 +41,7 @@ bool Composite::Remove(const String node_name) {
 }
 
 SharedPtr<Node> Composite::MakeCopy(SharedPtr<Node> parent) const {
-    auto copy_node = std::make_shared<Composite>(Name());
+    auto copy_node = MakeSharedPtr<Composite>(Name());
     copy_node->SetParent(parent ? parent : Parent());
     copy_node->SetSchemaNode(SchemaNode());
     for (auto& [name, node] : _node_by_name) {
