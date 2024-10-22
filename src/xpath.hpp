@@ -16,6 +16,7 @@ namespace XPath {
     static auto constexpr SUBSCRIPT_LEFT_PARENTHESIS = "[";
     static auto constexpr SUBSCRIPT_RIGHT_PARENTHESIS = "]";
     static auto constexpr SEPARATOR = "/";
+    static auto constexpr WILDCARD_TOKEN = "*";
 
     class NodeFinder : public Visitor {
       public:
