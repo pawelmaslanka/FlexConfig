@@ -77,7 +77,6 @@ bool Server::Run(const String& host, const UInt16 port) {
 
     srv.Get(ConnectionManagement::URIRequestPath::Config::RUNNING, [this](const Http::Request &req, Http::Response &res) {
         String return_data;
-        spdlog::debug("Got running GET request:\n {}", req.body);
         auto status = processRequest(HTTP::Method::GET, ConnectionManagement::URIRequestPath::Config::RUNNING, req.body, return_data);
         auto return_message = status ? return_data : "Failed";
         res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
@@ -91,7 +90,6 @@ bool Server::Run(const String& host, const UInt16 port) {
 
         _session_mngr.CancelSessionTokenTimerOnce(req);
         String return_data;
-        spdlog::debug("Got POST request:\n {}", req.body);
         res.status = processRequest(HTTP::Method::POST, ConnectionManagement::URIRequestPath::Config::RUNNING_UPDATE, req.body, return_data);
         auto return_message = HTTP::IsSuccess(static_cast<HTTP::StatusCode>(res.status)) ? return_data : "Failed";
         res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
@@ -108,7 +106,6 @@ bool Server::Run(const String& host, const UInt16 port) {
 
     srv.Post(ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF, [this](const Http::Request &req, Http::Response &res) {
         String return_data;
-        spdlog::debug("Got POST diff request:\n {}", req.body);
         res.status = processRequest(HTTP::Method::POST, ConnectionManagement::URIRequestPath::Config::RUNNING_DIFF, req.body, return_data);
         auto return_message = HTTP::IsSuccess((HTTP::StatusCode) res.status) ? return_data : "Failed";
         res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
@@ -121,7 +118,6 @@ bool Server::Run(const String& host, const UInt16 port) {
         }
 
         String return_data;
-        spdlog::debug("Got candidate GET request:\n {}", req.body);
         res.status = processRequest(HTTP::Method::GET, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
         auto return_message = HTTP::IsSuccess((HTTP::StatusCode) res.status) ? return_data : "Failed";
         res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
@@ -134,7 +130,6 @@ bool Server::Run(const String& host, const UInt16 port) {
 
         _session_mngr.CancelSessionTokenTimerOnce(req);
         String return_data;
-        spdlog::debug("Got PUT request:\n {}", req.body);
         res.status = processRequest(HTTP::Method::PUT, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
         auto return_message = HTTP::IsSuccess((HTTP::StatusCode) res.status) ? return_data : "Failed";
         res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);
@@ -147,7 +142,6 @@ bool Server::Run(const String& host, const UInt16 port) {
 
         _session_mngr.CancelSessionTokenTimerOnce(req);
         String return_data;
-        spdlog::debug("Got DELETE request:\n {}", req.body);
         res.status = processRequest(HTTP::Method::DEL, ConnectionManagement::URIRequestPath::Config::CANDIDATE, req.body, return_data);
         auto return_message = HTTP::IsSuccess((HTTP::StatusCode) res.status) ? return_data : "Failed";
         res.set_content(return_message, HTTP::ContentType::TEXT_PLAIN_RESP_CONTENT);

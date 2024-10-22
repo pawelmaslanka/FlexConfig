@@ -270,14 +270,12 @@ bool SessionManager::SetSessionTokenTimerOnce(const Http::Request &req, SessionT
 bool SessionManager::CancelSessionTokenTimerOnce(const Http::Request &req) {
     auto session_token = GetSessionToken(req).value_or("");
     if (session_token.empty()) {
-        spdlog::debug("There is not exists session token '{}'", session_token);
         return false;
     }
 
     LockGuard<Mutex> _(_session_token_timers_mutex);
     auto timer_it = _session_token_timers.find(session_token);
     if (timer_it == _session_token_timers.end()) {
-        spdlog::debug("Not found registered timer for session token '{}'", session_token);
         return false;
     }
 
