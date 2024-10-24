@@ -15,6 +15,18 @@ namespace Http = httplib;
 
 using namespace std::chrono_literals;
 
+bool Client::post(const String& host_addr, const String& path, const String& body) {
+    httplib::Client cli(host_addr);
+    auto content_type = "application/json";
+    auto result = cli.Post(path, body, content_type);
+    if (!result) {
+        spdlog::error("Failed to get response from server {}: {}", host_addr, httplib::to_string(result.error()));
+        return false;
+    }
+
+    return true;
+}
+
 Server::Server()
 : _session_mngr(360s /* session timeout */) {
     _session_mngr.RegisterSessionTimeoutCallback(_callback_register_id, [this](const String session_token) {

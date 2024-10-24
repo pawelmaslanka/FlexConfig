@@ -26,8 +26,7 @@ namespace Session {
 
 class Client {
 public:
-
-private:
+    static bool post(const String& host_addr, const String& path, const String& body);
 };
 
 using RequestCallback = std::function<HTTP::StatusCode(const String& path, String data_request, String& return_data)>;

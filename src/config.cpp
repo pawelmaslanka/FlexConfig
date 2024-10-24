@@ -11,6 +11,7 @@
 #include "config.hpp"
 
 #include "composite.hpp"
+#include "connection_management.hpp"
 #include "constraint_checking.hpp"
 #include "lib/utils.hpp"
 #include "nodes_ordering.hpp"
@@ -404,26 +405,16 @@ bool fPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
                 diff[0][JsonDiffField::PARAMETERS] = fFindAndAppendParamAction(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
             }
 
-            auto server_addr = server_addr_attr.front();
-            httplib::Client cli(server_addr);
-            auto path = action_attr.front();
-            auto body = diff[0].dump();
-            auto content_type = "application/json";
-            auto result = cli.Post(path, body, content_type);
-            if (!result) {
-                spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
+            if (!ConnectionManagement::Client::post(server_addr_attr.front(), action_attr.front(), diff[0].dump())) {
+                spdlog::error("Failed to send action request message");
                 while (!action_to_rollback.empty()) {
-                    httplib::Client cli(server_addr);
-                    auto path = action_attr.front();
                     auto action = action_to_rollback.top();
                     action_to_rollback.pop();
                     // It can be simply converted to "remove" operation since it is startup steps and there is
                     // not required to consider a "replace" operation
                     action[JsonDiffField::OPERATION] = JsonDiffOperation::REMOVE;
                     action[0][JsonDiffField::PARAMETERS] = fFindAndAppendParamAction(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
-                    auto body = action.dump();
-                    auto content_type = "application/json";
-                    cli.Post(path, body, content_type);
+                    ConnectionManagement::Client::post(server_addr_attr.front(), action_attr.front(), action.dump());
                 }
 
                 return false;
@@ -1207,15 +1198,8 @@ static bool fMakeCandidateConfigInternal(const String& patch, nlohmann::json& jc
             }
 
             // TODO: Render additional parameters come from 'action-parameters'
-            auto server_addr = server_addr_attr.front();
-            httplib::Client cli(server_addr);
-            auto path = action_attr.front();
-            auto body = action.dump();
-            auto content_type = "application/json";
-            auto result = cli.Post(path, body, content_type);
-            if (!result) {
-                spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
-                spdlog::error("Failed to rollback removed nodes");
+            if (!ConnectionManagement::Client::post(server_addr_attr.front(), action_attr.front(), action.dump())) {
+                spdlog::error("Failed to send action request message. Error to rollback removed nodes");
                 ::exit(EXIT_FAILURE);
             }
         }
@@ -1247,14 +1231,8 @@ static bool fMakeCandidateConfigInternal(const String& patch, nlohmann::json& jc
             diff[0][JsonDiffField::PARAMETERS] = fFindAndAppendParamAction(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
         }
 
-        auto server_addr = server_addr_attr.front();
-        httplib::Client cli(server_addr);
-        auto path = action_attr.front();
-        auto body = diff[0].dump();
-        auto content_type = "application/json";
-        auto result = cli.Post(path, body, content_type);
-        if (!result) {
-            spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
+        if (!ConnectionManagement::Client::post(server_addr_attr.front(), action_attr.front(), diff[0].dump())) {
+            spdlog::error("Failed to send action request message");
             if (!rollback_removed_nodes()) {
                 spdlog::critical("Failed to rollback removed nodes");
                 ::exit(EXIT_FAILURE);
@@ -1520,15 +1498,8 @@ static bool fMakeCandidateConfigInternal(const String& patch, nlohmann::json& jc
             //     }
             // }
 
-            auto server_addr = server_addr_attr.front();
-            httplib::Client cli(server_addr);
-            auto path = action_attr.front();
-            auto body = action.dump();
-            auto content_type = "application/json";
-            auto result = cli.Post(path, body, content_type);
-            if (!result) {
-                spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
-                spdlog::error("Failed to rollback removed nodes");
+            if (!ConnectionManagement::Client::post(server_addr_attr.front(), action_attr.front(), action.dump())) {
+                spdlog::error("Failed to send action request message. Error to rollback removed nodes");
                 ::exit(EXIT_FAILURE);
             }
         }
@@ -1572,14 +1543,8 @@ static bool fMakeCandidateConfigInternal(const String& patch, nlohmann::json& jc
             diff[0][JsonDiffField::PARAMETERS] = fFindAndAppendParamAction(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
         }
 
-        auto server_addr = server_addr_attr.front();
-        httplib::Client cli(server_addr);
-        auto path = action_attr.front();
-        auto body = diff[0].dump();
-        auto content_type = "application/json";
-        auto result = cli.Post(path, body, content_type);
-        if (!result) {
-            spdlog::error("Failed to get response from server {}: {}", server_addr, httplib::to_string(result.error()));
+        if (!ConnectionManagement::Client::post(server_addr_attr.front(), action_attr.front(), diff[0].dump())) {
+            spdlog::error("Failed to send action request message");
             if (!rollback_added_nodes()) {
                 spdlog::error("Failed to rollback added nodes");
                 ::exit(EXIT_FAILURE);
