@@ -88,10 +88,10 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
 }
 
 String XPath::mergeTokens(const Deque<String>& xpath_tokens) {
-    String xpath = "/";
+    String xpath = XPath::ROOT_TOKEN;
     for (auto& token : xpath_tokens) {
         if (xpath.at(xpath.size() - 1) != '/') {
-            xpath += "/";
+            xpath += XPath::SEPARATOR;
         }
 
         xpath += token;
