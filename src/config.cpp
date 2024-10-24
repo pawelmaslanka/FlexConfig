@@ -31,6 +31,22 @@ static constexpr auto SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME { "on-update" };
 static constexpr auto SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME { "on-delete" };
 static constexpr auto SCHEMA_NODE_ACTION_PARAM_NAME { "action-parameters" };
 
+namespace JsonDiffField {
+    static const String OPERATION = { "op" };
+    static const String PARAMETERS = { "params" };
+    static const String PATH = { "path" };
+    static const String VALUE = { "value" };
+}
+
+namespace JsonDiffOperation {
+    static const String ADD = { "add" };
+    static const String REMOVE = { "remove" };
+    static const String REPLACE = { "replace" };
+}
+
+/**
+    Stores and manages an access to uncommitted configuration changes.
+ */
 class CandidateJsonConfig {
 public:
     // FIXME: Move constructor to private section
@@ -72,6 +88,9 @@ private:
 
 nlohmann::json CandidateJsonConfig::_jconfig;
 
+/**
+    Stores and manages an access to committed configuration changes. Initially stores the loaded config.
+ */
 class RunningJsonConfig {
 public:
     // FIXME: Move constructor to private section
@@ -113,6 +132,9 @@ private:
 
 nlohmann::json RunningJsonConfig::_jconfig;
 
+/**
+    Stores and manages an access to loaded JSON schema.
+ */
 class JsonSchema {
 public:
     // FIXME: Move constructor to private section
@@ -161,7 +183,7 @@ protected:
                 nlohmann::json parsed_patch = nlohmann::json::array();
                 size_t i = 0;
                 for (auto& diff_item : patch) {
-                    if (diff_item["op"] == "add") {
+                    if (diff_item[JsonDiffField::OPERATION] == JsonDiffOperation::ADD) {
                         parsed_patch[i++] = diff_item;
                     }
                 }
@@ -185,7 +207,7 @@ private:
 
 nlohmann::json JsonSchema::_jschema;
 
-static nlohmann::json findAndAppendParamActionF(nlohmann::json& node_jschema, nlohmann::json& node_jconfig, const String& action_jnode_name) {
+static nlohmann::json fFindAndAppendParamAction(nlohmann::json& node_jschema, nlohmann::json& node_jconfig, const String& action_jnode_name) {
     nlohmann::json parameters = nlohmann::json({});
     if (node_jschema.find(SCHEMA_NODE_ACTION_PARAM_NAME) == node_jschema.end()) {
         return parameters;
@@ -202,16 +224,6 @@ static nlohmann::json findAndAppendParamActionF(nlohmann::json& node_jschema, nl
 
     return parameters;
 }
-
-// bool AddNode(SharedPtr<Node>& root_node, StringView xpath) {
-//     auto xpath_tokens = XPath::parse(String(xpath));
-//     auto new_node_name = xpath_tokens.back();
-//     xpath_tokens.pop_back();
-//     auto parent_xpath = XPath::mergeTokens(xpath_tokens);
-//     auto parent_node = XPath::select(root_node, parent_xpath);
-//     // FIXME: Update xpath_reference_by_target
-//     return true;
-// }
 
 bool validateJsonConfig(nlohmann::json& jconfig, nlohmann::json& jschema) {
     nlohmann::json_schema::json_validator validator; // create validator
@@ -237,8 +249,8 @@ bool validateJsonConfig(nlohmann::json& jconfig, nlohmann::json& jschema) {
     return true;
 }
 
-bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config);
-bool loadPatternProperties(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config) {
+bool fParseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config);
+bool fLoadPatternProperties(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config) {
     SharedPtr<Composite> node = root_config;
     for (auto& [k, v] : jconfig.items()) {
         for (auto& [ksch, vsch] : jschema.items()) {
@@ -250,7 +262,7 @@ bool loadPatternProperties(nlohmann::json& jconfig, nlohmann::json& jschema, std
                     continue;
                 }
 
-                if (!parseAndLoadConfig(v, vsch, node)) {
+                if (!fParseAndLoadConfig(v, vsch, node)) {
                     spdlog::error("Failed to parse config node '{}'", k);
                     return false;
                 }
@@ -261,7 +273,7 @@ bool loadPatternProperties(nlohmann::json& jconfig, nlohmann::json& jschema, std
     return true;
 }
 
-bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config) {
+bool fParseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::shared_ptr<Composite>& root_config) {
     SharedPtr<Composite> node = root_config;
     for (auto& [k, v] : jschema.items()) {
         if (jconfig.find(k) == jconfig.end()) {
@@ -295,7 +307,7 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
             root_config->Add(node);
         }
 
-        if (!parseAndLoadConfig(jconfig[k], v, node)) {
+        if (!fParseAndLoadConfig(jconfig[k], v, node)) {
             spdlog::error("Failed to parse schema node '{}'", k);
             return false;
         }
@@ -303,14 +315,14 @@ bool parseAndLoadConfig(nlohmann::json& jconfig, nlohmann::json& jschema, std::s
 
     for (auto& [k, v] : jschema.items()) {
         if (k == SCHEMA_NODE_PATTERN_PROPERTIES_NAME) {
-            if (!loadPatternProperties(jconfig, v, node)) {
+            if (!fLoadPatternProperties(jconfig, v, node)) {
                 spdlog::error("Failed to parse schema node '{}'", k);
                 return false;
             }
         }
 
         if (k == SCHEMA_NODE_PROPERTIES_NAME) {
-            if (!parseAndLoadConfig(jconfig, v, node)) {
+            if (!fParseAndLoadConfig(jconfig, v, node)) {
                 spdlog::error("Failed to parse schema node '{}'", k);
                 return false;
             }
@@ -329,7 +341,7 @@ Config::Manager::Manager(StringView config_filename, StringView schema_filename,
 
 }
 
-bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node_config, const String& schema_filename) {
+bool fPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node_config, const String& schema_filename) {
     auto dependency_mngr = MakeSharedPtr<NodeDependencyManager>(config_mngr);
     List<String> ordered_nodes_by_xpath = {};
     if (!dependency_mngr->resolve(node_config, ordered_nodes_by_xpath)) {
@@ -374,22 +386,22 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
             
             auto json_node2 = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
             auto diff = json_node2.diff({}, json_node2);
-            diff[0]["op"] = "add";
-            diff[0]["path"] = xpath;
+            diff[0][JsonDiffField::OPERATION] = JsonDiffOperation::ADD;
+            diff[0][JsonDiffField::PATH] = xpath;
             // Replace:
-            // { "op": "add", "path": "/interface/ethernet/eth-2", "value": null }
+            // { JsonDiffField::OPERATION: "add", JsonDiffField::PATH: "/interface/ethernet/eth-2", JsonDiffField::VALUE: null }
             // with:
-            // { "op": "add", "path": "/interface/ethernet", "value": "eth-2" }
+            // { JsonDiffField::OPERATION: "add", JsonDiffField::PATH: "/interface/ethernet", JsonDiffField::VALUE: "eth-2" }
             auto xpath_jschema = GetJsonSchemaByXPath(xpath);
             if (xpath_jschema.find("type") != xpath_jschema.end()) {
                 if ((xpath_jschema.at("type") == "null") || (xpath_jschema.at("type") == "object")) {
                     auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
-                    diff[0]["value"] = xpath_jpointer.back();
+                    diff[0][JsonDiffField::VALUE] = xpath_jpointer.back();
                     xpath_jpointer.pop_back();
-                    diff[0]["path"] = xpath_jpointer.to_string();
+                    diff[0][JsonDiffField::PATH] = xpath_jpointer.to_string();
                 }
 
-                diff[0]["params"] = findAndAppendParamActionF(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
+                diff[0][JsonDiffField::PARAMETERS] = fFindAndAppendParamAction(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
             }
 
             auto server_addr = server_addr_attr.front();
@@ -407,8 +419,8 @@ bool gPerformAction(SharedPtr<Config::Manager> config_mngr, SharedPtr<Node> node
                     action_to_rollback.pop();
                     // It can be simply converted to "remove" operation since it is startup steps and there is
                     // not required to consider a "replace" operation
-                    action["op"] = "remove";
-                    action[0]["params"] = findAndAppendParamActionF(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
+                    action[JsonDiffField::OPERATION] = JsonDiffOperation::REMOVE;
+                    action[0][JsonDiffField::PARAMETERS] = fFindAndAppendParamAction(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
                     auto body = action.dump();
                     auto content_type = "application/json";
                     cli.Post(path, body, content_type);
@@ -547,7 +559,7 @@ bool CheckIfThereIsDuplicatedKey(const String& json_filename) {
     return is_duplicated_key;
 }
 
-SharedPtr<Node> ReloadNodeConfig(nlohmann::json& jschema, nlohmann::json& jconfig, SharedPtr<Config::Manager> config_mngr) {
+SharedPtr<Node> fReloadNodeConfig(nlohmann::json& jschema, nlohmann::json& jconfig, SharedPtr<Config::Manager> config_mngr) {
     if (!validateJsonConfig(jconfig, jschema)) {
         spdlog::error("Failed to validate config");
         return nullptr;
@@ -558,7 +570,7 @@ SharedPtr<Node> ReloadNodeConfig(nlohmann::json& jschema, nlohmann::json& jconfi
     auto root_config = MakeSharedPtr<Composite>(Config::ROOT_TREE_CONFIG_NAME);
     auto properties_it = jschema.find(SCHEMA_NODE_PROPERTIES_NAME);
     if (properties_it != jschema.end()) {
-        if (!parseAndLoadConfig(jconfig, *properties_it, root_config)) {
+        if (!fParseAndLoadConfig(jconfig, *properties_it, root_config)) {
             spdlog::error("Failed to load config based on 'properties' node");
             return nullptr;
         }
@@ -574,7 +586,7 @@ SharedPtr<Node> ReloadNodeConfig(nlohmann::json& jschema, nlohmann::json& jconfi
 
     properties_it = jschema.find(SCHEMA_NODE_PATTERN_PROPERTIES_NAME);
     if (properties_it != jschema.end()) {
-        if (!loadPatternProperties(jconfig, *properties_it, root_config)) {
+        if (!fLoadPatternProperties(jconfig, *properties_it, root_config)) {
             spdlog::error("Failed to load config based on 'patternProperties' node");
             return nullptr;
         }
@@ -617,7 +629,7 @@ bool Config::Manager::load() {
     auto root_config = MakeSharedPtr<Composite>(ROOT_TREE_CONFIG_NAME);
     auto properties_it = jschema.find(SCHEMA_NODE_PROPERTIES_NAME);
     if (properties_it != jschema.end()) {
-        if (!parseAndLoadConfig(jconfig, *properties_it, root_config)) {
+        if (!fParseAndLoadConfig(jconfig, *properties_it, root_config)) {
             spdlog::error("Failed to load config based on 'properties' node");
             return false;
         }
@@ -629,7 +641,7 @@ bool Config::Manager::load() {
 
         saveXPathReference(ordered_nodes_by_xpath, std::dynamic_pointer_cast<Node>(root_config));
 
-        if (!gPerformAction(shared_from_this(), root_config, _schema_filename)) {
+        if (!fPerformAction(shared_from_this(), root_config, _schema_filename)) {
             spdlog::error("Failed to perform action on the config");
             return false;
         }
@@ -642,7 +654,7 @@ bool Config::Manager::load() {
 
     properties_it = jschema.find(SCHEMA_NODE_PATTERN_PROPERTIES_NAME);
     if (properties_it != jschema.end()) {
-        if (!loadPatternProperties(jconfig, *properties_it, root_config)) {
+        if (!fLoadPatternProperties(jconfig, *properties_it, root_config)) {
             spdlog::error("Failed to load config based on 'patternProperties' node");
             return false;
         }
@@ -653,7 +665,7 @@ bool Config::Manager::load() {
         }
 
         saveXPathReference(ordered_nodes_by_xpath, std::dynamic_pointer_cast<Node>(root_config));
-        if (!gPerformAction(shared_from_this(), root_config, _schema_filename)) {
+        if (!fPerformAction(shared_from_this(), root_config, _schema_filename)) {
             spdlog::error("Failed to perform action on the config");
             return false;
         }
@@ -723,7 +735,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
     for (auto token : xpath_tokens) {
         if (schema.find(token) == schema.end()) {
             if (schema.find(SCHEMA_NODE_PATTERN_PROPERTIES_NAME) == schema.end()) {
-                schema_xpath_composed += "/properties/" + token;
+                schema_xpath_composed += String(XPath::SEPARATOR) + SCHEMA_NODE_PROPERTIES_NAME + XPath::SEPARATOR + token;
                 auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
                 schema = jschema[selector];
                 if (schema.begin() == schema.end()) {
@@ -752,7 +764,7 @@ SharedPtr<SchemaNode> Config::Manager::getSchemaByXPath(const String& xpath) {
             }
         }
         else {
-            schema_xpath_composed += "/properties/" + token;
+            schema_xpath_composed += String(XPath::SEPARATOR) + SCHEMA_NODE_PROPERTIES_NAME + XPath::SEPARATOR + token;
             auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
             schema = jschema[selector];
             schema_node = load_schema_attributes(schema, token, schema_node);
@@ -780,7 +792,7 @@ nlohmann::json GetJsonSchemaByXPath(const String& xpath) {
     for (auto token : xpath_tokens) {
         if (schema.find(token) == schema.end()) {
             if (schema.find(SCHEMA_NODE_PATTERN_PROPERTIES_NAME) == schema.end()) {
-                schema_xpath_composed += "/properties/" + token;
+                schema_xpath_composed += String(XPath::SEPARATOR) + SCHEMA_NODE_PROPERTIES_NAME + XPath::SEPARATOR + token;
                 auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
                 schema = jschema[selector];
                 if (schema.begin() == schema.end()) {
@@ -806,7 +818,7 @@ nlohmann::json GetJsonSchemaByXPath(const String& xpath) {
             }
         }
         else {
-            schema_xpath_composed += "/properties/" + token;
+            schema_xpath_composed += String(XPath::SEPARATOR) + SCHEMA_NODE_PROPERTIES_NAME + XPath::SEPARATOR + token;
             auto selector = nlohmann::json::json_pointer(schema_xpath_composed);
             schema = jschema[selector];
             // TODO: Create schema node and add to cache
@@ -836,6 +848,9 @@ SharedPtr<Node> Config::Manager::getRunningConfig() {
     return _running_config;
 }
 
+/**
+    Get all subnodes of the 'node' as list of xpaths
+ */
 class SubnodesGetterVisitor : public Visitor {
 public:
     virtual ~SubnodesGetterVisitor() = default;
@@ -865,11 +880,14 @@ class PrintVisitor : public Visitor {
     }
 };
 
+/**
+    The 'NodesCollectorVisitor' class collects all nodes based on passed list as 'nodes_to_collect_by_xpath'
+ */
 class NodesCollectorVisitor : public Visitor {
 public:
     virtual ~NodesCollectorVisitor() = default;
-    NodesCollectorVisitor(const Set<String>& nodes_to_collect)
-    : _nodes_to_collect { nodes_to_collect },
+    NodesCollectorVisitor(const Set<String>& nodes_to_collect_by_xpath)
+    : _nodes_to_collect_by_xpath { nodes_to_collect_by_xpath },
       _root_config { MakeSharedPtr<Composite>(Config::ROOT_TREE_CONFIG_NAME) } { }
 
     virtual bool visit(SharedPtr<Node> node) override {
@@ -884,8 +902,8 @@ public:
             return true;
         }
 
-        auto node_it = _nodes_to_collect.find(xpath);
-        if (node_it != _nodes_to_collect.end()) {
+        auto node_it = _nodes_to_collect_by_xpath.find(xpath);
+        if (node_it != _nodes_to_collect_by_xpath.end()) {
             auto xpath_tokens = XPath::parse(xpath);
             xpath_tokens.pop_back();
             auto parent_node = _root_config;
@@ -913,11 +931,14 @@ public:
     SharedPtr<Node> getRootConfig() { return _root_config; }
 
 private:
-    Set<String> _nodes_to_collect;
+    Set<String> _nodes_to_collect_by_xpath;
     Map<String, SharedPtr<Node>> _node_by_xpath;
     SharedPtr<Node> _root_config;
 };
 
+/**
+    Make copy of passed 'node'.
+ */
 class NodeCopyMakerVisitor : public Visitor {
 public:
     virtual ~NodeCopyMakerVisitor() = default;
@@ -949,7 +970,10 @@ private:
     SharedPtr<Node> _root_config;
 };
 
-bool ValidatePatch(const String& patch, const nlohmann::json& jconfig) {
+/**
+    Validate the patch against JSON schema.
+ */
+static bool fValidatePatch(const String& patch, const nlohmann::json& jconfig) {
     auto diff_patch = jconfig.patch(nlohmann::json::parse(patch));
     auto origin_diff = nlohmann::json::diff(jconfig, diff_patch);
     if (nlohmann::json::parse(patch) != origin_diff) {
@@ -963,7 +987,10 @@ bool ValidatePatch(const String& patch, const nlohmann::json& jconfig) {
     return false;
 }
 
-bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, SharedPtr<Node>& node_config, const String& schema_filename, SharedPtr<Config::Manager>& config_mngr, Map<String, Set<String>>& node_references) {
+/**
+    Makes candidate config based on passed the 'patch' and a result puts into passed 'jconfig' argument.
+ */
+static bool fMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, SharedPtr<Node>& node_config, const String& schema_filename, SharedPtr<Config::Manager>& config_mngr, Map<String, Set<String>>& node_references) {
     NodeCopyMakerVisitor node_copy_maker;
     node_config->Accept(node_copy_maker);
     auto candidate_node_config = node_copy_maker.getNodeConfigCopy();
@@ -980,20 +1007,20 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     Set<String> path_nodes = {};
     Set<String> subnodes_xpath = {};
     for (auto& diff_item : nlohmann::json::parse(patch)) {
-        auto op = diff_item["op"];
-        auto path = diff_item["path"];
-        if (diff_item.find("value") == diff_item.end()) {
+        auto op = diff_item[JsonDiffField::OPERATION];
+        auto path = diff_item[JsonDiffField::PATH];
+        if (diff_item.find(JsonDiffField::VALUE) == diff_item.end()) {
             auto path_jpointer = nlohmann::json::json_pointer(path);
             if (json_config.contains(path_jpointer.to_string())) {
-                diff_item["value"] = json_config[path_jpointer];
+                diff_item[JsonDiffField::VALUE] = json_config[path_jpointer];
             }
             else {
-                diff_item["value"] = nullptr;
+                diff_item[JsonDiffField::VALUE] = nullptr;
             }
         }
 
-        auto value = diff_item["value"];
-        if (op != "remove") {
+        auto value = diff_item[JsonDiffField::VALUE];
+        if (op != JsonDiffOperation::REMOVE) {
             continue;
         }
 
@@ -1075,9 +1102,9 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     for (const auto& xpath : ordered_nodes_by_xpath) {
         bool should_be_removed = false;
         for (auto& diff_item : nlohmann::json::parse(patch)) {
-            auto op = diff_item["op"];
-            if (op == "remove") {
-                auto path = diff_item["path"];
+            auto op = diff_item[JsonDiffField::OPERATION];
+            if (op == JsonDiffOperation::REMOVE) {
+                auto path = diff_item[JsonDiffField::PATH];
                 if (xpath.find(path) != String::npos) {
                     should_be_removed = true;
                     break;
@@ -1122,7 +1149,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             spdlog::error("Failed to remove node {} from collection of {}", node_to_remove->Name(), parent_node->Name());
             return false;
         }
-        
+
         node_to_remove.reset();
     }
 
@@ -1154,16 +1181,16 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             }
 
             nlohmann::json action = nlohmann::json::object();
-            action["op"] = "add";
-            action["path"] = xpath;
-            action["value"] = nullptr;
+            action[JsonDiffField::OPERATION] = JsonDiffOperation::ADD;
+            action[JsonDiffField::PATH] = xpath;
+            action[JsonDiffField::VALUE] = nullptr;
             // NOTE: This is note a case since the array type is not longer handle
             // if (jnode.is_array()) {
-            //     action["value"] = jnode;
+            //     action[JsonDiffField::VALUE] = jnode;
             // }
             // else
             if (std::dynamic_pointer_cast<Leaf>(node)) {
-                action["value"] = jnode;
+                action[JsonDiffField::VALUE] = jnode;
             }
             else {
                 auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
@@ -1171,11 +1198,11 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
                 // Item has to be fixed if the type is 'null', like for member containers with reference
                 if (((xpath_jschema.find("type") != xpath_jschema.end())
                         && ((xpath_jschema.at("type") == "object") || (xpath_jschema.at("type") == "null")))) {
-                    action["value"] = xpath_jpointer.back();
+                    action[JsonDiffField::VALUE] = xpath_jpointer.back();
                     xpath_jpointer.pop_back();
-                    action["path"] = xpath_jpointer.to_string();
+                    action[JsonDiffField::PATH] = xpath_jpointer.to_string();
                     auto xpath_jconfig = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
-                    action[0]["params"] = findAndAppendParamActionF(xpath_jschema, xpath_jconfig, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
+                    action[0][JsonDiffField::PARAMETERS] = fFindAndAppendParamAction(xpath_jschema, xpath_jconfig, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
                 }
             }
 
@@ -1207,17 +1234,17 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
 
         auto json_node2 = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
         auto diff = json_node2.diff({}, json_node2);
-        diff[0]["op"] = "remove";
-        diff[0]["path"] = xpath;
+        diff[0][JsonDiffField::OPERATION] = JsonDiffOperation::REMOVE;
+        diff[0][JsonDiffField::PATH] = xpath;
         auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
         auto xpath_jschema = GetJsonSchemaByXPath(xpath_jpointer.parent_pointer().to_string());
         if (((xpath_jschema.find("type") != xpath_jschema.end())
                 && ((xpath_jschema.at("type") == "object") || (xpath_jschema.at("type") == "null")))) {
             auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
-            diff[0]["value"] = xpath_jpointer.back();
+            diff[0][JsonDiffField::VALUE] = xpath_jpointer.back();
             xpath_jpointer.pop_back();
-            diff[0]["path"] = xpath_jpointer.to_string();
-            diff[0]["params"] = findAndAppendParamActionF(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
+            diff[0][JsonDiffField::PATH] = xpath_jpointer.to_string();
+            diff[0][JsonDiffField::PARAMETERS] = fFindAndAppendParamAction(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
         }
 
         auto server_addr = server_addr_attr.front();
@@ -1235,11 +1262,6 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
 
             return false;
         }
-
-        // if (!XPath::RemoveNode(SharedPtr<Node>& root_node, StringView xpath)) {
-        //     spdlog::critical("Failed to remove node by xpath '{}'", xpath);
-        //     ::exit(EXIT_FAILURE);
-        // }
 
         removed_nodes_by_xpath.push(xpath);
     }
@@ -1274,20 +1296,20 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
 
     path_nodes.clear();
     for (auto& diff_item : nlohmann::json::parse(patch)) {
-        auto op = diff_item["op"];
-        auto path = diff_item["path"];
-        if (diff_item.find("value") == diff_item.end()) {
+        auto op = diff_item[JsonDiffField::OPERATION];
+        auto path = diff_item[JsonDiffField::PATH];
+        if (diff_item.find(JsonDiffField::VALUE) == diff_item.end()) {
             auto path_jpointer = nlohmann::json::json_pointer(path);
             if (json_config.contains(path_jpointer.to_string())) {
-                diff_item["value"] = json_config[path_jpointer];
+                diff_item[JsonDiffField::VALUE] = json_config[path_jpointer];
             }
             else {
-                diff_item["value"] = nullptr;
+                diff_item[JsonDiffField::VALUE] = nullptr;
             }
         }
 
-        auto value = diff_item["value"];
-        if (op == "remove") {
+        auto value = diff_item[JsonDiffField::VALUE];
+        if (op == JsonDiffOperation::REMOVE) {
             continue;
         }
 
@@ -1338,7 +1360,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto properties_it = jschema.find(SCHEMA_NODE_PROPERTIES_NAME);
         if (properties_it != jschema.end()) {
             auto node = std::dynamic_pointer_cast<Composite>(root_node);
-            if (!parseAndLoadConfig(json_config[nlohmann::json::json_pointer(xpath)], *properties_it, node)) {
+            if (!fParseAndLoadConfig(json_config[nlohmann::json::json_pointer(xpath)], *properties_it, node)) {
                 spdlog::error("Failed to load config based on 'properties' node");
                 json_config = nlohmann::json();
                 if (!rollback_removed_nodes()) {
@@ -1353,7 +1375,7 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             properties_it = jschema.find(SCHEMA_NODE_PATTERN_PROPERTIES_NAME);
             if (properties_it != jschema.end()) {
                 auto node = std::dynamic_pointer_cast<Composite>(root_node);
-                if (!loadPatternProperties(json_config[nlohmann::json::json_pointer(xpath)], *properties_it, node)) {
+                if (!fLoadPatternProperties(json_config[nlohmann::json::json_pointer(xpath)], *properties_it, node)) {
                     spdlog::error("Failed to load config based on 'patternProperties' node");
                     if (!rollback_removed_nodes()) {
                         spdlog::error("Failed to rollback removed nodes");
@@ -1382,9 +1404,9 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     for (const auto& xpath : ordered_nodes_by_xpath) {
         bool should_be_added = false;
         for (auto& diff_item : nlohmann::json::parse(patch)) {
-            auto op = diff_item["op"];
-            if (op != "remove") {
-                auto path = diff_item["path"];
+            auto op = diff_item[JsonDiffField::OPERATION];
+            if (op != JsonDiffOperation::REMOVE) {
+                auto path = diff_item[JsonDiffField::PATH];
                 if (xpath.find(path) != String::npos) {
                     should_be_added = true;
                     break;
@@ -1470,30 +1492,30 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
             }
 
             nlohmann::json action = nlohmann::json::object();
-            action["op"] = "remove";
-            action["path"] = xpath;
-            action["value"] = nullptr;
+            action[JsonDiffField::OPERATION] = JsonDiffOperation::REMOVE;
+            action[JsonDiffField::PATH] = xpath;
+            action[JsonDiffField::VALUE] = nullptr;
             auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
             auto xpath_jschema = GetJsonSchemaByXPath(xpath_jpointer.parent_pointer().to_string());
             auto is_object = (xpath_jschema.find("type") != xpath_jschema.end()) && (xpath_jschema.at("object") == "null");
             // Item has to be fixed if the type is 'null', like for member containers with reference
             auto is_leaf_object = (xpath_jschema.find("type") != xpath_jschema.end()) && (xpath_jschema.at("type") == "null");
             if (is_object || is_leaf_object) {
-                action["value"] = xpath_jpointer.back();
+                action[JsonDiffField::VALUE] = xpath_jpointer.back();
                 xpath_jpointer.pop_back();
-                action["path"] = xpath_jpointer.to_string();
+                action[JsonDiffField::PATH] = xpath_jpointer.to_string();
                 auto xpath_jconfig = nlohmann::json().parse(config_mngr->getConfigNode(xpath));
-                action[0]["params"] = findAndAppendParamActionF(xpath_jschema, xpath_jconfig, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
+                action[0][JsonDiffField::PARAMETERS] = fFindAndAppendParamAction(xpath_jschema, xpath_jconfig, SCHEMA_NODE_ACTION_PARAM_ON_DELETE_NAME);
             }
             // NOTE: Since there is not permit array type so the below code is not longer necessary
             // if (auto leaf_ptr = std::dynamic_pointer_cast<Leaf>(node)) {
             //     if (leaf_ptr->getValue().is_string_array()) {
             //         auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
             //         if (json_config.contains(xpath_jpointer.to_string())) {
-            //             action["value"] = json_config[xpath_jpointer];
+            //             action[JsonDiffField::VALUE] = json_config[xpath_jpointer];
             //         }
             //         else {
-            //             action["value"] = nlohmann::json::array();
+            //             action[JsonDiffField::VALUE] = nlohmann::json::array();
             //         }
             //     }
             // }
@@ -1527,27 +1549,27 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
         auto json_node2 = nlohmann::json().parse(copy_json_config[nlohmann::json::json_pointer(xpath)].dump());
         auto diff = json_node2.diff({}, json_node2);
         auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
-        diff[0]["op"] = jconfig.contains(xpath_jpointer) ? "replace" : "add";
-        diff[0]["path"] = xpath;
+        diff[0][JsonDiffField::OPERATION] = jconfig.contains(xpath_jpointer) ? JsonDiffOperation::REPLACE : JsonDiffOperation::ADD;
+        diff[0][JsonDiffField::PATH] = xpath;
         /*
         * Replace:
-        * { "op": "replace", "path": "/interface/ethernet/eth-2", "value": null }
+        * { JsonDiffField::OPERATION: "replace", JsonDiffField::PATH: "/interface/ethernet/eth-2", JsonDiffField::VALUE: null }
         * with:
-        * { "op": "replace", "path": "/interface/ethernet", "value": "eth-2" }
+        * { JsonDiffField::OPERATION: "replace", JsonDiffField::PATH: "/interface/ethernet", JsonDiffField::VALUE: "eth-2" }
         */
         auto xpath_jschema = GetJsonSchemaByXPath(xpath_jpointer.to_string());
         // Item has to be fixed if the type is 'null', like for member containers with reference
         if (((xpath_jschema.find("type") != xpath_jschema.end())
                 && ((xpath_jschema.at("type") == "object") || (xpath_jschema.at("type") == "null")))) {
             auto xpath_jpointer = nlohmann::json::json_pointer(xpath);
-            diff[0]["value"] = xpath_jpointer.back();
+            diff[0][JsonDiffField::VALUE] = xpath_jpointer.back();
             xpath_jpointer.pop_back();
-            diff[0]["path"] = xpath_jpointer.to_string();
-            if (diff[0]["op"] == "replace") {
-                diff[0]["op"] = "add";
+            diff[0][JsonDiffField::PATH] = xpath_jpointer.to_string();
+            if (diff[0][JsonDiffField::OPERATION] == JsonDiffOperation::REPLACE) {
+                diff[0][JsonDiffField::OPERATION] = JsonDiffOperation::ADD;
             }
 
-            diff[0]["params"] = findAndAppendParamActionF(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
+            diff[0][JsonDiffField::PARAMETERS] = fFindAndAppendParamAction(xpath_jschema, json_node2, SCHEMA_NODE_ACTION_PARAM_ON_UPDATE_NAME);
         }
 
         auto server_addr = server_addr_attr.front();
@@ -1578,23 +1600,27 @@ bool gMakeCandidateConfigInternal(const String& patch, nlohmann::json& jconfig, 
     return true;
 }
 
+/**
+    Initiates making candidate config based on passed the 'patch'.
+    At the end it is stored internally to be a replacement of the running config or just discarded so it consists of uncommitted changes.
+ */
 bool Config::Manager::makeCandidateConfig(const String& patch) {
     NodeCopyMakerVisitor node_copy_maker;
     _running_config->Accept(node_copy_maker);
     auto root_node_candidate_config = node_copy_maker.getNodeConfigCopy();
     auto candidate_jconfig = RunningJsonConfig::instance().get();
-    if (ValidatePatch(patch, candidate_jconfig)) {
+    if (fValidatePatch(patch, candidate_jconfig)) {
         spdlog::error("Patch is invalid... probably does not come from this instance running");
         return false;
     }
 
     auto config_mngr = shared_from_this();
-    if (!gMakeCandidateConfigInternal(patch, candidate_jconfig, root_node_candidate_config, _schema_filename, config_mngr, _candidate_xpath_source_reference_by_target)) {
+    if (!fMakeCandidateConfigInternal(patch, candidate_jconfig, root_node_candidate_config, _schema_filename, config_mngr, _candidate_xpath_source_reference_by_target)) {
         spdlog::error("Failed to make candidate config");
         return false;
     }
 
-    auto new_node_config = ReloadNodeConfig(JsonSchema::instance().get(), candidate_jconfig, shared_from_this());
+    auto new_node_config = fReloadNodeConfig(JsonSchema::instance().get(), candidate_jconfig, shared_from_this());
     if (!new_node_config) {
         spdlog::error("Failed to reload node config");
         return false;
@@ -1671,19 +1697,19 @@ bool Config::Manager::cancelCandidateConfig() {
         return false;
     }
 
-    // TODO: If there is not "value" then restore it from original config
+    // TODO: If there is not JsonDiffField::VALUE then restore it from original config
     for (auto& diff_item : patch) {
-        auto op = diff_item["op"];
-        auto path = diff_item["path"];
-        if (diff_item.find("value") == diff_item.end()) {
-            diff_item["value"] = candidate_jconfig[nlohmann::json::json_pointer(path)];
+        auto op = diff_item[JsonDiffField::OPERATION];
+        auto path = diff_item[JsonDiffField::PATH];
+        if (diff_item.find(JsonDiffField::VALUE) == diff_item.end()) {
+            diff_item[JsonDiffField::VALUE] = candidate_jconfig[nlohmann::json::json_pointer(path)];
         }
     }
 
     Map<String, Set<String>>  copy_candidate_xpath_source_reference_by_target = _candidate_xpath_source_reference_by_target;
     _candidate_config->Accept(print_visitor);
     auto config_mngr = shared_from_this();
-    if (!gMakeCandidateConfigInternal(patch.dump(), candidate_jconfig, _candidate_config, _schema_filename, config_mngr, _candidate_xpath_source_reference_by_target)) {
+    if (!fMakeCandidateConfigInternal(patch.dump(), candidate_jconfig, _candidate_config, _schema_filename, config_mngr, _candidate_xpath_source_reference_by_target)) {
         spdlog::error("Failed to rollback changes");
         _candidate_xpath_source_reference_by_target = copy_candidate_xpath_source_reference_by_target;
         return false;
