@@ -19,7 +19,7 @@
                                             },
                                             "additionalProperties": false,
                                             "reference": [
-                                                "/interface/aggregate-ethernet[@item]/members/@"
+                                                "/interface/aggregate-ethernet[@key]/members/@"
                                             ],
                                             "action": {
                                                 "on-update-path": "/update",
@@ -27,7 +27,7 @@
                                                 "server-address": "127.0.0.1:8000"
                                             },
                                             "update-dependencies": [
-                                                "/interface/aggregate-ethernet[@item]/members"
+                                                "/interface/aggregate-ethernet[@key]/members"
                                             ],
                                             "update-constraints": [
                                                 "must(exists(xpath(@)))"
@@ -43,11 +43,11 @@
                             ],
                             "update-dependencies": [
                                 "/interface/aggregate-ethernet/@",
-                                "/interface/aggregate-ethernet[@item]/protocol"
+                                "/interface/aggregate-ethernet[@key]/protocol"
                             ],
                             "update-constraints": [
                                 "must(exists(xpath(@)))",
-                                "must(xpath_value('/interface/aggregate-ethernet[@item]/protocol') == 'lacp')"
+                                "must(xpath_value('/interface/aggregate-ethernet[@key]/protocol') == 'lacp')"
                             ],
                             "action": {
                                 "on-update-path": "/update",

@@ -30,17 +30,17 @@ SharedPtr<Node> XPath::NodeFinder::getResult() {
 }
 
 Deque<String> XPath::parse(const String xpath) {
-    Deque<String> xpath_items;
+    Deque<String> xpath_keys;
     // Returns first token
     char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
     // Keep printing tokens while one of the
     // delimiters present in str[].
     while (token != nullptr) {
-        xpath_items.push_back(token);
+        xpath_keys.push_back(token);
         token = std::strtok(nullptr, XPath::SEPARATOR);
     }
 
-    return xpath_items;
+    return xpath_keys;
 }
 
 SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
@@ -48,21 +48,21 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
         return nullptr;
     }
 
-    auto xpath_items = parse(xpath);
+    auto xpath_keys = parse(xpath);
     auto node_finder = MakeSharedPtr<XPath::NodeFinder>();
     auto visiting_node = root_node;
-    while (!xpath_items.empty()) { 
-        auto item = xpath_items.front();
-        if ((item == "value") && (xpath_items.size() == 1)) {
+    while (!xpath_keys.empty()) { 
+        auto key = xpath_keys.front();
+        if ((key == "value") && (xpath_keys.size() == 1)) {
             return visiting_node;
         }
 
-        auto left_pos = item.find(XPath::SUBSCRIPT_LEFT_PARENTHESIS);
-        auto right_pos = item.find(XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
+        auto left_pos = key.find(XPath::SUBSCRIPT_LEFT_PARENTHESIS);
+        auto right_pos = key.find(XPath::SUBSCRIPT_RIGHT_PARENTHESIS);
         if (left_pos != StringEnd()
             && right_pos != StringEnd()) {
-            xpath_items.pop_front();
-            for (auto new_item : { item.substr(0, left_pos), item.substr(left_pos + 1, (right_pos - left_pos - 1)) }) {
+            xpath_keys.pop_front();
+            for (auto new_item : { key.substr(0, left_pos), key.substr(left_pos + 1, (right_pos - left_pos - 1)) }) {
                 node_finder->init(new_item);
                 visiting_node->Accept(*node_finder);
                 visiting_node = node_finder->getResult();
@@ -74,14 +74,14 @@ SharedPtr<Node> XPath::select(SharedPtr<Node> root_node, const String xpath) {
             continue;
         }
 
-        node_finder->init(xpath_items.front());
+        node_finder->init(xpath_keys.front());
         visiting_node->Accept(*node_finder);
         visiting_node = node_finder->getResult();
         if (!visiting_node) {
             return nullptr;
         }
 
-        xpath_items.pop_front();
+        xpath_keys.pop_front();
     }
 
     return visiting_node;
@@ -136,9 +136,9 @@ struct NodeCounter : public Visitor {
 };
 
 // Resolves the xpath based on the node from the same xpath,
-// i.e. xpath = '/platform/port/[@item]/breakout-mode' then node
+// i.e. xpath = '/platform/port/[@key]/breakout-mode' then node
 // must be "breakout-mode" to successfully evaluate the node - it
-// cannot be i.e. '/interface/ethernet[@item]/auto-negotiation'
+// cannot be i.e. '/interface/ethernet[@key]/auto-negotiation'
 String XPath::evaluateXPath(SharedPtr<Node> start_node, String xpath) {
     if (xpath.at(0) != XPath::SEPARATOR[0]) {
         return {};
@@ -146,20 +146,20 @@ String XPath::evaluateXPath(SharedPtr<Node> start_node, String xpath) {
 
     Utils::find_and_replace_all(xpath, XPath::ITEM_NAME_SUBSCRIPT, String(XPath::SEPARATOR) + XPath::ITEM_NAME_SUBSCRIPT);
     MultiMap<String, std::size_t> idx_by_xpath_item;
-    Vector<String> xpath_items;
+    Vector<String> xpath_keys;
     // Returns first token
     char* token = std::strtok(const_cast<char*>(xpath.c_str()), XPath::SEPARATOR);
     // Keep printing tokens while one of the
     // delimiters present in str[].
     size_t idx = 0;
     while (token != nullptr) {
-        xpath_items.push_back(token);
+        xpath_keys.push_back(token);
         idx_by_xpath_item.emplace(token, idx);
         token = strtok(NULL, XPath::SEPARATOR);
         ++idx;
     }
 
-    // Resolve @item key
+    // Resolve @key key
     auto key_name_pos = idx_by_xpath_item.find(XPath::ITEM_NAME_SUBSCRIPT);
     if (key_name_pos != std::end(idx_by_xpath_item)) {
         // Find last idx
@@ -171,9 +171,9 @@ String XPath::evaluateXPath(SharedPtr<Node> start_node, String xpath) {
             }
         }
 
-        String wanted_child = xpath_items.at(idx);
-        if (xpath_items.size() > (idx + 1)) {
-            wanted_child = xpath_items.at(idx + 1);
+        String wanted_child = xpath_keys.at(idx);
+        if (xpath_keys.size() > (idx + 1)) {
+            wanted_child = xpath_keys.at(idx + 1);
         }
 
         auto curr_node = start_node;
@@ -200,14 +200,14 @@ String XPath::evaluateXPath(SharedPtr<Node> start_node, String xpath) {
 
         // Resolve all occurences of XPath::ITEM_NAME_SUBSCRIPT
         for (auto it = range.first; it != range.second; ++it) {
-            xpath_items.at(it->second) = resolved_key_name;
+            xpath_keys.at(it->second) = resolved_key_name;
         }
     }
 
     String evaluated_xpath;
-    for (auto item : xpath_items) {
+    for (auto key : xpath_keys) {
         evaluated_xpath += XPath::SEPARATOR;
-        evaluated_xpath += item;
+        evaluated_xpath += key;
     }
 
     return evaluated_xpath;

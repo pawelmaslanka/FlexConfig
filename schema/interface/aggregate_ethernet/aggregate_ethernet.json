@@ -32,8 +32,8 @@
                                             },
                                             "update-dependencies": [
                                                 "/interface/ethernet/@",
-                                                "/interface/ethernet[@item]/speed",
-                                                "/interface/ethernet[@item]/auto-negotiation"
+                                                "/interface/ethernet[@key]/speed",
+                                                "/interface/ethernet[@key]/auto-negotiation"
                                             ],
                                             "update-constraints": [
                                                 "must(exists(xpath(@)))",
@@ -63,7 +63,7 @@
                                 ]
                             },
                             "delete-constraints": [
-                                "must(count(xpath('/interface/aggregate-ethernet[@item]/members')) == 0)"
+                                "must(count(xpath('/interface/aggregate-ethernet[@key]/members')) == 0)"
                             ]
                         }
                     },

@@ -67,7 +67,7 @@
                         "server-address": "127.0.0.1:8000"
                     },
                     "delete-constraints": [
-                        "must(count(xpath('/vlan[@item]/members')) == 0)"
+                        "must(count(xpath('/vlan[@key]/members')) == 0)"
                     ]
                 }
             },

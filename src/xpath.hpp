@@ -10,8 +10,8 @@
 #include "node.hpp"
 
 namespace XPath {
-    static auto constexpr ITEM_NAME = "@item";
-    static auto constexpr ITEM_NAME_SUBSCRIPT = "[@item]";
+    static auto constexpr ITEM_NAME = "@key";
+    static auto constexpr ITEM_NAME_SUBSCRIPT = "[@key]";
     static auto constexpr REFERENCE_TOKEN = "@";
     static auto constexpr ROOT_TOKEN = "/";
     static auto constexpr SUBSCRIPT_LEFT_PARENTHESIS = "[";

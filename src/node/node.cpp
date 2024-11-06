@@ -14,7 +14,7 @@ const Set<String> SchemaNode::ATTR_NAME = {
     "update-constraints",
     "delete-constraints",
     "type",
-    "@item",
+    "@key",
     "array",
     "min",
     "max",

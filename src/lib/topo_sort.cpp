@@ -203,26 +203,26 @@ std::optional<std::string> run_update_op(SharedPtr<Map<String, Set<String>>> cmd
     //     corrected_ordered_cmds.push_front(*ordered_cmds.begin());
     //     ordered_cmds.erase(ordered_cmds.begin());
     //     ForwardList<String>::iterator longest_xpath = corrected_ordered_cmds.begin();
-    //     for (auto& item : ordered_cmds) {
+    //     for (auto& key : ordered_cmds) {
     //         for (auto it = corrected_ordered_cmds.begin(); it != corrected_ordered_cmds.end(); ++it) {
-    //             if (item.find(*it) != String::npos) {
+    //             if (key.find(*it) != String::npos) {
     //                 if (longest_xpath->size() < it->size()) {
-    //                     // std::cout << item << " is longer than " << *it << std::endl;
+    //                     // std::cout << key << " is longer than " << *it << std::endl;
     //                     longest_xpath = it;
     //                 }
     //             }
     //         }
 
-    //         longest_xpath = corrected_ordered_cmds.insert_after(longest_xpath, item);
+    //         longest_xpath = corrected_ordered_cmds.insert_after(longest_xpath, key);
     //     }
 
     //     ordered_cmds.clear();
-    //     for (auto& item : corrected_ordered_cmds) {
-    //         ordered_cmds.push_back(item);
+    //     for (auto& key : corrected_ordered_cmds) {
+    //         ordered_cmds.push_back(key);
     //     }
     // }
 
-    // std::cout << "Resolved " << ordered_cmds.size() << " items:\n";
+    // std::cout << "Resolved " << ordered_cmds.size() << " keys:\n";
     // for (auto& r : ordered_cmds) {
     //     // std::cout << r << " ";
     // }

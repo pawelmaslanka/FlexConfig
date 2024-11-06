@@ -54,4 +54,4 @@ Exceptions to JSON schema
 
 Rules during write schema:
 * **@** - this is reference token. Reference to some **node**. It is evaluated as its corresponding node in other xpath. It is used at the end of expression. 
-* **[@item]** - this is reference to node in container. It is evaluated as node in currently processing xpath.
+* **[@key]** - this is reference to node in container. It is evaluated as node in currently processing xpath.
